@@ -1,0 +1,32 @@
+@import './styles/design-system.css';
+@import './styles/auth.css';
+@import './styles/sidebar.css';
+
+/* Conteúdo principal (área branca do app) */
+.app-content {
+  background: var(--gray-50);
+  min-height: 100%;
+}
+
+/* Modals & Overlays */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1.5rem;
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}

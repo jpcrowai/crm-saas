@@ -1,0 +1,38 @@
+.sidebar {
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    var(--navy-950),
+    var(--navy-800)
+  );
+
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+
+  padding: 1.5rem;
+}
+
+.sidebar-item {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  cursor: pointer;
+}
+
+.sidebar-item.active,
+.sidebar-item:hover {
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold-500);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 0.75rem;
+  color: var(--gold-400);
+}

@@ -1,0 +1,153 @@
+.sidebar {
+  width: 260px;
+  background: var(--navy-800);
+  color: var(--white);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  border-right: 1px solid var(--navy-700);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.sidebar.collapsed {
+  width: 80px;
+}
+
+/* HEADER */
+.sidebar-header {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--navy-700);
+}
+
+.logo-area {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--white);
+  letter-spacing: -0.025em;
+}
+
+.collapse-btn {
+  background: transparent;
+  color: var(--gray-400);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--gold-400);
+}
+
+/* NAV */
+.sidebar-nav {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--gray-400);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.nav-item:hover {
+  background: var(--navy-700);
+  color: var(--white);
+}
+
+.nav-item.active {
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--white);
+  border-right: 3px solid var(--gold-500);
+}
+
+.nav-item .icon {
+  display: flex;
+  min-width: 20px;
+}
+
+/* FOOTER */
+.sidebar-footer {
+  padding: 1.5rem;
+  border-top: 1px solid var(--navy-700);
+}
+
+.user-role {
+  font-size: 0.7rem;
+  color: var(--gold-400);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: transparent;
+  color: var(--gray-400);
+  border: 1px solid var(--navy-700);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  justify-content: center;
+  /* Centered when collapsed if needed, but flex handles it */
+}
+
+.sidebar.collapsed .logout-btn {
+  padding: 0.6rem;
+}
+
+.logout-btn:hover {
+  border-color: var(--gold-500);
+  color: var(--gold-400);
+  background: rgba(212, 175, 55, 0.05);
+}
+
+/* Alignment fixes for collapsed state */
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.sidebar.collapsed .user-role {
+  display: none;
+}

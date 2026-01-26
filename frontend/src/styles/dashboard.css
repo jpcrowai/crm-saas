@@ -1,0 +1,167 @@
+/* Dashboard.css */
+
+/* Ensure text is dark on the light dashboard background */
+.dashboard-container {
+    color: var(--navy-900);
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--gray-400);
+    /* Slightly darker border */
+    padding-bottom: 1rem;
+}
+
+.page-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--navy-900);
+    /* Dark Navy */
+    margin: 0;
+}
+
+.sub-text {
+    color: var(--gray-600);
+    margin-top: 0.5rem;
+}
+
+/* SECTION HEADERS */
+.section-title {
+    margin-bottom: 1rem;
+    color: var(--navy-700);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+/* CARDS */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--gray-400);
+    /* Visible border */
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--gold-500);
+}
+
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--navy-900);
+    margin: 0;
+}
+
+.card-subtitle {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.card-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: var(--gray-100);
+    color: var(--navy-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--gray-400);
+}
+
+/* BUTTONS */
+.btn-primary {
+    background-color: var(--gold-500);
+    color: var(--white);
+    /* White text on Gold */
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: var(--gold-400);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--navy-800);
+    border: 1px solid var(--gray-400);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    border-color: var(--gold-500);
+    color: var(--gold-500);
+    background: var(--gray-50);
+}
+
+/* DASHBOARD (Generic) */
+.btn-primary {
+    background: var(--primary-color);
+    color: #0f172a;
+    /* Force dark text on buttons */
+}
+
+/* BADGES */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-info {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}
+
+.badge-active {
+    background-color: #dcfce7;
+    color: #15803d;
+}
+
+.badge-inactive {
+    background-color: #f1f5f9;
+    color: #64748b;
+}

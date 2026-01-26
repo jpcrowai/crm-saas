@@ -1,0 +1,27 @@
+# Node
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+db.sqlite3
+
+# Excel data (local storage)
+backend/excel/*.xlsx
+!backend/excel/master.xlsx
+!backend/excel/niches.xlsx
+!backend/excel/ambientes.xlsx
+
+# Misc
+.DS_Store
+.vscode/
+.idea/
+*.log

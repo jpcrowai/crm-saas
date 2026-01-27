@@ -38,9 +38,9 @@ const FinanceExtrato = () => {
 
     const getStatusBadge = (status) => {
         const s = {
-            pago: { bg: '#dcfce7', color: '#166534', label: 'Pago' },
-            pendente: { bg: '#fef3c7', color: '#92400e', label: 'Pendente' },
-            atrasado: { bg: '#fee2e2', color: '#991b1b', label: 'Atrasado' }
+            pago: { bg: '#dcfce7', color: '#166534', label: '🟢 Pago' },
+            pendente: { bg: '#fef3c7', color: '#92400e', label: '🟡 Pendente' },
+            atrasado: { bg: '#fee2e2', color: '#991b1b', label: '🔴 Atrasado' }
         }[status] || { bg: '#f1f5f9', color: '#64748b', label: status };
         return <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.35rem 0.65rem', borderRadius: '6px', background: s.bg, color: s.color }}>{s.label}</span>;
     };

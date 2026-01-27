@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import { useAuth } from '../context/AuthContext'
 import { AlertTriangle } from 'lucide-react'
+import { Toaster } from 'react-hot-toast'
 
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false)
@@ -22,6 +23,23 @@ const MainLayout = () => {
       }}
     >
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: 'var(--navy-900)',
+            color: 'white',
+            border: '1px solid var(--gold-500)',
+          },
+          success: {
+            iconTheme: {
+              primary: 'var(--success)',
+              secondary: 'white',
+            },
+          },
+        }}
+      />
 
       <main
         style={{

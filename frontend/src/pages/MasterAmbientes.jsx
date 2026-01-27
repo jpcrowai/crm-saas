@@ -173,28 +173,28 @@ const MasterAmbientes = () => {
                       <input className="input-premium" placeholder="Ex: Barbearia Tadeu's" value={newEnv.nome_empresa} onChange={e => setNewEnv({ ...newEnv, nome_empresa: e.target.value })} required />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                       <div className="form-group">
                         <label>Slug (URL)</label>
-                        <input className="input-premium" placeholder="tadeu-barber" value={newEnv.slug} onChange={e => setNewEnv({ ...newEnv, slug: e.target.value })} required />
+                        <input placeholder="tadeu-barber" value={newEnv.slug} onChange={e => setNewEnv({ ...newEnv, slug: e.target.value })} required />
                       </div>
                       <div className="form-group">
                         <label>Nicho</label>
-                        <select className="input-premium" value={newEnv.nicho_id} onChange={e => setNewEnv({ ...newEnv, nicho_id: e.target.value })} required>
+                        <select value={newEnv.nicho_id} onChange={e => setNewEnv({ ...newEnv, nicho_id: e.target.value })} required>
                           <option value="">Selecione...</option>
                           {niches.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
                         </select>
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '1.25rem' }}>
+                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '1.25rem' }}>
                       <div className="form-group">
                         <label>E-mail Admin</label>
-                        <input className="input-premium" type="email" placeholder="admin@empresa.com" value={newEnv.admin_email} onChange={e => setNewEnv({ ...newEnv, admin_email: e.target.value })} required />
+                        <input type="email" placeholder="admin@empresa.com" value={newEnv.admin_email} onChange={e => setNewEnv({ ...newEnv, admin_email: e.target.value })} required />
                       </div>
                       <div className="form-group">
                         <label>Plano</label>
-                        <select className="input-premium" value={newEnv.plan} onChange={e => setNewEnv({ ...newEnv, plan: e.target.value })}>
+                        <select value={newEnv.plan} onChange={e => setNewEnv({ ...newEnv, plan: e.target.value })}>
                           <option value="basic">BASIC</option>
                           <option value="pro">PRO</option>
                           <option value="enterprise">ENTERPRISE</option>

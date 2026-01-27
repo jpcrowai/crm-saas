@@ -9,7 +9,7 @@ const Plans = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
     const [newPlan, setNewPlan] = useState({
-        name: '', description: '', price: 0, periodicity: 'monthly', item_ids: []
+        name: '', description: '', price: 0, periodicity: 'monthly', items: []
     });
 
     useEffect(() => {
@@ -34,7 +34,7 @@ const Plans = () => {
             }
             setShowModal(false);
             setEditingPlan(null);
-            setNewPlan({ name: '', description: '', price: 0, periodicity: 'monthly', item_ids: [] });
+            setNewPlan({ name: '', description: '', price: 0, periodicity: 'monthly', items: [] });
             loadData();
         } catch (e) { alert("Erro ao salvar plano"); }
     };
@@ -46,7 +46,13 @@ const Plans = () => {
             description: plan.description,
             price: plan.price,
             periodicity: plan.periodicity,
-            item_ids: (plan.items || []).map(i => i.id)
+            items: (plan.items || []).map(i => ({
+                id: i.product_id || i.id, // Handle both backend structures if needed
+                product_id: i.product_id || i.id,
+                name: i.name || i.nome,
+                frequency: i.frequency || 'monthly',
+                quantity: i.quantidade || 1
+            }))
         });
         setShowModal(true);
     };
@@ -133,20 +139,64 @@ const Plans = () => {
 
                             <div className="form-group">
                                 <label>Composição do Plano (Selecione os Itens)</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', maxHeight: '180px', overflowY: 'auto', padding: '1rem', background: '#f1f5f9', borderRadius: '12px' }}>
-                                    {items.map(item => (
-                                        <label key={item.id} className={`module-option ${newPlan.item_ids.includes(item.id) ? 'selected' : ''}`} style={{ padding: '0.75rem' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={newPlan.item_ids.includes(item.id)}
-                                                onChange={(e) => {
-                                                    const ids = e.target.checked ? [...newPlan.item_ids, item.id] : newPlan.item_ids.filter(id => id !== item.id);
-                                                    setNewPlan({ ...newPlan, item_ids: ids });
-                                                }}
-                                            />
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{item.name}</span>
-                                        </label>
-                                    ))}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', padding: '1rem', background: '#f1f5f9', borderRadius: '12px' }}>
+                                    {items.map(item => {
+                                        const isSelected = newPlan.items.find(i => i.product_id === item.id);
+                                        return (
+                                            <div key={item.id} className={`module-option ${isSelected ? 'selected' : ''}`} style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1 }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!isSelected}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setNewPlan({ ...newPlan, items: [...newPlan.items, { product_id: item.id, name: item.name, frequency: 'monthly', quantity: 1 }] });
+                                                                } else {
+                                                                    setNewPlan({ ...newPlan, items: newPlan.items.filter(i => i.product_id !== item.id) });
+                                                                }
+                                                            }}
+                                                        />
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{item.name}</span>
+                                                    </label>
+                                                    {isSelected && <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 700 }}>Selecionado</span>}
+                                                </div>
+
+                                                {isSelected && (
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '0.5rem', marginLeft: '1.5rem', padding: '0.5rem', background: 'rgba(255,255,255,0.5)', borderRadius: '6px' }}>
+                                                        <div>
+                                                            <label style={{ fontSize: '0.65rem', fontWeight: 600, display: 'block' }}>Qtd.</label>
+                                                            <input
+                                                                type="number" min="1"
+                                                                style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                                                value={isSelected.quantity}
+                                                                onChange={(e) => {
+                                                                    const updated = newPlan.items.map(i => i.product_id === item.id ? { ...i, quantity: parseFloat(e.target.value) } : i);
+                                                                    setNewPlan({ ...newPlan, items: updated });
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label style={{ fontSize: '0.65rem', fontWeight: 600, display: 'block' }}>Frequência</label>
+                                                            <select
+                                                                style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem' }}
+                                                                value={isSelected.frequency}
+                                                                onChange={(e) => {
+                                                                    const updated = newPlan.items.map(i => i.product_id === item.id ? { ...i, frequency: e.target.value } : i);
+                                                                    setNewPlan({ ...newPlan, items: updated });
+                                                                }}
+                                                            >
+                                                                <option value="monthly">Mensal / Recorrente</option>
+                                                                <option value="weekly">Semanal (4x/mês)</option>
+                                                                <option value="once">Única vez</option>
+                                                                <option value="unlimited">Ilimitado</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 

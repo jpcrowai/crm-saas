@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { getItems, createItem, deleteItem, updateItem, exportItems, importItems } from '../services/api';
 import { Plus, Search, ShoppingBag, Package, Trash2, DollarSign, XCircle, Settings, Upload, Download, Tag, Edit3 } from 'lucide-react';
 import '../styles/tenant-luxury.css';
+
+const generateSku = () => 'ITEM-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
 const ProductCatalog = () => {
     const [items, setItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    const [newItem, setNewItem] = useState({ name: '', description: '', price: 0, category: 'Service' });
+    const [newItem, setNewItem] = useState({ sku: '', name: '', description: '', price: 0, category: 'Service' });
 
     useEffect(() => { loadItems(); }, []);
 
@@ -26,14 +29,15 @@ const ProductCatalog = () => {
             else await createItem(newItem);
             setShowForm(false);
             setEditingItem(null);
-            setNewItem({ name: '', description: '', price: 0, category: 'Service' });
+            setNewItem({ sku: '', name: '', description: '', price: 0, category: 'Service' });
             loadItems();
-        } catch (e) { alert("Erro ao salvar item"); }
+            toast.success("Item salvo com sucesso!");
+        } catch (e) { toast.error("Erro ao salvar item"); }
     };
 
     const handleEdit = (item) => {
         setEditingItem(item);
-        setNewItem({ name: item.name, description: item.description, price: item.price, category: item.category });
+        setNewItem({ sku: item.sku || generateSku(), name: item.name, description: item.description, price: item.price, category: item.category });
         setShowForm(true);
     };
 
@@ -46,7 +50,7 @@ const ProductCatalog = () => {
             link.setAttribute('download', 'catalogo_produtos.xlsx');
             document.body.appendChild(link);
             link.click();
-        } catch (e) { alert("Erro ao exportar"); }
+        } catch (e) { toast.error("Erro ao exportar"); }
     };
 
     const handleImport = async (e) => {
@@ -56,9 +60,9 @@ const ProductCatalog = () => {
         formData.append('file', file);
         try {
             await importItems(formData);
-            alert("Catálogo atualizado com sucesso via Excel!");
+            toast.success("Catálogo atualizado com sucesso via Excel!");
             loadItems();
-        } catch (e) { alert("Erro na importação: Verifique as colunas do arquivo."); }
+        } catch (e) { toast.error("Erro na importação: Verifique as colunas do arquivo."); }
     };
 
     const filtered = items.filter(i => (i.name || '').toLowerCase().includes(searchTerm.toLowerCase()));
@@ -125,7 +129,7 @@ const ProductCatalog = () => {
                                         <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.3rem 0.6rem', borderRadius: '4px', background: '#f1f5f9', color: '#64748b' }}>{i.category}</span>
                                     </td>
                                     <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--navy-950)' }}>
-                                        R$ {i.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        R$ {(i.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -154,6 +158,10 @@ const ProductCatalog = () => {
                             <button onClick={() => { setShowForm(false); setEditingItem(null); }} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
                         </div>
                         <form onSubmit={handleCreate} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div className="form-group">
+                                <label>Código (SKU)</label>
+                                <input className="input-premium" placeholder="Ex: SERV-001" value={newItem.sku} onChange={e => setNewItem({ ...newItem, sku: e.target.value })} required />
+                            </div>
                             <div className="form-group">
                                 <label>Nome do Produto ou Serviço</label>
                                 <input className="input-premium" placeholder="Ex: Consultoria Mensal" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} required />

@@ -21,6 +21,10 @@ const AppointmentsCalendar = () => {
     });
 
     const { user } = useAuth();
+    const handleConnectGoogle = () => {
+        alert("Integrando com Google Agenda... Redirecionando para autenticação.");
+        // Logic to connect with Google API would go here
+    };
 
     useEffect(() => {
         loadData();
@@ -56,8 +60,8 @@ const AppointmentsCalendar = () => {
                     <p>Sincronização centralizada para sua produtividade</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn-luxury" style={{ borderRadius: '12px', padding: '0.75rem 1.25rem' }}>
-                        <Video size={18} /> Vincular Google Meet
+                    <button className="btn-luxury" onClick={() => handleConnectGoogle()} style={{ borderRadius: '12px', padding: '0.75rem 1.25rem' }}>
+                        <CalendarIcon size={18} style={{ marginRight: '8px' }} /> Vincular com Google Agenda
                     </button>
                     <button className="btn-luxury-gold" onClick={() => setShowModal(true)} style={{ borderRadius: '12px', padding: '0.75rem 1.5rem' }}>
                         <Plus size={20} /> Novo Agendamento

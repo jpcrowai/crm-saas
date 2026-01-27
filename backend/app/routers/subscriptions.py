@@ -17,7 +17,8 @@ router = APIRouter(prefix="/tenant", tags=["subscriptions"])
 class PlanItem(BaseModel):
     product_id: str
     nome: str
-    quantidade: float
+    quantidade: float = 1.0
+    frequency: str = "monthly" # weekly, monthly, once, unlimited
     preco_unitario: float
     total: float
 

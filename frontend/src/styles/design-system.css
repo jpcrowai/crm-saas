@@ -75,6 +75,24 @@ select,
 textarea {
   font-family: inherit;
   font-size: inherit;
+  outline: none;
+}
+
+/* GLOBAL BUTTON RESET */
+button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  border: none;
+  background: none;
+  transition: var(--transition);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* GLOBAL LUXURY BUTTONS */
@@ -106,6 +124,34 @@ textarea {
   transform: translateY(-2px);
 }
 
+/* GLOBAL FORM ELEMENTS */
+input,
+select,
+textarea {
+  background: var(--white) !important;
+  color: var(--navy-950) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  transition: var(--transition);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--gold-500) !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1) !important;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--navy-800);
+}
+
 /* LUXURY FILTERS */
 .filter-input {
   background: var(--bg-filter) !important;
@@ -119,4 +165,13 @@ textarea {
   border-color: var(--gold-500) !important;
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1) !important;
   background: var(--white) !important;
+}
+
+/* BASE COMPONENTS */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
 }

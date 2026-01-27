@@ -80,10 +80,9 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                         </select>
 
                         {formData.origem === 'venda' && (
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Selecionar Venda/Lead</label>
+                            <div className="form-group">
+                                <label>Selecionar Venda/Lead</label>
                                 <select
-                                    style={{ width: '100%', padding: '0.75rem' }}
                                     value={formData.lead_id}
                                     onChange={(e) => {
                                         const lead = leads.find(l => l.id === e.target.value);
@@ -109,30 +108,30 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                     <div className="wizard-step">
                         <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Etapa 2: Valores e Vencimento</h4>
                         <div style={{ display: 'grid', gap: '1rem' }}>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Descrição</label>
-                                <input style={{ width: '100%' }} value={formData.descricao} onChange={e => setFormData({ ...formData, descricao: e.target.value })} placeholder="Ex: Pagamento Fornecedor X" />
+                            <div className="form-group">
+                                <label>Descrição</label>
+                                <input value={formData.descricao} onChange={e => setFormData({ ...formData, descricao: e.target.value })} placeholder="Ex: Pagamento Fornecedor X" />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Valor Total (R$)</label>
-                                    <input type="number" step="0.01" style={{ width: '100%' }} value={formData.valor} onChange={e => setFormData({ ...formData, valor: e.target.value })} />
+                                <div className="form-group">
+                                    <label>Valor Total (R$)</label>
+                                    <input type="number" step="0.01" value={formData.valor} onChange={e => setFormData({ ...formData, valor: e.target.value })} />
                                 </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Número de Parcelas</label>
-                                    <input type="number" min="1" style={{ width: '100%' }} value={formData.parcelas} onChange={e => setFormData({ ...formData, parcelas: e.target.value })} />
+                                <div className="form-group">
+                                    <label>Número de Parcelas</label>
+                                    <input type="number" min="1" value={formData.parcelas} onChange={e => setFormData({ ...formData, parcelas: e.target.value })} />
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Data de Vencimento</label>
-                                    <input type="date" style={{ width: '100%' }} value={formData.data_vencimento} onChange={e => setFormData({ ...formData, data_vencimento: e.target.value })} />
+                                <div className="form-group">
+                                    <label>Data de Vencimento</label>
+                                    <input type="date" value={formData.data_vencimento} onChange={e => setFormData({ ...formData, data_vencimento: e.target.value })} />
                                 </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Forma de Pagamento</label>
-                                    <select style={{ width: '100%' }} value={formData.forma_pagamento} onChange={e => setFormData({ ...formData, forma_pagamento: e.target.value })}>
+                                <div className="form-group">
+                                    <label>Forma de Pagamento</label>
+                                    <select value={formData.forma_pagamento} onChange={e => setFormData({ ...formData, forma_pagamento: e.target.value })}>
                                         <option value="">Selecione...</option>
-                                        {methods.map(m => <option key={m.id} value={m.nome}>{m.nome}</option>)}
+                                        {(methods || []).map(m => <option key={m.id} value={m.nome}>{m.nome}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -148,7 +147,7 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Categoria Financeira</label>
                                 <select style={{ width: '100%' }} value={formData.categoria} onChange={e => setFormData({ ...formData, categoria: e.target.value })}>
                                     <option value="">Selecione...</option>
-                                    {categories.filter(c => c.tipo === (formData.tipo === 'receita' ? 'entrada' : 'saida') || c.tipo === 'ambos').map(c => (
+                                    {(categories || []).filter(c => c.tipo === (formData.tipo === 'receita' ? 'entrada' : 'saida') || c.tipo === 'ambos').map(c => (
                                         <option key={c.id} value={c.nome}>{c.nome}</option>
                                     ))}
                                 </select>
@@ -216,7 +215,7 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
     };
 
     return (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+        <div className="modal-overlay">
             <div className="card" style={{ width: '600px', maxWidth: '95%', padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ margin: 0 }}>Novo Lançamento</h3>

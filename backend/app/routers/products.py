@@ -14,13 +14,13 @@ router = APIRouter(prefix="/tenant", tags=["products"])
 
 class Product(BaseModel):
     id: Optional[str] = None
-    codigo: str
-    nome: str
-    descricao: Optional[str] = ""
-    preco_unitario: float
-    categoria: str
-    unidade: str # mensal, hora, unidade, pacote
-    status: str = "Ativo" # Ativo / Inativo
+    sku: str
+    name: str
+    description: Optional[str] = ""
+    price: float
+    category: str
+    unit: str # monthly, hourly, unit, package
+    status: str = "Active" # Active / Inactive
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
@@ -42,19 +42,53 @@ def clean_price(val):
             return 0.0
     return 0.0
 
+def map_legacy_product(p: Dict[str, Any]) -> Dict[str, Any]:
+    """Maps Portuguese fields to English fields if necessary."""
+    mapped = p.copy()
+    
+    # Mapping table: format (New Key, [Old Keys])
+    mappings = [
+        ("sku", ["codigo", "code"]),
+        ("name", ["nome", "produto", "servico"]),
+        ("description", ["descricao", "obs"]),
+        ("price", ["preco_unitario", "valor", "preco"]),
+        ("category", ["categoria", "tipo"]),
+        ("unit", ["unidade", "medida"]),
+        ("status", ["situacao", "ativo"]) # status is usually same, but good to check
+    ]
+    
+    for new_key, old_keys in mappings:
+        if new_key not in mapped or not mapped[new_key]:
+            for old in old_keys:
+                if old in mapped and mapped[old]:
+                    mapped[new_key] = mapped[old]
+                    # Don't delete old keys to avoid data loss during transition if we write back whole dicts
+                    # But for the Pydantic model we just need the new keys populated
+                    break
+    
+    # Defaults
+    if "price" not in mapped: mapped["price"] = 0.0
+    else: mapped["price"] = clean_price(mapped["price"])
+    
+    if "status" not in mapped: mapped["status"] = "Active"
+    
+    return mapped
+
 @router.get("/products", response_model=List[Product])
 async def get_products(current_user: TokenData = Depends(get_current_tenant_user)):
     ensure_product_sheets(current_user.tenant_slug)
     raw_products = read_sheet(current_user.tenant_slug, "products")
     
-    # Process types to ensure Pydantic doesn't fail
     cleaned = []
     for p in raw_products:
-        p["preco_unitario"] = clean_price(p.get("preco_unitario"))
-        # Ensure other strings are not None
-        for key in ["codigo", "nome", "categoria", "unidade", "status"]:
-            if not p.get(key): p[key] = ""
-        cleaned.append(p)
+        # Apply mapping
+        p_mapped = map_legacy_product(p)
+        
+        # Ensure strings
+        for key in ["sku", "name", "category", "unit", "status"]:
+            if not p_mapped.get(key): p_mapped[key] = ""
+            
+        cleaned.append(p_mapped)
         
     return cleaned
 
@@ -63,9 +97,10 @@ async def create_product(product: Product, current_user: TokenData = Depends(get
     ensure_product_sheets(current_user.tenant_slug)
     products = read_sheet(current_user.tenant_slug, "products")
     
-    # Check if code already exists
-    if any(p.get("codigo") == product.codigo for p in products):
-        raise HTTPException(status_code=400, detail="Código de produto já existe")
+    # Check if sku already exists
+    # Check both sku and codigo for backward compat check
+    if any(p.get("sku") == product.sku or p.get("codigo") == product.sku for p in products):
+        raise HTTPException(status_code=400, detail="Product Code (SKU) already exists")
         
     new_product = product.dict()
     new_product["id"] = str(uuid.uuid4())
@@ -83,40 +118,49 @@ async def update_product(product_id: str, product_in: Dict[str, Any], current_us
     idx = next((i for i, p in enumerate(products) if p.get("id") == product_id), -1)
     
     if idx == -1:
-        raise HTTPException(status_code=404, detail="Produto não encontrado")
+        raise HTTPException(status_code=404, detail="Product not found")
     
     # Update fields except ID
     if "id" in product_in: del product_in["id"]
-    if "preco_unitario" in product_in:
-        product_in["preco_unitario"] = clean_price(product_in["preco_unitario"])
+    if "price" in product_in:
+        product_in["price"] = clean_price(product_in["price"])
 
     products[idx].update(product_in)
     products[idx]["updated_at"] = datetime.now().isoformat()
     
     write_sheet(current_user.tenant_slug, "products", products)
-    return Product(**products[idx])
+    
+    # Return mapped version just to be safe for response model
+    return Product(**map_legacy_product(products[idx]))
 
 @router.get("/products/template")
 async def get_product_template(current_user: TokenData = Depends(get_current_tenant_user)):
     ensure_product_sheets(current_user.tenant_slug)
     products = read_sheet(current_user.tenant_slug, "products")
     
-    df = pd.DataFrame(products)
+    # We want to export a template that works for the NEW format, but maybe populating with old data is nice?
+    # Let's map everything to new format first
+    mapped_products = [map_legacy_product(p) for p in products]
+    
+    df = pd.DataFrame(mapped_products)
     if df.empty:
-        df = pd.DataFrame(columns=["codigo", "nome", "descricao", "preco_unitario", "categoria", "unidade", "status"])
+        df = pd.DataFrame(columns=["sku", "name", "description", "price", "category", "unit", "status"])
     else:
         # Reorder and filter columns for the template
-        cols = ["codigo", "nome", "descricao", "preco_unitario", "categoria", "unidade", "status"]
+        cols = ["sku", "name", "description", "price", "category", "unit", "status"]
+        # Ensure cols exist
+        for c in cols:
+            if c not in df.columns: df[c] = ""
         df = df[cols]
     
     # Map headers to Portuguese for user friendliness
     headers = {
-        "codigo": "Código",
-        "nome": "Nome",
-        "descricao": "Descrição",
-        "preco_unitario": "Preço Unitário",
-        "categoria": "Categoria",
-        "unidade": "Unidade",
+        "sku": "Código",
+        "name": "Nome",
+        "description": "Descrição",
+        "price": "Preço Unitário",
+        "category": "Categoria",
+        "unit": "Unidade",
         "status": "Status"
     }
     df.rename(columns=headers, inplace=True)
@@ -135,21 +179,21 @@ async def get_product_template(current_user: TokenData = Depends(get_current_ten
 @router.post("/products/import")
 async def import_products(file: UploadFile = File(...), current_user: TokenData = Depends(get_current_tenant_user)):
     if not file.filename.endswith(('.xlsx', '.xls')):
-        raise HTTPException(status_code=400, detail="Arquivo deve ser Excel")
+        raise HTTPException(status_code=400, detail="File must be Excel")
         
     try:
         contents = await file.read()
         df = pd.read_excel(BytesIO(contents))
         
-        # Mapeamento robusto
+        # Robust Mapping
         mapping = {
-            "codigo": ["código", "codigo", "code", "id"],
-            "nome": ["nome", "name", "produto", "serviço"],
-            "descricao": ["descrição", "descricao", "description", "obs"],
-            "preco_unitario": ["preço unitário", "preco unitario", "preço", "valor", "price"],
-            "categoria": ["categoria", "category", "tipo"],
-            "unidade": ["unidade", "unit", "medida"],
-            "status": ["status", "ativo"]
+            "sku": ["código", "codigo", "code", "id", "sku"],
+            "name": ["nome", "name", "produto", "serviço", "servico"],
+            "description": ["descrição", "descricao", "description", "obs"],
+            "price": ["preço unitário", "preco unitario", "preço", "valor", "price"],
+            "category": ["categoria", "category", "tipo"],
+            "unit": ["unidade", "unit", "medida"],
+            "status": ["status", "ativo", "situacao"]
         }
         
         def find_col(possible_names):
@@ -158,10 +202,10 @@ async def import_products(file: UploadFile = File(...), current_user: TokenData 
                     return col
             return None
 
-        actual_mapping = {custom: find_col(standards) for custom, standards in mapping.items()}
+        actual_mapping = {key: find_col(standards) for key, standards in mapping.items()}
         
-        if not actual_mapping["codigo"]:
-            raise HTTPException(status_code=400, detail="Coluna 'Código' não encontrada no Excel")
+        if not actual_mapping["sku"]:
+            raise HTTPException(status_code=400, detail="Column 'Código' or 'SKU' not found in Excel")
 
         ensure_product_sheets(current_user.tenant_slug)
         products = read_sheet(current_user.tenant_slug, "products")
@@ -170,27 +214,35 @@ async def import_products(file: UploadFile = File(...), current_user: TokenData 
         
         for _, row in df.iterrows():
             try:
-                codigo = str(row[actual_mapping["codigo"]]).strip()
-                if not codigo or pd.isna(codigo): continue
+                sku = str(row[actual_mapping["sku"]]).strip()
+                if not sku or pd.isna(sku): continue
                 
                 prod_data = {}
                 for key, col in actual_mapping.items():
                     if col and pd.notnull(row[col]):
                         val = row[col]
-                        if key == "preco_unitario":
+                        if key == "price":
                             val = clean_price(val)
                         prod_data[key] = val
                     else:
-                        if key == "status": prod_data[key] = "Ativo"
-                        elif key == "preco_unitario": prod_data[key] = 0.0
-                        else: prod_data[key] = ""
+                        if key == "status": prod_data[key] = "Active"
+                        elif key == "price": prod_data[key] = 0.0
+                        else: prod_data[key] = "" # Default empty string
                 
-                # Check for existing by Code
-                existing_idx = next((i for i, p in enumerate(products) if str(p.get("codigo")) == codigo), -1)
+                # Check for existing by SKU/Code
+                # We check match against 'sku' OR 'codigo' to match existing legacy items
+                existing_idx = next((i for i, p in enumerate(products) if str(p.get("sku")) == sku or str(p.get("codigo")) == sku), -1)
                 
                 if existing_idx != -1:
                     products[existing_idx].update(prod_data)
                     products[existing_idx]["updated_at"] = datetime.now().isoformat()
+                    # Ensure we migrate legacy keys if we are updating
+                    # If we update, we might as well clean up legacy keys, but keeping them doesn't hurt much if we use the mapper on read
+                    # But ideally we standardize on write
+                    if "codigo" in products[existing_idx]: del products[existing_idx]["codigo"]
+                    if "nome" in products[existing_idx]: del products[existing_idx]["nome"]
+                    if "preco_unitario" in products[existing_idx]: del products[existing_idx]["preco_unitario"]
+                    
                     stats["updated"] += 1
                 else:
                     new_id = str(uuid.uuid4())
@@ -209,7 +261,7 @@ async def import_products(file: UploadFile = File(...), current_user: TokenData 
         write_sheet(current_user.tenant_slug, "products", products)
         
         return {
-            "message": "Importação de produtos concluída",
+            "message": "Product import finished",
             "created": stats["created"],
             "updated": stats["updated"],
             "errors": stats["errors"]

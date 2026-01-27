@@ -46,7 +46,7 @@ const Customers = () => {
                     <h1>Base de Clientes</h1>
                     <p>Gerencie seus parceiros e histórico de relacionamento</p>
                 </div>
-                <button className="btn-luxury-gold" onClick={() => setShowForm(true)} style={{ borderRadius: '12px' }}>
+                <button className="btn-primary" onClick={() => setShowForm(true)}>
                     <Plus size={20} /> Novo Cliente
                 </button>
             </header>
@@ -99,8 +99,8 @@ const Customers = () => {
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            <button className="btn-action-luxury"><FileText size={16} /></button>
-                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => deleteCustomer(c.id).then(loadCustomers)}><Trash2 size={16} /></button>
+                                            <button className="btn-action-luxury" title="Ver Detalhes" onClick={() => alert(`Detalhes de ${c.name}`)}><FileText size={16} /></button>
+                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => deleteCustomer(c.id).then(loadCustomers)} title="Remover"><Trash2 size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -144,8 +144,8 @@ const Customers = () => {
                                 </div>
                             </div>
                             <footer style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
-                                <button type="button" className="btn-secondary-premium" style={{ flex: 1 }} onClick={() => setShowForm(false)}>Cancelar</button>
-                                <button type="submit" className="btn-primary-premium" style={{ flex: 1 }}>Salvar Cliente</button>
+                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowForm(false)}>Cancelar</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Salvar Cliente</button>
                             </footer>
                         </form>
                     </div>

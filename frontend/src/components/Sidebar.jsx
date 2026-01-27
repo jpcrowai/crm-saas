@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon, DollarSign, Activity, Settings, Package, Layers, FileText
+  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon, DollarSign, Activity, Settings, Package, Layers, FileText, Shield
 } from 'lucide-react';
 import '../styles/sidebar.css';
 import { useAuth } from '../context/AuthContext';
@@ -132,9 +132,35 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       </nav>
 
       <div className="sidebar-footer">
+        {!collapsed && isMaster && inTenantContext && (
+          <div style={{
+            margin: '0 1rem 1.5rem',
+            padding: '1rem',
+            background: 'var(--gold-50)',
+            borderRadius: '12px',
+            border: '1px solid var(--gold-400)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--gold-700)', fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '4px' }}>
+              <Shield size={14} /> Sessão Master
+            </div>
+            <div style={{ fontSize: '0.75rem' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.6rem', textTransform: 'uppercase' }}>Nicho</div>
+              <div style={{ fontWeight: 700, color: 'var(--navy-900)' }}>{user?.nicho_nome || 'Não definido'}</div>
+            </div>
+            <div style={{ fontSize: '0.75rem' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.6rem', textTransform: 'uppercase' }}>Plano / Status</div>
+              <div style={{ fontWeight: 700, color: 'var(--navy-900)' }}>
+                {user?.plan?.toUpperCase()} | <span style={{ color: user?.payment_status === 'paid' ? 'var(--success)' : 'var(--error)' }}>{user?.payment_status?.toUpperCase()}</span>
+              </div>
+            </div>
+          </div>
+        )}
         {!collapsed && (
-          <div style={{ marginBottom: '1rem' }}>
-            <p className="user-role">{isMaster ? "ADMINISTRADOR GLOBAL" : "USUÁRIO"}</p>
+          <div style={{ marginBottom: '1rem', paddingLeft: '1rem' }}>
+            <p className="user-role">{isMaster ? (inTenantContext ? "MASTER EM AMBIENTE" : "ADMINISTRADOR GLOBAL") : "USUÁRIO"}</p>
           </div>
         )}
         <button className="logout-btn" onClick={handleLogout}>

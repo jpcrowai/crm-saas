@@ -75,14 +75,14 @@ const ProductCatalog = () => {
                     <p>Gerencie sua oferta comercial e sincronize via Excel</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn-luxury" onClick={handleExport} style={{ padding: '0.75rem 1.25rem', borderRadius: '12px' }}>
+                    <button className="btn-primary" onClick={handleExport}>
                         <Download size={18} /> Exportar Excel
                     </button>
-                    <label className="btn-luxury" style={{ cursor: 'pointer', padding: '0.75rem 1.25rem', borderRadius: '12px' }}>
+                    <label className="btn-primary" style={{ cursor: 'pointer' }}>
                         <Upload size={18} /> Importar Excel
                         <input type="file" hidden onChange={handleImport} accept=".xlsx, .xls" />
                     </label>
-                    <button className="btn-luxury-gold" onClick={() => { setEditingItem(null); setShowForm(true); }} style={{ padding: '0.75rem 1.5rem', borderRadius: '12px' }}>
+                    <button className="btn-primary" onClick={() => { setEditingItem(null); setShowForm(true); }}>
                         <Plus size={20} /> Novo Item
                     </button>
                 </div>

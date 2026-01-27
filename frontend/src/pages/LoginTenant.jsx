@@ -109,7 +109,7 @@ const LoginTenant = () => {
           <button
             type="submit"
             className="btn-primary"
-            style={{ width: '100%', justifyContent: 'center', height: '44px', fontSize: '1rem', background: 'var(--color-bg-sidebar)' }}
+            style={{ width: '100%', justifyContent: 'center', height: '48px', fontSize: '1rem' }}
             disabled={loading}
           >
             {loading ? 'Verificando...' : (

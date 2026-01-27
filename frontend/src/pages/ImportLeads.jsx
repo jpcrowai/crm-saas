@@ -43,7 +43,7 @@ const ImportLeads = () => {
                         <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--navy-900)', marginBottom: '0.5rem' }}>Arraste seu arquivo Excel</h2>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>O sistema detectará automaticamente as colunas de Nome, WhatsApp e E-mail.</p>
 
-                        <label className="btn-luxury-gold" style={{ cursor: 'pointer', padding: '0.85rem 2rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <label className="btn-primary" style={{ cursor: 'pointer' }}>
                             <FileText size={18} /> {file ? file.name : 'Selecionar Arquivo'}
                             <input type="file" hidden onChange={handleFile} accept=".xlsx, .xls" />
                         </label>
@@ -59,9 +59,9 @@ const ImportLeads = () => {
                     </div>
 
                     <button
-                        className="btn-luxury"
+                        className="btn-primary"
                         disabled={!file || loading}
-                        style={{ width: '100%', marginTop: '3rem', padding: '1rem', borderRadius: '12px' }}
+                        style={{ width: '100%', marginTop: '3rem' }}
                         onClick={handleUpload}
                     >
                         {loading ? 'Processando dados...' : 'Executar Sincronização em Massa'}
@@ -97,7 +97,7 @@ const ImportLeads = () => {
 
                             <div style={{ background: 'var(--grad-premium)', padding: '1.5rem', borderRadius: '16px', color: 'white' }}>
                                 <p style={{ fontSize: '0.85rem', fontWeight: 600, opacity: 0.8, marginBottom: '0.5rem' }}>Próximos Passos</p>
-                                <button className="btn-luxury-gold" style={{ width: '100%', fontSize: '0.8rem', padding: '0.75rem' }} onClick={() => window.location.href = '/pipeline'}>
+                                <button className="btn-primary" style={{ width: '100%' }} onClick={() => window.location.href = '/pipeline'}>
                                     Visualizar no Pipeline de Vendas <ChevronRight size={16} />
                                 </button>
                             </div>

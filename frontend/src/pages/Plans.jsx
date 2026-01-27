@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getPlans, createPlan, updatePlan, getItems } from '../services/api';
-import { Plus, Package, DollarSign, Settings, XCircle, CheckCircle2, ShoppingBag, Edit3 } from 'lucide-react';
+import { Plus, Package, XCircle, CheckCircle2, Edit3, Save, Trash2 } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
 const Plans = () => {
@@ -8,8 +8,15 @@ const Plans = () => {
     const [items, setItems] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
-    const [newPlan, setNewPlan] = useState({
-        name: '', description: '', price: 0, periodicity: 'monthly', items: []
+    const [loading, setLoading] = useState(false);
+
+    // State for the form (shared for create and edit)
+    const [formData, setFormData] = useState({
+        name: '',
+        description: '',
+        price: 0,
+        periodicity: 'monthly',
+        items: []
     });
 
     useEffect(() => {
@@ -19,42 +26,141 @@ const Plans = () => {
     const loadData = async () => {
         try {
             const [pRes, iRes] = await Promise.all([getPlans(), getItems()]);
-            setPlans(pRes.data);
+            // Backend keeps fields in Portuguese but with camelCase/snake_case mix sometimes.
+            // Our frontend expects 'name', 'price', etc. 
+            // Let's normalize data from backend if needed.
+            const normalizedPlans = pRes.data.map(p => ({
+                id: p.id,
+                name: p.nome || p.name,
+                description: p.descricao || p.description,
+                price: p.valor_base || p.price || 0,
+                periodicity: p.periodicidade || p.periodicity || 'monthly',
+                items: (p.itens || p.items || []).map(it => ({
+                    product_id: it.product_id,
+                    name: it.nome || it.name,
+                    quantity: it.quantidade || it.quantity || 1,
+                    frequency: it.frequency || 'monthly'
+                }))
+            }));
+            setPlans(normalizedPlans);
             setItems(iRes.data);
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error("Erro ao carregar dados:", e);
+        }
+    };
+
+    const validateForm = () => {
+        if (!formData.name.trim()) {
+            alert("O nome do plano é obrigatório.");
+            return false;
+        }
+        if (parseFloat(formData.price) < 0) {
+            alert("O preço não pode ser negativo.");
+            return false;
+        }
+        return true;
+    };
+
+    const transformPayload = (data) => {
+        return {
+            nome: data.name,
+            descricao: data.description,
+            periodicidade: data.periodicity,
+            valor_base: parseFloat(data.price),
+            itens: data.items.map(it => {
+                const product = items.find(p => p.id === it.product_id);
+                return {
+                    product_id: it.product_id,
+                    nome: it.name,
+                    quantidade: parseFloat(it.quantity),
+                    frequency: it.frequency,
+                    preco_unitario: parseFloat(product?.price || 0),
+                    total: parseFloat(product?.price || 0) * parseFloat(it.quantity)
+                };
+            }),
+            ativo: true
+        };
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
+
+        setLoading(true);
         try {
+            const payload = transformPayload(formData);
+
             if (editingPlan) {
-                await updatePlan(editingPlan.id, newPlan);
+                console.log(`Updating plan ${editingPlan.id}...`, payload);
+                const response = await updatePlan(editingPlan.id, payload);
+                console.log("Update success:", response.data);
             } else {
-                await createPlan(newPlan);
+                console.log("Creating new plan...", payload);
+                await createPlan(payload);
             }
+
             setShowModal(false);
             setEditingPlan(null);
-            setNewPlan({ name: '', description: '', price: 0, periodicity: 'monthly', items: [] });
-            loadData();
-        } catch (e) { alert("Erro ao salvar plano"); }
+            resetForm();
+            await loadData();
+
+            // Temporary alert for feedback (ideally using a toast)
+            alert(editingPlan ? "Plano atualizado com sucesso!" : "Plano criado com sucesso!");
+        } catch (e) {
+            console.error("Erro ao salvar:", e);
+            alert("Erro ao salvar plano: " + (e.response?.data?.detail || "Erro de conexão com o servidor"));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            name: '',
+            description: '',
+            price: 0,
+            periodicity: 'monthly',
+            items: []
+        });
     };
 
     const handleEdit = (plan) => {
         setEditingPlan(plan);
-        setNewPlan({
+        setFormData({
             name: plan.name,
-            description: plan.description,
+            description: plan.description || '',
             price: plan.price,
             periodicity: plan.periodicity,
-            items: (plan.items || []).map(i => ({
-                id: i.product_id || i.id, // Handle both backend structures if needed
-                product_id: i.product_id || i.id,
-                name: i.name || i.nome,
-                frequency: i.frequency || 'monthly',
-                quantity: i.quantidade || 1
-            }))
+            items: [...plan.items]
         });
         setShowModal(true);
+    };
+
+    const handleToggleItem = (product) => {
+        const isSelected = formData.items.find(it => it.product_id === product.id);
+        if (isSelected) {
+            setFormData({
+                ...formData,
+                items: formData.items.filter(it => it.product_id !== product.id)
+            });
+        } else {
+            setFormData({
+                ...formData,
+                items: [...formData.items, {
+                    product_id: product.id,
+                    name: product.name,
+                    quantity: 1,
+                    frequency: 'monthly'
+                }]
+            });
+        }
+    };
+
+    const updateItemDetail = (productId, field, value) => {
+        const updatedItems = formData.items.map(it =>
+            it.product_id === productId ? { ...it, [field]: value } : it
+        );
+        setFormData({ ...formData, items: updatedItems });
     };
 
     return (
@@ -64,7 +170,7 @@ const Plans = () => {
                     <h1>Planos de Assinatura</h1>
                     <p>Configure pacotes de serviços e recorrência para seus clientes</p>
                 </div>
-                <button className="btn-luxury-gold" onClick={() => { setEditingPlan(null); setShowModal(true); }} style={{ borderRadius: '12px' }}>
+                <button className="btn-primary" onClick={() => { setEditingPlan(null); resetForm(); setShowModal(true); }}>
                     <Plus size={20} /> Criar Novo Plano
                 </button>
             </header>
@@ -87,109 +193,128 @@ const Plans = () => {
                             <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
                                 <label style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '0.75rem' }}>Incluso no Pacote</label>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                    {(plan.items || []).map(item => (
-                                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--navy-800)' }}>
-                                            <CheckCircle2 size={14} color="var(--success)" /> {item.name}
+                                    {plan.items.map((item, idx) => (
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--navy-800)' }}>
+                                            <CheckCircle2 size={14} color="var(--success)" /> {item.name} ({item.quantity}x)
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
-                            <button className="btn-luxury" style={{ width: '100%', marginTop: 'auto', padding: '0.75rem', borderRadius: '10px', fontSize: '0.8rem' }} onClick={() => handleEdit(plan)}>
+                            <button className="btn-secondary" style={{ width: '100%', marginTop: 'auto' }} onClick={() => handleEdit(plan)}>
                                 <Edit3 size={16} /> Detalhes do Plano
                             </button>
                         </div>
                     </div>
                 ))}
-                {plans.length === 0 && (
-                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', border: '2px dashed rgba(255,255,255,0.1)' }}>
-                        <Package size={48} color="white" style={{ opacity: 0.3, margin: '0 auto 1rem' }} />
-                        <p style={{ color: 'white' }}>Nenhum plano cadastrado ainda.</p>
-                    </div>
-                )}
             </div>
 
-            {/* FORM MODAL */}
             {showModal && (
                 <div className="modal-overlay">
-                    <div className="card" style={{ width: '600px', padding: '0', overflow: 'hidden' }}>
+                    <div className="card" style={{ width: '640px', padding: '0', overflow: 'hidden' }}>
                         <div className="modal-header-luxury">
-                            <h2>{editingPlan ? 'Ajustar Plano' : 'Novo Pacote Premium'}</h2>
+                            <h2>{editingPlan ? 'Editar Plano' : 'Novo Pacote'}</h2>
                             <button onClick={() => setShowModal(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
                         </div>
                         <form onSubmit={handleSubmit} style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            <div className="form-group">
-                                <label>Título Comercial do Plano</label>
-                                <input className="input-premium" placeholder="Ex: Upgrade Plus, Plano Master..." value={newPlan.name} onChange={e => setNewPlan({ ...newPlan, name: e.target.value })} required />
+                            <div className="form-group-luxury">
+                                <label>Nome do Plano</label>
+                                <input
+                                    className="input-premium"
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-group-luxury">
+                                <label>Descrição</label>
+                                <textarea
+                                    className="input-premium"
+                                    value={formData.description}
+                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                />
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                                <div className="form-group">
-                                    <label>Valor da Assinatura (R$)</label>
-                                    <input className="input-premium" type="number" step="0.01" value={newPlan.price} onChange={e => setNewPlan({ ...newPlan, price: e.target.value })} required />
+                                <div className="form-group-luxury">
+                                    <label>Preço Base (R$)</label>
+                                    <input
+                                        className="input-premium"
+                                        type="number" step="0.01"
+                                        value={formData.price}
+                                        onChange={e => setFormData({ ...formData, price: e.target.value })}
+                                        required
+                                    />
                                 </div>
-                                <div className="form-group">
-                                    <label>Ciclo de Faturamento</label>
-                                    <select className="input-premium" value={newPlan.periodicity} onChange={e => setNewPlan({ ...newPlan, periodicity: e.target.value })}>
+                                <div className="form-group-luxury">
+                                    <label>Ciclo</label>
+                                    <select
+                                        className="input-premium"
+                                        value={formData.periodicity}
+                                        onChange={e => setFormData({ ...formData, periodicity: e.target.value })}
+                                    >
                                         <option value="monthly">Mensal</option>
                                         <option value="yearly">Anual</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <div className="form-group">
-                                <label>Composição do Plano (Selecione os Itens)</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', padding: '1rem', background: '#f1f5f9', borderRadius: '12px' }}>
-                                    {items.map(item => {
-                                        const isSelected = newPlan.items.find(i => i.product_id === item.id);
+                            <div className="form-group-luxury">
+                                <label>Selecione os Serviços Inclusos</label>
+                                <div style={{
+                                    display: 'grid',
+                                    gap: '0.75rem',
+                                    maxHeight: '250px',
+                                    overflowY: 'auto',
+                                    padding: '1rem',
+                                    background: '#f1f5f9',
+                                    borderRadius: '12px'
+                                }}>
+                                    {items.map(product => {
+                                        const selected = formData.items.find(it => it.product_id === product.id);
                                         return (
-                                            <div key={item.id} className={`module-option ${isSelected ? 'selected' : ''}`} style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div key={product.id} style={{
+                                                background: selected ? '#fff' : 'transparent',
+                                                padding: '1rem',
+                                                borderRadius: '8px',
+                                                border: selected ? '2px solid var(--gold-400)' : '1px solid #cbd5e1'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1 }}>
                                                         <input
                                                             type="checkbox"
-                                                            checked={!!isSelected}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) {
-                                                                    setNewPlan({ ...newPlan, items: [...newPlan.items, { product_id: item.id, name: item.name, frequency: 'monthly', quantity: 1 }] });
-                                                                } else {
-                                                                    setNewPlan({ ...newPlan, items: newPlan.items.filter(i => i.product_id !== item.id) });
-                                                                }
-                                                            }}
+                                                            checked={!!selected}
+                                                            onChange={() => handleToggleItem(product)}
                                                         />
-                                                        <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{item.name}</span>
+                                                        <span style={{ fontWeight: 700 }}>{product.name}</span>
                                                     </label>
-                                                    {isSelected && <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 700 }}>Selecionado</span>}
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                        R$ {parseFloat(product.price).toLocaleString('pt-BR')}
+                                                    </span>
                                                 </div>
 
-                                                {isSelected && (
-                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '0.5rem', marginLeft: '1.5rem', padding: '0.5rem', background: 'rgba(255,255,255,0.5)', borderRadius: '6px' }}>
+                                                {selected && (
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginTop: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '6px' }}>
                                                         <div>
-                                                            <label style={{ fontSize: '0.65rem', fontWeight: 600, display: 'block' }}>Qtd.</label>
+                                                            <label style={{ fontSize: '0.7rem', fontWeight: 800 }}>QTD</label>
                                                             <input
                                                                 type="number" min="1"
-                                                                style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                                                value={isSelected.quantity}
-                                                                onChange={(e) => {
-                                                                    const updated = newPlan.items.map(i => i.product_id === item.id ? { ...i, quantity: parseFloat(e.target.value) } : i);
-                                                                    setNewPlan({ ...newPlan, items: updated });
-                                                                }}
+                                                                value={selected.quantity}
+                                                                onChange={(e) => updateItemDetail(product.id, 'quantity', e.target.value)}
+                                                                style={{ width: '100%', padding: '0.4rem' }}
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label style={{ fontSize: '0.65rem', fontWeight: 600, display: 'block' }}>Frequência</label>
+                                                            <label style={{ fontSize: '0.7rem', fontWeight: 800 }}>FREQUÊNCIA</label>
                                                             <select
-                                                                style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem' }}
-                                                                value={isSelected.frequency}
-                                                                onChange={(e) => {
-                                                                    const updated = newPlan.items.map(i => i.product_id === item.id ? { ...i, frequency: e.target.value } : i);
-                                                                    setNewPlan({ ...newPlan, items: updated });
-                                                                }}
+                                                                value={selected.frequency}
+                                                                onChange={(e) => updateItemDetail(product.id, 'frequency', e.target.value)}
+                                                                style={{ width: '100%', padding: '0.4rem' }}
                                                             >
-                                                                <option value="monthly">Mensal / Recorrente</option>
-                                                                <option value="weekly">Semanal (4x/mês)</option>
-                                                                <option value="once">Única vez</option>
-                                                                <option value="unlimited">Ilimitado</option>
+                                                                <option value="monthly">Mensal</option>
+                                                                <option value="weekly">Semanal</option>
+                                                                <option value="once">Única</option>
                                                             </select>
                                                         </div>
                                                     </div>
@@ -200,9 +325,15 @@ const Plans = () => {
                                 </div>
                             </div>
 
-                            <footer style={{ marginTop: '1rem', display: 'flex', gap: '1.25rem' }}>
-                                <button type="button" className="btn-secondary-premium" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Descartar</button>
-                                <button type="submit" className="btn-primary-premium" style={{ flex: 1.5 }}>{editingPlan ? 'Salvar Alterações' : 'Publicar Plano'}</button>
+                            <footer style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 2 }} disabled={loading}>
+                                    {loading ? 'Processando...' : (
+                                        <>
+                                            <Save size={18} /> {editingPlan ? 'Salvar Alterações' : 'Criar Plano'}
+                                        </>
+                                    )}
+                                </button>
                             </footer>
                         </form>
                     </div>

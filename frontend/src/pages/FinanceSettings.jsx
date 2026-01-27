@@ -51,7 +51,7 @@ const FinanceSettings = () => {
                     <div style={{ padding: '2rem' }}>
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
                             <input className="input-premium" placeholder="Nova Categoria (ex: Marketing)" value={newItem} onChange={e => setNewItem(e.target.value)} />
-                            <button className="btn-luxury-gold" onClick={handleAddCategory}><Plus size={20} /></button>
+                            <button className="btn-primary" onClick={handleAddCategory}><Plus size={20} /></button>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -76,7 +76,7 @@ const FinanceSettings = () => {
                     <div style={{ padding: '2rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
                             {['Dinheiro', 'PIX', 'Cartão de Crédito', 'Boleto'].map(m => (
-                                <button key={m} className="btn-luxury" style={{ fontSize: '0.75rem', padding: '0.6rem', borderRadius: '8px' }} onClick={() => handleAddMethod(m)}>
+                                <button key={m} className="btn-secondary" onClick={() => handleAddMethod(m)}>
                                     + {m}
                                 </button>
                             ))}

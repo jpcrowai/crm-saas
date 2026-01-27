@@ -52,11 +52,13 @@ def authenticate_master(email: str, password: str):
     # The init script did not add password col to master excel definition.
     return False
 
-def get_tenant_file(tenant_slug: str):
+def get_tenant_file(tenant_slug: str, allow_inactive: bool = False):
     ambientes = read_sheet("ambientes", "ambientes")
-    ambiente = next((a for a in ambientes if a["slug"] == tenant_slug and a["ativo"]), None)
+    # If allow_inactive is True, we only care about the slug existing.
+    # Otherwise, check if it's active (considering None as True for legacy).
+    ambiente = next((a for a in ambientes if a["slug"] == tenant_slug and (allow_inactive or a.get("ativo") is not False)), None)
     if ambiente:
-        return ambiente["excel_file"]
+        return ambiente.get("excel_file") or f"{tenant_slug}.xlsx"
     return None
 
 def authenticate_tenant_user(tenant_slug: str, email: str, password: str):

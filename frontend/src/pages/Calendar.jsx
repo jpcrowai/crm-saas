@@ -10,6 +10,13 @@ const AppointmentsCalendar = () => {
     const [date, setDate] = useState(new Date());
     const [appointments, setAppointments] = useState([]);
     const [customers, setCustomers] = useState([]);
+    const [showGoogleConfig, setShowGoogleConfig] = useState(false);
+    const [googleConfig, setGoogleConfig] = useState({
+        client_id: '',
+        client_secret: '',
+        redirect_uri: 'http://localhost:5173/google-callback'
+    });
+    const [connectionInfo, setConnectionInfo] = useState({ connected: false, email: '' });
     const [showModal, setShowModal] = useState(false);
     const [newAppt, setNewAppt] = useState({
         customer_id: '',
@@ -21,9 +28,32 @@ const AppointmentsCalendar = () => {
     });
 
     const { user } = useAuth();
-    const handleConnectGoogle = () => {
-        alert("Integrando com Google Agenda... Redirecionando para autenticação.");
-        // Logic to connect with Google API would go here
+
+    const handleConnectGoogle = async () => {
+        try {
+            const { getAuthUrl } = await import('../services/api');
+            const res = await getAuthUrl();
+            window.location.href = res.data.url;
+        } catch (e) {
+            alert("Erro ao iniciar conexão com Google. Certifique-se de que o Client ID/Secret estão salvos.");
+            setShowGoogleConfig(true);
+        }
+    };
+
+    const handleSaveGoogleConfig = async (e) => {
+        e.preventDefault();
+        try {
+            const { saveGoogleConfig } = await import('../services/api');
+            const res = await saveGoogleConfig(googleConfig);
+            alert(res.data.message || "Configurações do Google salvas e VALIDADAS com sucesso!");
+            setShowGoogleConfig(false);
+            // Refresh info or handle state
+            loadData();
+        } catch (e) {
+            console.error(e);
+            const errorMsg = e.response?.data?.detail || "Erro ao validar configurações. Verifique o Client ID e Secret.";
+            alert(errorMsg);
+        }
     };
 
     useEffect(() => {
@@ -32,9 +62,15 @@ const AppointmentsCalendar = () => {
 
     const loadData = async () => {
         try {
-            const [apptRes, custRes] = await Promise.all([getAppointments(), getCustomers()]);
+            const { getCalendarInfo } = await import('../services/api');
+            const [apptRes, custRes, infoRes] = await Promise.all([
+                getAppointments(),
+                getCustomers(),
+                getCalendarInfo()
+            ]);
             setAppointments(apptRes.data);
             setCustomers(custRes.data);
+            setConnectionInfo(infoRes.data);
         } catch (e) { console.error(e); }
     };
 
@@ -48,22 +84,41 @@ const AppointmentsCalendar = () => {
         } catch (e) { alert("Erro ao agendar"); }
     };
 
-    const dayAppointments = appointments.filter(a =>
-        new Date(a.appointment_date).toDateString() === date.toDateString()
-    );
+    const dayAppointments = appointments.filter(a => {
+        const apptDate = a.start_time || a.appointment_date;
+        return apptDate && new Date(apptDate).toDateString() === date.toDateString();
+    });
 
     return (
         <div className="tenant-page-container">
             <header className="page-header-row">
                 <div className="page-title-group">
                     <h1>Agenda & Compromissos</h1>
-                    <p>Sincronização centralizada para sua produtividade</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem' }}>
+                        <p style={{ margin: 0 }}>Sincronização centralizada para sua produtividade</p>
+                        {connectionInfo.connected && (
+                            <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                color: '#059669',
+                                background: '#ecfdf5',
+                                padding: '0.25rem 0.75rem',
+                                borderRadius: '20px',
+                                border: '1px solid #10b981'
+                            }}>
+                                <CheckCircle2 size={12} /> Google: {connectionInfo.email}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn-luxury" onClick={() => handleConnectGoogle()} style={{ borderRadius: '12px', padding: '0.75rem 1.25rem' }}>
-                        <CalendarIcon size={18} style={{ marginRight: '8px' }} /> Vincular com Google Agenda
+                    <button className="btn-primary" onClick={handleConnectGoogle}>
+                        <CalendarIcon size={18} /> Vincular Google Agenda
                     </button>
-                    <button className="btn-luxury-gold" onClick={() => setShowModal(true)} style={{ borderRadius: '12px', padding: '0.75rem 1.5rem' }}>
+                    <button className="btn-primary" onClick={() => setShowModal(true)}>
                         <Plus size={20} /> Novo Agendamento
                     </button>
                 </div>
@@ -81,7 +136,10 @@ const AppointmentsCalendar = () => {
                             value={date}
                             className="luxury-calendar-override"
                             tileClassName={({ date: tileDate }) => {
-                                const hasAppt = appointments.some(a => new Date(a.appointment_date).toDateString() === tileDate.toDateString());
+                                const hasAppt = appointments.some(a => {
+                                    const apptDate = a.start_time || a.appointment_date;
+                                    return apptDate && new Date(apptDate).toDateString() === tileDate.toDateString();
+                                });
                                 return hasAppt ? 'has-appointment' : null;
                             }}
                         />
@@ -104,7 +162,7 @@ const AppointmentsCalendar = () => {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                     <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--navy-900)' }}>{appt.title}</h4>
                                     <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gold-600)', background: 'var(--gold-50)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
-                                        {new Date(appt.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                        {new Date(appt.start_time || appt.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
                                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{appt.description}</p>
@@ -128,7 +186,7 @@ const AppointmentsCalendar = () => {
                             <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)' }}>
                                 <CalendarIcon size={64} style={{ opacity: 0.1, margin: '0 auto 1.5rem' }} />
                                 <p style={{ fontWeight: 600 }}>Agenda livre para este dia.</p>
-                                <button className="btn-luxury" style={{ marginTop: '1.5rem', padding: '0.5rem 1rem', fontSize: '0.75rem', borderRadius: '8px' }} onClick={() => setShowModal(true)}>
+                                <button className="btn-primary" onClick={() => setShowModal(true)}>
                                     Criar meu primeiro agendamento
                                 </button>
                             </div>
@@ -166,8 +224,45 @@ const AppointmentsCalendar = () => {
                                 <input className="input-premium" placeholder="Google Meet, Endereço Físico..." value={newAppt.location} onChange={e => setNewAppt({ ...newAppt, location: e.target.value })} />
                             </div>
                             <footer style={{ marginTop: '1rem', display: 'flex', gap: '1.25rem' }}>
-                                <button type="button" className="btn-secondary-premium" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Voltar</button>
-                                <button type="submit" className="btn-primary-premium" style={{ flex: 2 }}>Confirmar Agendamento</button>
+                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Voltar</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 2 }}>Confirmar Agendamento</button>
+                            </footer>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* GOOGLE CONFIG MODAL */}
+            {showGoogleConfig && (
+                <div className="modal-overlay">
+                    <div className="card" style={{ width: '500px', padding: '0', overflow: 'hidden' }}>
+                        <div className="modal-header-luxury">
+                            <h2>Configurar Google Agenda</h2>
+                            <button onClick={() => setShowGoogleConfig(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
+                        </div>
+                        <form onSubmit={handleSaveGoogleConfig} style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                Insira suas credenciais da API do Google para sincronizar sua agenda.
+                                Você pode encontrá-las no <a href="https://console.developers.google.com/" target="_blank" rel="noreferrer" style={{ color: 'var(--gold-600)', textDecoration: 'underline' }}>Google Cloud Console</a>.
+                            </p>
+                            <div className="form-group">
+                                <label>Client ID</label>
+                                <input className="input-premium" placeholder="Seu Client ID do Google" value={googleConfig.client_id} onChange={e => setGoogleConfig({ ...googleConfig, client_id: e.target.value })} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Client Secret</label>
+                                <input className="input-premium" type="password" placeholder="Seu Client Secret do Google" value={googleConfig.client_secret} onChange={e => setGoogleConfig({ ...googleConfig, client_secret: e.target.value })} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Redirect URI</label>
+                                <input className="input-premium" value={googleConfig.redirect_uri} readOnly />
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                    Copie esta URI e adicione-a como "URI de redirecionamento autorizada" no Google Cloud Console.
+                                </p>
+                            </div>
+                            <footer style={{ marginTop: '1rem', display: 'flex', gap: '1.25rem' }}>
+                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowGoogleConfig(false)}>Cancelar</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 2 }}><CheckCircle2 size={18} /> Salvar Configurações</button>
                             </footer>
                         </form>
                     </div>

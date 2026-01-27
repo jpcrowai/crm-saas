@@ -299,3 +299,24 @@ async def get_customer_ranking(current_user: TokenData = Depends(get_current_ten
     
     # We would ideally join with customer names here, but for now just returning IDs and totals
     return [{"customer_id": k, "total": round(v, 2)} for k, v in sorted_ranking[:10]]
+@router.get("/export")
+async def export_finances(current_user: TokenData = Depends(get_current_tenant_user)):
+    ensure_finance_sheets(current_user.tenant_slug)
+    finances = read_sheet(current_user.tenant_slug, "finances")
+    
+    import pandas as pd
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    
+    df = pd.DataFrame(finances)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Financeiro')
+    
+    output.seek(0)
+    filename = f"financeiro_{current_user.tenant_slug}_{date.today().isoformat()}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

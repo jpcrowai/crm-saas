@@ -25,10 +25,10 @@ async def login_master(user_in: MasterLogin):
 
 @router.post("/select-tenant", response_model=Token)
 async def select_tenant(payload: SelectTenant, current_user: TokenData = Depends(get_current_master)):
-    # Check if tenant exists
-    excel_file = get_tenant_file(payload.tenant_slug)
+    # Check if tenant exists (Master can enter even if inactive)
+    excel_file = get_tenant_file(payload.tenant_slug, allow_inactive=True)
     if not excel_file:
-        raise HTTPException(status_code=404, detail="Tenant not active or not found")
+        raise HTTPException(status_code=404, detail="Tenant not found")
         
     # Generate new token with tenant context
     access_token = create_access_token(

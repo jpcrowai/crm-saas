@@ -27,7 +27,7 @@ const Reports = () => {
                     <h1>Relatórios & Insights</h1>
                     <p>Análise de performance e saúde financeira do negócio</p>
                 </div>
-                <button className="btn-luxury" style={{ borderRadius: '12px', padding: '0.75rem 1.25rem' }}>
+                <button className="btn-primary">
                     <Calendar size={18} /> Filtrar Período
                 </button>
             </header>

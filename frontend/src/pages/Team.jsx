@@ -34,7 +34,7 @@ const Team = () => {
                     <h1>Sua Equipe</h1>
                     <p>Gerencie acessos e permissões dos seus colaboradores</p>
                 </div>
-                <button className="btn-luxury-gold" onClick={() => setShowForm(true)} style={{ borderRadius: '12px', padding: '0.75rem 1.5rem' }}>
+                <button className="btn-primary" onClick={() => setShowForm(true)}>
                     <Plus size={20} /> Adicionar Colaborador
                 </button>
             </header>
@@ -123,8 +123,8 @@ const Team = () => {
                                 </div>
                             </div>
                             <footer style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
-                                <button type="button" className="btn-secondary-premium" style={{ flex: 1 }} onClick={() => setShowForm(false)}>Cancelar</button>
-                                <button type="submit" className="btn-primary-premium" style={{ flex: 1.5 }}>Liberar Acesso</button>
+                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowForm(false)}>Cancelar</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 1.5 }}>Liberar Acesso</button>
                             </footer>
                         </form>
                     </div>

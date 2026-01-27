@@ -27,6 +27,8 @@ class EnvironmentBase(BaseModel):
     nome_empresa: Optional[str] = None
     nome: Optional[str] = None # Legacy field
     slug: str
+    cnpj: Optional[str] = None
+    endereco: Optional[str] = None
     nicho_id: Optional[str] = None
     nicho: Optional[str] = None # Legacy field
     logo_url: Optional[str] = None
@@ -34,6 +36,9 @@ class EnvironmentBase(BaseModel):
     plan: Optional[str] = "basic"
     payment_status: Optional[str] = "trial"
     modulos_habilitados: List[str] = []
+    contract_generated_url: Optional[str] = None
+    contract_signed_url: Optional[str] = None
+    contract_status: Optional[str] = "pending_generation" # pending_generation, generated, signed
 
 class EnvironmentCreate(EnvironmentBase):
     admin_email: str
@@ -41,17 +46,23 @@ class EnvironmentCreate(EnvironmentBase):
 
 class EnvironmentUpdate(BaseModel):
     nome_empresa: Optional[str] = None
+    cnpj: Optional[str] = None
+    endereco: Optional[str] = None
     nicho_id: Optional[str] = None
     plan: Optional[str] = None
     payment_status: Optional[str] = None
     ativo: Optional[bool] = None
     modulos_habilitados: Optional[List[str]] = None
+    contract_status: Optional[str] = None
 
 class Environment(EnvironmentBase):
     id: str
-    excel_file: str
-    ativo: bool
-    nome: Optional[str] = None # Legacy field, keeping for compat if needed but will use nome_empresa
+    excel_file: Optional[str] = ""
+    ativo: Optional[bool] = False
+    nome: Optional[str] = None
+
+    class Config:
+        extra = 'ignore'
 
 class LeadBase(BaseModel):
     name: str
@@ -121,8 +132,9 @@ class Niche(BaseModel):
 
 class AppointmentBase(BaseModel):
     title: str
-    start_time: str # ISO format
-    end_time: str # ISO format
+    start_time: Optional[str] = None # ISO format
+    end_time: Optional[str] = None # ISO format
+    appointment_date: Optional[str] = None # Legacy/Frontend compatibility
     customer_id: Optional[str] = None
     staff_id: Optional[str] = None
     status: str = "scheduled" # scheduled, completed, cancelled

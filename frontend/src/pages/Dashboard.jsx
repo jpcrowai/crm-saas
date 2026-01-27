@@ -30,7 +30,7 @@ const MasterAdminView = () => {
           <h1>{stats.nome}</h1>
           <p>Ambiente Gerenciado por CRMaster Global</p>
         </div>
-        <button className="btn-luxury" onClick={() => window.location.href = '/import-leads'}>
+        <button className="btn-primary" onClick={() => window.location.href = '/import-leads'}>
           <Upload size={18} /> Importar Base de Leads
         </button>
       </header>
@@ -115,7 +115,7 @@ const ClientDashboard = () => {
           <h1>{user?.nome_empresa || `Dashboard`}</h1>
           <p>Visão estratégica do seu ecossistema de {user?.nicho_nome || 'negócio'}</p>
         </div>
-        <button className="btn-luxury-gold" onClick={() => setShowLeadForm(true)} style={{ borderRadius: '12px' }}>
+        <button className="btn-primary" onClick={() => setShowLeadForm(true)}>
           <Plus size={20} /> Capturar Novo Lead
         </button>
       </header>
@@ -222,8 +222,8 @@ const ClientDashboard = () => {
               </div>
 
               <footer style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
-                <button type="button" className="btn-secondary-premium" style={{ flex: 1, padding: '0.85rem' }} onClick={() => setShowLeadForm(false)}>Descartar</button>
-                <button type="submit" className="btn-primary-premium" style={{ flex: 2, padding: '0.85rem' }}>Salvar Lead</button>
+                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowLeadForm(false)}>Descartar</button>
+                <button type="submit" className="btn-primary" style={{ flex: 2 }}>Salvar Lead</button>
               </footer>
             </form>
           </div>

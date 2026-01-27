@@ -35,6 +35,48 @@ def ensure_tenant_sheets(tenant_slug: str):
         except:
             write_sheet(tenant_slug, sheet, [])
 
+def sync_customer_from_lead(tenant_slug: str, lead_data: Dict[str, Any]):
+    """Ensure a lead is also represented in the customers sheet."""
+    customers = read_sheet(tenant_slug, "customers")
+    
+    # Try to match by email or phone or ID
+    existing_idx = -1
+    lead_email = lead_data.get("email")
+    lead_phone = lead_data.get("phone") or lead_data.get("telefone")
+    lead_id = lead_data.get("id")
+    
+    for i, c in enumerate(customers):
+        if lead_id and c.get("lead_id") == lead_id:
+            existing_idx = i
+            break
+        if lead_email and c.get("email") == lead_email:
+            existing_idx = i
+            break
+        # Match by phone if clean digits match
+        if lead_phone:
+            clean = lambda p: "".join(filter(str.isdigit, str(p)))
+            if clean(c.get("phone") or c.get("telefone") or "") == clean(lead_phone):
+                existing_idx = i
+                break
+
+    cust_data = {
+        "name": lead_data.get("name") or lead_data.get("nome") or "Lead Importado",
+        "email": lead_email or "",
+        "phone": lead_phone or "",
+        "status": "Lead" if lead_data.get("status") != "converted" else "Ativo",
+        "lead_id": lead_id,
+        "updated_at": datetime.now().isoformat()
+    }
+
+    if existing_idx != -1:
+        customers[existing_idx].update(cust_data)
+    else:
+        cust_data["id"] = str(uuid.uuid4())
+        cust_data["created_at"] = datetime.now().isoformat()
+        customers.append(cust_data)
+    
+    write_sheet(tenant_slug, "customers", customers)
+
 @router.get("/niche-config")
 async def get_niche_config(current_user: TokenData = Depends(get_current_tenant_user)):
     """Get niche configuration including pipeline stages for tenant's environment."""
@@ -44,7 +86,20 @@ async def get_niche_config(current_user: TokenData = Depends(get_current_tenant_
     
     if not env:
         return {"pipeline_stages": ["Novo", "Em Contato", "Agendado"]}
-    
+
+    # 1. First check if environment has custom override
+    custom_stages = env.get("custom_pipeline_stages")
+    if custom_stages:
+        if isinstance(custom_stages, str):
+            try: custom_stages = json.loads(custom_stages.replace("'", '"'))
+            except: pass
+        if isinstance(custom_stages, list):
+            return {
+                "niche_name": env.get("nicho") or "Custom",
+                "pipeline_stages": custom_stages
+            }
+
+    # 2. Fallback to Niche config
     niche_id = env.get("niche_id") or env.get("nicho")
     if not niche_id:
         return {"pipeline_stages": ["Novo", "Em Contato", "Agendado"]}
@@ -69,6 +124,24 @@ async def get_niche_config(current_user: TokenData = Depends(get_current_tenant_
         "pipeline_stages": stages or ["Novo", "Em Contato", "Agendado"]
     }
 
+@router.post("/pipeline-stages")
+async def save_pipeline_stages(data: Dict[str, Any], current_user: TokenData = Depends(get_current_tenant_user)):
+    stages = data.get("stages")
+    if not isinstance(stages, list):
+        raise HTTPException(status_code=400, detail="Stages must be a list")
+    
+    # Update ambientes sheet with custom override
+    ambientes = read_sheet("ambientes", "ambientes")
+    idx = next((i for i, a in enumerate(ambientes) if a["slug"] == current_user.tenant_slug), -1)
+    
+    if idx == -1:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    ambientes[idx]["custom_pipeline_stages"] = json.dumps(stages)
+    write_sheet("ambientes", "ambientes", ambientes)
+    
+    return {"status": "success", "stages": stages}
+
 @router.get("/leads")
 async def get_leads(current_user: TokenData = Depends(get_current_tenant_user)):
     ensure_tenant_sheets(current_user.tenant_slug)
@@ -88,6 +161,9 @@ async def create_lead(lead_in: Dict[str, Any], current_user: TokenData = Depends
     
     leads.append(new_lead)
     write_sheet(current_user.tenant_slug, "leads", leads)
+    
+    # Sync with customers
+    sync_customer_from_lead(current_user.tenant_slug, new_lead)
     
     # Log initial history
     history = read_sheet(current_user.tenant_slug, "lead_history")
@@ -121,6 +197,9 @@ async def update_lead(lead_id: str, lead_update: Dict[str, Any], current_user: T
     new_status = new_lead.get("status") or new_lead.get("status_lead")
     
     write_sheet(current_user.tenant_slug, "leads", leads)
+    
+    # Sync with customers
+    sync_customer_from_lead(current_user.tenant_slug, new_lead)
     
     # Log stage change if status changed
     if new_status and old_status and new_status != old_status:
@@ -378,6 +457,10 @@ async def import_leads_excel(file: UploadFile = File(...), current_user: TokenDa
                 
         write_sheet(current_user.tenant_slug, "leads", leads)
         write_sheet(current_user.tenant_slug, "lead_history", history)
+        
+        # Sync all with customers after batch
+        for l in leads:
+            sync_customer_from_lead(current_user.tenant_slug, l)
         
         return {
             "message": "Importação concluída",

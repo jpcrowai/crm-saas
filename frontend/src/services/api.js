@@ -169,6 +169,9 @@ export const getNicheConfig = () => {
   return api.get('/tenant/niche-config');
 };
 
+// Master Module
+export const getMasterEnvironmentContract = (slug) => api.get(`/master/ambientes/${slug}/contract`, { responseType: 'blob' });
+
 // Delete Ambiente
 export const deleteAmbiente = (slug) => {
   return api.delete(`/master/ambientes/${slug}`);
@@ -198,6 +201,7 @@ export const deleteFinance = (id) => {
 };
 
 export const deleteFinanceEntry = deleteFinance; // Alias for FinanceExtrato.jsx
+export const exportFinanceEntries = () => api.get('/tenant/export', { responseType: 'blob' });
 
 export const getCategories = () => {
   return api.get('/tenant/categories');
@@ -297,7 +301,19 @@ export const updatePlan = (id, data) => api.put(`/tenant/plans/${id}`, data);
 export const getSubscriptions = () => api.get('/tenant/subscriptions');
 export const createSubscription = (data) => api.post('/tenant/subscriptions', data);
 export const updateSubscriptionStatus = (id, status) => api.put(`/tenant/subscriptions/${id}`, { status });
+export const uploadSubscriptionContract = (id, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post(`/tenant/subscriptions/${id}/upload_signed_contract`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};
 export const signSubscription = (id) => api.put(`/tenant/subscriptions/${id}/sign`);
 export const downloadContract = (id) => api.get(`/tenant/subscriptions/${id}/contract`, { responseType: 'blob' });
+export const saveGoogleConfig = (data) => api.post('/tenant/appointments/config', data);
+export const getAuthUrl = () => api.get('/tenant/appointments/auth-url');
+export const googleCallback = (data) => api.post('/tenant/appointments/callback', data);
+export const getCalendarInfo = () => api.get('/tenant/appointments/calendar-info');
+export const savePipelineStages = (stages) => api.post('/tenant/pipeline-stages', { stages });
 
 export default api;

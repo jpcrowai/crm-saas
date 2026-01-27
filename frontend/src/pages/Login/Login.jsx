@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { loginMaster, loginTenant } from '../../services/api';
+import { Mail, Lock, Building, ArrowRight, ShieldCheck, User } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
@@ -25,10 +26,6 @@ const Login = () => {
       if (isMaster) {
         response = await loginMaster(email, password);
       } else {
-        // For tenant login, we need a slug. 
-        // If the user's design doesn't have a slug field, we might need to ask or assume.
-        // The previous design had it. I'll add a toggle or simple field if missing.
-        // For now, let's assume if it's not master, we need a slug.
         if (!tenantSlug) throw new Error("Informe o slug da empresa");
         response = await loginTenant(email, password, tenantSlug);
       }
@@ -45,57 +42,95 @@ const Login = () => {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <h1>CRM SaaS</h1>
-        <p>Entre para continuar</p>
+      <div className="auth-card-luxury">
+        <div className="auth-header">
+          <div className="auth-logo-icon">
+            {isMaster ? <ShieldCheck size={32} /> : <Building size={32} />}
+          </div>
+          <h1>{isMaster ? 'Painel Master' : 'Acesso ao CRM'}</h1>
+          <p>{isMaster ? 'Gestão administrativa global' : 'Bem-vindo de volta! Entre em sua conta.'}</p>
+        </div>
 
-        {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
+        {error && (
+          <div className="auth-error-badge">
+            {error}
+          </div>
+        )}
 
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', justifyContent: 'center' }}>
+        <div className="auth-type-toggle">
           <button
             type="button"
+            className={!isMaster ? 'active' : ''}
             onClick={() => setIsMaster(false)}
-            style={{ background: !isMaster ? 'var(--gold-500)' : '#eee', color: !isMaster ? '#fff' : '#333' }}
           >
-            Sou Cliente
+            <User size={16} /> Cliente
           </button>
           <button
             type="button"
+            className={isMaster ? 'active' : ''}
             onClick={() => setIsMaster(true)}
-            style={{ background: isMaster ? 'var(--gold-500)' : '#eee', color: isMaster ? '#fff' : '#333' }}
           >
-            Sou Master
+            <ShieldCheck size={16} /> Master
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="auth-form">
           {!isMaster && (
-            <input
-              type="text"
-              placeholder="Slug da Empresa"
-              value={tenantSlug}
-              onChange={e => setTenantSlug(e.target.value)}
-              required={!isMaster}
-            />
+            <div className="form-group-luxury">
+              <label>Identificador da Empresa</label>
+              <div className="input-with-icon">
+                <Building size={18} className="icon" />
+                <input
+                  type="text"
+                  placeholder="ex: barbearia"
+                  value={tenantSlug}
+                  onChange={e => setTenantSlug(e.target.value)}
+                  required={!isMaster}
+                />
+              </div>
+            </div>
           )}
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? 'Entrando...' : 'Entrar'}
+
+          <div className="form-group-luxury">
+            <label>E-mail Corporativo</label>
+            <div className="input-with-icon">
+              <Mail size={18} className="icon" />
+              <input
+                type="email"
+                placeholder="exemplo@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group-luxury">
+            <label>Senha</label>
+            <div className="input-with-icon">
+              <Lock size={18} className="icon" />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary btn-auth-submit" disabled={loading}>
+            {loading ? 'Validando...' : (
+              <>
+                Entrar no Sistema <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </form>
+
+        <div className="auth-footer">
+          <p>Esqueceu sua senha? Entre em contato com o suporte.</p>
+        </div>
       </div>
     </div>
   );

@@ -6,3 +6,6 @@ openpyxl
 pandas
 python-multipart
 fpdf2
+google-auth
+google-auth-oauthlib
+google-api-python-client

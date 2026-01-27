@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, File, UploadFile
 from fastapi.responses import FileResponse
 from typing import List, Optional, Dict, Any
 import uuid
@@ -76,92 +76,176 @@ def generate_contract_pdf(tenant_slug: str, sub_data: Dict[str, Any], plan_data:
     logo_rel_path = env.get("logo_url")
     nome_empresa = env.get("nome_empresa", tenant_slug.upper())
     
+    # Try to get customer data
+    try:
+        customers = read_sheet(tenant_slug, "customers")
+        customer = next((c for c in customers if c["id"] == sub_data["customer_id"]), {})
+        customer_name = customer.get("name") or customer.get("nome") or "CLIENTE NÃO IDENTIFICADO"
+        customer_doc = customer.get("document") or customer.get("cpf_cnpj") or "CPF/CNPJ não informado"
+        customer_addr = customer.get("address") or customer.get("endereco") or "Endereço não informado"
+    except:
+        customer_name = "CLIENTE NÃO IDENTIFICADO"
+        customer_doc = "---"
+        customer_addr = "---"
+
     pdf = FPDF()
     pdf.add_page()
     
-    # Header Accent
+    # --- DECORATIVE WAVES (Simulated with curves/polygons) ---
+    # Top Wave (Blue & Gold)
+    pdf.set_fill_color(15, 23, 42) # Navy 900
+    pdf.rect(0, 0, 210, 40, 'F')
+    
     pdf.set_fill_color(212, 175, 55) # Gold
-    pdf.rect(0, 0, 210, 15, 'F')
+    # A simple gold accent line
+    pdf.rect(0, 38, 210, 2, 'F')
+
+    # --- HEADER ---
+    pdf.set_y(10)
+    
+    # CRM Master Icon in top-left
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    crm_icon_path = os.path.join(base_dir, "backend", "static", "crm_icon.png")
+    if os.path.exists(crm_icon_path):
+        pdf.image(crm_icon_path, 10, 7, 15)
+    
+    # Tenant logo if exists (shifted slightly right)
+    if logo_rel_path:
+        # Rel path from static/logos/filename.png to absolute
+        # logo_rel_path usually starts with /static/
+        t_logo_path = os.path.join(base_dir, "backend", logo_rel_path.strip("/"))
+        if os.path.exists(t_logo_path):
+            # Scale down and place top-right or after icon
+            pdf.image(t_logo_path, 28, 7, 12) 
+    
+    pdf.set_y(12)
+    pdf.set_font("Arial", "B", 20)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(0, 10, "CONTRATO DE ADESÃO", 0, 1, "R")
+    
+    pdf.set_font("Arial", "", 10)
+    pdf.set_text_color(200, 200, 200)
+    pdf.cell(0, 5, f"Termo nº {sub_data['id'].split('-')[0].upper()} | Gerado em {datetime.now().strftime('%d/%m/%Y')}", 0, 1, "R")
+    
+    pdf.ln(25)
+    
+    # --- PARTIES ---
+    pdf.set_text_color(15, 23, 42)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "1. PARTES CONTRATANTES", 0, 1)
+    
+    pdf.set_font("Arial", "", 10)
+    pdf.set_fill_color(248, 250, 252)
+    pdf.set_draw_color(226, 232, 240)
+    
+    # CONTRATADA BOX
+    y_start = pdf.get_y()
+    pdf.rect(10, y_start, 90, 35, 'DF')
+    pdf.set_xy(12, y_start + 2)
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(86, 5, "CONTRATADA (EMPRESA)", 0, 1)
+    pdf.set_font("Arial", "", 9)
+    pdf.set_x(12)
+    pdf.multi_cell(86, 4, f"{nome_empresa}\nCNPJ: {env.get('cnpj', 'Não informado')}\n{env.get('address', 'Endereço Principal do Sistema')}")
+    
+    # CONTRATANTE BOX
+    pdf.set_xy(110, y_start)
+    pdf.rect(110, y_start, 90, 35, 'DF')
+    pdf.set_xy(112, y_start + 2)
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(86, 5, "CONTRATANTE (CLIENTE)", 0, 1)
+    pdf.set_font("Arial", "", 9)
+    pdf.set_x(112)
+    pdf.multi_cell(86, 4, f"{customer_name}\nCPF/CNPJ: {customer_doc}\n{customer_addr}")
+    
+    pdf.ln(35) # Space after boxes
+    
+    # --- PLAN DETAILS ---
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "2. OBJETO DO CONTRATO", 0, 1)
+    
+    pdf.set_font("Arial", "", 10)
+    pdf.multi_cell(0, 5, "Este contrato tem como objeto a prestação de serviços ou fornecimento de produtos descritos no plano abaixo selecionado, conforme condições comerciais acordadas.")
+    pdf.ln(5)
+
+    # Plan Summary
+    pdf.set_fill_color(240, 253, 250) # Light teal bg
+    pdf.rect(10, pdf.get_y(), 190, 20, 'F')
+    pdf.set_x(15)
+    pdf.set_y(pdf.get_y() + 5)
+    
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(95, 6, f"PLANO: {plan_data['nome']}", 0, 0)
+    pdf.cell(95, 6, f"VALOR: R$ {sub_data['valor_total']:.2f} / {sub_data['periodicidade']}", 0, 1, "R")
+    
+    pdf.set_font("Arial", "", 10)
+    pdf.set_x(15)
+    pdf.cell(95, 6, f"Vigência: Indeterminada", 0, 0)
+    pdf.cell(95, 6, f"Início: {datetime.strptime(sub_data['data_inicio'], '%Y-%m-%d').strftime('%d/%m/%Y')}", 0, 1, "R")
+    
+    pdf.ln(10)
+    
+    # Items Table
+    pdf.set_font("Arial", "B", 10)
+    pdf.set_fill_color(226, 232, 240)
+    pdf.cell(110, 8, " Item / Serviço", 1, 0, 'L', True)
+    pdf.cell(30, 8, " Qtd.", 1, 0, 'C', True)
+    pdf.cell(50, 8, " Total Parcial", 1, 1, 'R', True)
+    
+    pdf.set_font("Arial", "", 9)
+    for item in sub_data["itens"]:
+        pdf.cell(110, 8, f" {item['descricao']}", 1, 0, 'L')
+        pdf.cell(30, 8, f" {item['quantidade']}", 1, 0, 'C')
+        pdf.cell(50, 8, f" R$ {item['total']:.2f}", 1, 1, 'R')
+        
+    pdf.ln(10)
+    
+    # --- TERMS ---
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "3. TERMOS E CONDIÇÕES", 0, 1)
+    pdf.set_font("Arial", "", 9)
+    terms = (
+        "1. O pagamento deverá ser efetuado conforme periodicidade escolhida.\n"
+        "2. A inadimplência superior a 10 dias poderá acarretar suspensão dos serviços.\n"
+        "3. O contrato poderá ser rescindido por ambas as partes com aviso prévio de 30 dias.\n"
+        "4. As partes elegem o foro da comarca da CONTRATADA para dirimir quaisquer dúvidas."
+    )
+    pdf.multi_cell(0, 5, terms)
     
     pdf.ln(20)
     
-    # Logo & Title
-    if logo_rel_path:
-        # Resolve full path. logo_url is /static/logos/filename.ext
-        # static dir is at backend/static
-        logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", logo_rel_path.strip("/"))
-        if os.path.exists(logo_path):
-            pdf.image(logo_path, x=10, y=20, h=25)
+    # --- SIGNATURES ---
+    y_sig = pdf.get_y()
+    if y_sig > 240: # Check if new page needed
+        pdf.add_page()
+        y_sig = 40
+        
+    pdf.line(20, y_sig, 90, y_sig)
+    pdf.line(120, y_sig, 190, y_sig)
     
-    pdf.set_font("Arial", "B", 20)
-    pdf.set_text_color(15, 23, 42) # Navy 900
-    pdf.cell(0, 30, "CONTRATO DE PRESTAÇÃO", 0, 1, "R")
-    pdf.ln(10)
+    pdf.set_xy(20, y_sig + 2)
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(70, 4, nome_empresa.upper(), 0, 1, 'C')
+    pdf.set_x(20)
+    pdf.set_font("Arial", "", 7)
+    pdf.cell(70, 4, "Representante Legal", 0, 0, 'C')
     
-    # Body
-    pdf.set_font("Arial", "", 11)
-    pdf.set_text_color(50, 50, 50)
-    text = (
-        f"Pelo presente instrumento particular, de um lado {nome_empresa.upper()}, "
-        f"doravante denominada CONTRATADA, e de outro lado o CLIENTE identificado pela ID "
-        f"{sub_data['customer_id']}, doravante denominado CONTRATANTE, celebram o presente "
-        f"contrato de prestação de serviços digitais sob as condições descritas abaixo:"
-    )
-    pdf.multi_cell(0, 7, text)
-    pdf.ln(10)
+    pdf.set_xy(120, y_sig + 2)
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(70, 4, customer_name.upper(), 0, 1, 'C')
+    pdf.set_x(120)
+    pdf.set_font("Arial", "", 7)
+    pdf.cell(70, 4, "Cliente / Responsável", 0, 0, 'C')
     
-    # Plan Info Box
-    pdf.set_fill_color(248, 250, 252) # Gray 50
-    pdf.set_draw_color(226, 232, 240)
-    pdf.rect(10, pdf.get_y(), 190, 45, 'DF')
-    
-    pdf.set_y(pdf.get_y() + 5)
-    pdf.set_x(15)
-    pdf.set_font("Arial", "B", 13)
-    pdf.cell(0, 10, f"PLANO: {plan_data['nome'].upper()}", 0, 1)
-    
-    pdf.set_font("Arial", "", 12)
-    pdf.set_x(15)
-    pdf.cell(90, 10, f"Periodicidade: {sub_data['periodicidade'].capitalize()}", 0, 0)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(90, 10, f"Valor Total: R$ {sub_data['valor_total']:.2f}", 0, 1)
-    
-    pdf.ln(15)
-    
-    # Table Header
-    pdf.set_fill_color(15, 23, 42) # Navy
-    pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Arial", "B", 10)
-    pdf.cell(120, 10, " DESCRIÇÃO DO SERVIÇO", 1, 0, 'L', True)
-    pdf.cell(30, 10, " QTD", 1, 0, 'C', True)
-    pdf.cell(40, 10, " TOTAL", 1, 1, 'C', True)
-    
-    # Table Body
-    pdf.set_text_color(30, 30, 30)
-    pdf.set_font("Arial", "", 10)
-    for item in sub_data["itens"]:
-        pdf.cell(120, 10, f" {item['descricao']}", 1, 0, 'L')
-        pdf.cell(30, 10, f" {item['quantidade']}", 1, 0, 'C')
-        pdf.cell(40, 10, f" R$ {item['total']:.2f}", 1, 1, 'R')
-    
-    pdf.ln(25)
-    pdf.multi_cell(0, 7, "A validade jurídica deste documento é garantida pela assinatura eletrônica a ser coletada em plataforma autorizada.")
-    
-    # Signatures
-    pdf.ln(30)
-    pdf.line(20, pdf.get_y(), 90, pdf.get_y())
-    pdf.line(120, pdf.get_y(), 190, pdf.get_y())
-    pdf.set_y(pdf.get_y() + 2)
-    pdf.cell(90, 10, "CONTRATADA", 0, 0, "C")
-    pdf.cell(90, 10, "CONTRATANTE", 0, 1, "C")
-    
-    # Footer
-    pdf.set_y(280)
+    # --- BOTTOM WAVE ---
+    pdf.set_y(-25)
     pdf.set_fill_color(15, 23, 42)
-    pdf.rect(0, 285, 210, 12, 'F')
-    pdf.set_text_color(200, 200, 200)
-    pdf.set_font("Arial", "I", 8)
-    pdf.cell(0, 25, "Gerado automaticamente pela plataforma CRMaster - CRM SaaS de Alta Performance", 0, 0, 'C')
+    pdf.rect(0, 275, 210, 25, 'F')
+    
+    pdf.set_y(-15)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(0, 10, "Documento gerado eletronicamente via CRMaster", 0, 0, 'C')
     
     filename = f"contrato_{sub_data['id']}.pdf"
     filepath = os.path.join("storage", tenant_slug, filename)
@@ -263,6 +347,62 @@ async def sign_subscription(sub_id: str, current_user: TokenData = Depends(get_c
     # In a real app, this would be a CRON job, but here we can do a push
     await trigger_subscription_finance(current_user.tenant_slug, subs[idx])
     
+    return subs[idx]
+
+@router.put("/subscriptions/{sub_id}")
+async def update_subscription_status(sub_id: str, data: Dict[str, str], current_user: TokenData = Depends(get_current_tenant_user)):
+    ensure_subscription_sheets(current_user.tenant_slug)
+    subs = read_sheet(current_user.tenant_slug, "subscriptions")
+    idx = next((i for i, s in enumerate(subs) if s["id"] == sub_id), -1)
+    
+    if idx == -1:
+        raise HTTPException(status_code=404, detail="Assinatura não encontrada")
+    
+    status = data.get("status")
+    if status:
+        subs[idx]["status"] = status
+        
+    write_sheet(current_user.tenant_slug, "subscriptions", subs)
+    return subs[idx]
+
+@router.post("/subscriptions/{sub_id}/upload_signed_contract")
+async def upload_signed_contract(sub_id: str, file: UploadFile = File(...), current_user: TokenData = Depends(get_current_tenant_user)):
+    ensure_subscription_sheets(current_user.tenant_slug)
+    
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Apenas arquivos PDF são permitidos.")
+        
+    subs = read_sheet(current_user.tenant_slug, "subscriptions")
+    idx = next((i for i, s in enumerate(subs) if s["id"] == sub_id), -1)
+    
+    if idx == -1:
+        raise HTTPException(status_code=404, detail="Assinatura não encontrada")
+        
+    # Save file
+    storage_dir = os.path.join("storage", current_user.tenant_slug, "contracts_signed")
+    os.makedirs(storage_dir, exist_ok=True)
+    
+    filename = f"signed_{sub_id}_{uuid.uuid4().hex[:6]}.pdf"
+    filepath = os.path.join(storage_dir, filename)
+    
+    with open(filepath, "wb") as buffer:
+        from shutil import copyfileobj
+        copyfileobj(file.file, buffer)
+        
+    # Update Subscription
+    subs[idx]["contrato_assinado_url"] = filepath
+    subs[idx]["status"] = "Ativa" # Auto-activate on signed contract
+    
+    # Update Contract Record if exists
+    contracts = read_sheet(current_user.tenant_slug, "contracts")
+    c_idx = next((i for i, c in enumerate(contracts) if c["assinatura_id"] == sub_id), -1)
+    if c_idx != -1:
+        contracts[c_idx]["status"] = "Assinado"
+        contracts[c_idx]["data_assinatura"] = datetime.now().isoformat()
+        contracts[c_idx]["arquivo_assinado_url"] = filepath
+        write_sheet(current_user.tenant_slug, "contracts", contracts)
+    
+    write_sheet(current_user.tenant_slug, "subscriptions", subs)
     return subs[idx]
 
 async def trigger_subscription_finance(tenant_slug: str, sub: Dict[str, Any]):

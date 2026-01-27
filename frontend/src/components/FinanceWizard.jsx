@@ -69,9 +69,10 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                             </button>
                         </div>
 
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Origem do Lançamento</label>
+                        <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Origem do Lançamento</label>
                         <select
-                            style={{ width: '100%', marginBottom: '1rem', padding: '0.75rem' }}
+                            className="input-premium"
+                            style={{ width: '100%', marginBottom: '1rem' }}
                             value={formData.origem}
                             onChange={(e) => setFormData({ ...formData, origem: e.target.value, lead_id: '' })}
                         >
@@ -79,28 +80,27 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                             <option value="venda">Vinculado a uma Venda/Lead</option>
                         </select>
 
-                        {formData.origem === 'venda' && (
-                            <div className="form-group">
-                                <label>Selecionar Venda/Lead</label>
-                                <select
-                                    value={formData.lead_id}
-                                    onChange={(e) => {
-                                        const lead = leads.find(l => l.id === e.target.value);
-                                        setFormData({
-                                            ...formData,
-                                            lead_id: e.target.value,
-                                            valor: lead?.valor || lead?.value || formData.valor,
-                                            descricao: `Venda: ${lead?.nome || lead?.name || 'Lead'}`
-                                        });
-                                    }}
-                                >
-                                    <option value="">Selecione um lead...</option>
-                                    {leads.map(l => (
-                                        <option key={l.id} value={l.id}>{l.nome || l.name} - R$ {l.valor || l.value}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
+                        <div className="form-group">
+                            <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Selecionar Venda/Lead</label>
+                            <select
+                                className="input-premium"
+                                value={formData.lead_id}
+                                onChange={(e) => {
+                                    const lead = leads.find(l => l.id === e.target.value);
+                                    setFormData({
+                                        ...formData,
+                                        lead_id: e.target.value,
+                                        valor: lead?.valor || lead?.value || formData.valor,
+                                        descricao: `Venda: ${lead?.nome || lead?.name || 'Lead'}`
+                                    });
+                                }}
+                            >
+                                <option value="">Selecione um lead...</option>
+                                {leads.map(l => (
+                                    <option key={l.id} value={l.id}>{l.nome || l.name} - R$ {l.valor || l.value}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 );
             case 2:
@@ -109,27 +109,27 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                         <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Etapa 2: Valores e Vencimento</h4>
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             <div className="form-group">
-                                <label>Descrição</label>
-                                <input value={formData.descricao} onChange={e => setFormData({ ...formData, descricao: e.target.value })} placeholder="Ex: Pagamento Fornecedor X" />
+                                <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Descrição</label>
+                                <input className="input-premium" value={formData.descricao} onChange={e => setFormData({ ...formData, descricao: e.target.value })} placeholder="Ex: Pagamento Fornecedor X" />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="form-group">
-                                    <label>Valor Total (R$)</label>
-                                    <input type="number" step="0.01" value={formData.valor} onChange={e => setFormData({ ...formData, valor: e.target.value })} />
+                                    <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Valor Total (R$)</label>
+                                    <input className="input-premium" type="number" step="0.01" value={formData.valor} onChange={e => setFormData({ ...formData, valor: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label>Número de Parcelas</label>
-                                    <input type="number" min="1" value={formData.parcelas} onChange={e => setFormData({ ...formData, parcelas: e.target.value })} />
+                                    <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Número de Parcelas</label>
+                                    <input className="input-premium" type="number" min="1" value={formData.parcelas} onChange={e => setFormData({ ...formData, parcelas: e.target.value })} />
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="form-group">
-                                    <label>Data de Vencimento</label>
-                                    <input type="date" value={formData.data_vencimento} onChange={e => setFormData({ ...formData, data_vencimento: e.target.value })} />
+                                    <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Data de Vencimento</label>
+                                    <input className="input-premium" type="date" value={formData.data_vencimento} onChange={e => setFormData({ ...formData, data_vencimento: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label>Forma de Pagamento</label>
-                                    <select value={formData.forma_pagamento} onChange={e => setFormData({ ...formData, forma_pagamento: e.target.value })}>
+                                    <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Forma de Pagamento</label>
+                                    <select className="input-premium" value={formData.forma_pagamento} onChange={e => setFormData({ ...formData, forma_pagamento: e.target.value })}>
                                         <option value="">Selecione...</option>
                                         {(methods || []).map(m => <option key={m.id} value={m.nome}>{m.nome}</option>)}
                                     </select>
@@ -144,8 +144,8 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                         <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Etapa 3: Categorização</h4>
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Categoria Financeira</label>
-                                <select style={{ width: '100%' }} value={formData.categoria} onChange={e => setFormData({ ...formData, categoria: e.target.value })}>
+                                <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Categoria Financeira</label>
+                                <select className="input-premium" style={{ width: '100%' }} value={formData.categoria} onChange={e => setFormData({ ...formData, categoria: e.target.value })}>
                                     <option value="">Selecione...</option>
                                     {(categories || []).filter(c => c.tipo === (formData.tipo === 'receita' ? 'entrada' : 'saida') || c.tipo === 'ambos').map(c => (
                                         <option key={c.id} value={c.nome}>{c.nome}</option>
@@ -153,8 +153,8 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                                 </select>
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Observações Internas</label>
-                                <textarea style={{ width: '100%', height: '100px' }} value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} />
+                                <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Observações Internas</label>
+                                <textarea className="input-premium" style={{ width: '100%', height: '100px' }} value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} />
                             </div>
                             <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>

@@ -1,26 +1,21 @@
 .auth-page {
   height: 100vh;
   width: 100vw;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
-  background: linear-gradient(135deg,
-      var(--navy-950) 0%,
-      var(--navy-800) 50%,
-      var(--navy-950) 100%);
+  background: radial-gradient(circle at top right, var(--navy-800), var(--navy-950));
 }
 
 .auth-card {
   width: 100%;
   max-width: 420px;
-
   background: var(--navy-900);
   border-radius: var(--radius-lg);
   padding: 2.5rem;
-
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-premium);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .auth-card h1 {
@@ -29,30 +24,34 @@
 
 .auth-card p {
   margin-bottom: 2rem;
-  color: var(--gray-400);
+  color: var(--text-muted);
 }
 
 .auth-card input {
   width: 100%;
   padding: 0.75rem;
-  margin-bottom: 1rem;
-
-  background: var(--navy-950);
-  border: 1px solid var(--navy-700);
-  border-radius: var(--radius-sm);
-  color: var(--white);
+  margin-bottom: 1.25rem;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--navy-700) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--white) !important;
 }
 
 .auth-card button {
   width: 100%;
-  padding: 0.75rem;
-
+  padding: 0.85rem;
   border: none;
-  border-radius: var(--radius-sm);
-
-  background: var(--primary-color);
-
+  border-radius: var(--radius-md);
+  background: var(--grad-gold);
   color: var(--navy-950);
-  font-weight: 600;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   cursor: pointer;
+  transition: var(--transition);
+}
+
+.auth-card button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
 }

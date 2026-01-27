@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getSubscriptions, getPlans, getCustomers, createSubscription, updateSubscriptionStatus } from '../services/api';
-import { Plus, Search, CreditCard, User, Package, Calendar, MoreVertical, XCircle, CheckCircle2, AlertCircle, FileText, Settings } from 'lucide-react';
+import { getSubscriptions, getPlans, getCustomers, createSubscription, updateSubscriptionStatus, uploadSubscriptionContract } from '../services/api';
+import { Plus, Search, CreditCard, User, Package, Calendar, MoreVertical, XCircle, CheckCircle2, AlertCircle, FileText, Settings, Upload } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
 const Subscriptions = () => {
@@ -10,26 +10,98 @@ const Subscriptions = () => {
     const [showForm, setShowForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [newSub, setNewSub] = useState({ customer_id: '', plan_id: '' });
+    const [manageSub, setManageSub] = useState(null);
 
     useEffect(() => { loadData(); }, []);
 
     const loadData = async () => {
         try {
             const [sRes, pRes, cRes] = await Promise.all([getSubscriptions(), getPlans(), getCustomers()]);
-            setSubscriptions(sRes.data);
-            setPlans(pRes.data);
-            setCustomers(cRes.data);
-        } catch (e) { console.error(e); }
+            const sData = Array.isArray(sRes.data) ? sRes.data : [];
+            const pData = Array.isArray(pRes.data) ? pRes.data : [];
+            const cData = Array.isArray(cRes.data) ? cRes.data : [];
+
+            // Map names for the UI
+            const mappedSubs = sData.map(s => {
+                const customer = cData.find(c => c.id === s.customer_id);
+                const plan = pData.find(p => p.id === s.plano_id);
+                return {
+                    ...s,
+                    customer_name: customer?.name || customer?.nome || 'Cliente Desconhecido',
+                    plan_name: plan?.nome || plan?.name || 'Plano Descontinuado',
+                    price: s.valor_total || plan?.valor_base || plan?.price || 0
+                };
+            });
+
+            setSubscriptions(mappedSubs);
+            setPlans(pData);
+            setCustomers(cData);
+        } catch (e) {
+            console.error("Erro ao carregar dados:", e);
+            setSubscriptions([]);
+            setPlans([]);
+            setCustomers([]);
+        }
+    };
+
+    const handleDownloadContract = async (id) => {
+        try {
+            const { downloadContract } = await import('../services/api');
+            const response = await downloadContract(id);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `contrato_${id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao baixar contrato. Tente regenerá-lo.");
+        }
     };
 
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            await createSubscription(newSub);
+            const plan = plans.find(p => p.id === newSub.plan_id);
+            if (!plan) throw new Error("Plano não selecionado");
+
+            const payload = {
+                customer_id: newSub.customer_id,
+                plano_id: newSub.plan_id,
+                data_inicio: new Date().toISOString().split('T')[0],
+                periodicidade: plan.periodicity || plan.periodicidade || 'monthly',
+                valor_total: parseFloat(plan.price || plan.valor_base || 0),
+                status: 'Pendente Assinatura',
+                itens: (plan.items || []).map(i => ({
+                    product_id: i.product_id || i.id,
+                    descricao: i.name || i.nome,
+                    quantidade: parseFloat(i.quantity || i.quantidade || 1),
+                    preco_unitario: parseFloat(i.preco_unitario || i.price || 0),
+                    total: parseFloat(i.total || (i.price * i.quantidade) || 0)
+                }))
+            };
+
+            await createSubscription(payload);
             setShowForm(false);
             setNewSub({ customer_id: '', plan_id: '' });
             loadData();
-        } catch (e) { alert("Erro ao criar assinatura"); }
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao criar assinatura: " + (e.response?.data?.detail || e.message || "Erro desconhecido"));
+        }
+    };
+
+    const handleUpdateStatus = async (id, status) => {
+        try {
+            await updateSubscriptionStatus(id, status);
+            setManageSub(null);
+            loadData();
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao atualizar status.");
+        }
     };
 
     const getStatusBadge = (status) => {
@@ -62,7 +134,7 @@ const Subscriptions = () => {
                     <h1>Gestão de Assinaturas</h1>
                     <p>Controle de recorrência, contratos e status de faturamento</p>
                 </div>
-                <button className="btn-luxury-gold" onClick={() => setShowForm(true)} style={{ padding: '0.75rem 1.5rem', borderRadius: '12px' }}>
+                <button className="btn-primary" onClick={() => setShowForm(true)}>
                     <Plus size={20} /> Nova Assinatura
                 </button>
             </header>
@@ -119,10 +191,10 @@ const Subscriptions = () => {
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            <button className="btn-action-luxury" title="Ver Contrato PDF" onClick={() => window.open(`http://localhost:8000/api/v1/tenant/subscriptions/${s.id}/contract`, '_blank')}>
+                                            <button className="btn-action-luxury" title="Ver Contrato PDF" onClick={() => handleDownloadContract(s.id)}>
                                                 <FileText size={16} />
                                             </button>
-                                            <button className="btn-action-luxury" title="Configurações"><Settings size={16} /></button>
+                                            <button className="btn-action-luxury" title="Configurações" onClick={() => setManageSub(s)}><Settings size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -167,10 +239,59 @@ const Subscriptions = () => {
                             </div>
 
                             <footer style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem' }}>
-                                <button type="button" className="btn-secondary-premium" style={{ flex: 1 }} onClick={() => setShowForm(false)}>Cancelar</button>
-                                <button type="submit" className="btn-primary-premium" style={{ flex: 1.5 }}>Efetivar Assinatura</button>
+                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowForm(false)}>Cancelar</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 1.5 }}>Efetivar Assinatura</button>
                             </footer>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {manageSub && (
+                <div className="modal-overlay">
+                    <div className="card" style={{ width: '400px', padding: '0', overflow: 'hidden' }}>
+                        <div className="modal-header-luxury">
+                            <h2>Gerenciar Assinatura</h2>
+                            <button onClick={() => setManageSub(null)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
+                        </div>
+                        <div style={{ padding: '2rem' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--navy-900)' }}>{manageSub.plan_name}</h3>
+                                <p style={{ color: 'var(--text-muted)' }}>{manageSub.customer_name}</p>
+                            </div>
+
+                            <h4 className="form-section-title">Alterar Status</h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <button className="btn-secondary" onClick={() => handleUpdateStatus(manageSub.id, 'active')} style={manageSub.status === 'active' ? { borderColor: 'var(--success)', color: 'var(--success)', background: '#f0fdf4' } : {}}>
+                                    <CheckCircle2 size={16} /> Ativa
+                                </button>
+                                <button className="btn-secondary" onClick={() => handleUpdateStatus(manageSub.id, 'past_due')} style={manageSub.status === 'past_due' ? { borderColor: 'var(--error)', color: 'var(--error)', background: '#fef2f2' } : {}}>
+                                    <AlertCircle size={16} /> Atrasada
+                                </button>
+                                <button className="btn-secondary" onClick={() => handleUpdateStatus(manageSub.id, 'canceled')} style={{ gridColumn: 'span 2', borderColor: manageSub.status === 'canceled' ? 'var(--text-muted)' : '', opacity: manageSub.status === 'canceled' ? 0.7 : 1 }}>
+                                    <XCircle size={16} /> Cancelar Assinatura
+                                </button>
+                            </div>
+                        </div>
+
+                        <h4 className="form-section-title" style={{ marginTop: '1.5rem' }}>Contrato Assinado</h4>
+                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-soft)' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', justifyContent: 'center', padding: '0.5rem', border: '1px dashed var(--primary)', borderRadius: '6px', color: 'var(--primary)', fontWeight: 600 }}>
+                                <Upload size={16} /> Fazer Upload do PDF
+                                <input type="file" hidden accept=".pdf" onChange={(e) => {
+                                    if (e.target.files[0]) handleUploadContract(manageSub.id, e.target.files[0]);
+                                }} />
+                            </label>
+                            {manageSub.contrato_assinado_url && (
+                                <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--success)', textAlign: 'center', fontWeight: 600 }}>
+                                    ✓ Contrato assinado em arquivo
+                                </p>
+                            )}
+                        </div>
+
+                        <footer style={{ marginTop: '2rem', textAlign: 'center' }}>
+                            <button className="btn-secondary" style={{ width: '100%' }} onClick={() => setManageSub(null)}>Fechar</button>
+                        </footer>
                     </div>
                 </div>
             )}

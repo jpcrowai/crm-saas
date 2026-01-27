@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getLeads, updateLead, getNicheConfig } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { DollarSign, MoreHorizontal, Settings, Trophy, User, MapPin, Layers } from 'lucide-react';
+import { DollarSign, MoreHorizontal, Settings, Trophy, User, MapPin, Layers, Plus, XCircle } from 'lucide-react';
 import FinanceWizard from '../components/FinanceWizard';
 import LeadDetailsModal from '../components/LeadDetailsModal';
 import '../styles/tenant-luxury.css';
@@ -19,6 +19,8 @@ const Pipeline = () => {
     const [selectedLead, setSelectedLead] = useState(null);
     const [categories, setCategories] = useState([]);
     const [methods, setMethods] = useState([]);
+    const [showPipelineConfig, setShowPipelineConfig] = useState(false);
+    const [tempStages, setTempStages] = useState([]);
 
     const { user } = useAuth();
 
@@ -40,11 +42,26 @@ const Pipeline = () => {
 
             const stages = configRes.data.pipeline_stages || ["Novo", "Em Contato", "Agendado"];
             setPipelineStages(stages);
+            setTempStages(stages);
         } catch (error) {
             console.error(error);
-            setPipelineStages(["Novo", "Em Contato", "Agendado"]);
+            const fallback = ["Novo", "Em Contato", "Agendado"];
+            setPipelineStages(fallback);
+            setTempStages(fallback);
         }
         setLoading(false);
+    };
+
+    const handleSavePipelineConfig = async () => {
+        try {
+            const { savePipelineStages } = await import('../services/api');
+            await savePipelineStages(tempStages);
+            setPipelineStages(tempStages);
+            setShowPipelineConfig(false);
+            alert("Funil atualizado com sucesso!");
+        } catch (e) {
+            alert("Erro ao salvar configuração do funil");
+        }
     };
 
     const handleStatusChange = async (lead, newStatus) => {
@@ -54,13 +71,15 @@ const Pipeline = () => {
 
         try {
             await updateLead(id, { status: newStatus, status_lead: newStatus });
-            const isWin = newStatus.toLowerCase().includes('pago') ||
+            const isConverted = newStatus === 'converted';
+            const isWin = isConverted ||
+                newStatus.toLowerCase().includes('pago') ||
                 newStatus.toLowerCase().includes('ganho') ||
                 newStatus.toLowerCase().includes('concluido') ||
                 newStatus === pipelineStages[pipelineStages.length - 1].toLowerCase().replace(/\s+/g, '_');
 
             if (isWin) {
-                if (window.confirm(`Venda Confirmada! Deseja gerar o lançamento financeiro para ${lead.nome || lead.name}?`)) {
+                if (window.confirm(`Lead convertido! Deseja gerar o lançamento financeiro para ${lead.nome || lead.name}?`)) {
                     setSelectedLeadForFinance(lead);
                     setShowFinanceModal(true);
                 }
@@ -90,7 +109,7 @@ const Pipeline = () => {
                     <p>Gestão visual do funil estratégico • {pipelineStages.length} estágios ativos</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn-luxury" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px' }}>
+                    <button className="btn-primary" onClick={() => setShowPipelineConfig(true)}>
                         <Layers size={18} /> Configurar Funil
                     </button>
                 </div>
@@ -148,7 +167,20 @@ const Pipeline = () => {
                                     >
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                                             <span style={{ fontWeight: 800, color: 'var(--navy-950)', fontSize: '0.95rem' }}>{getName(lead)}</span>
-                                            <button className="btn-icon" onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}><MoreHorizontal size={16} /></button>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    className="btn-icon"
+                                                    style={{ color: 'var(--success)' }}
+                                                    title="Converter em Cliente"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleStatusChange(lead, 'converted');
+                                                    }}
+                                                >
+                                                    <Trophy size={14} />
+                                                </button>
+                                                <button className="btn-icon" onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}><MoreHorizontal size={16} /></button>
+                                            </div>
                                         </div>
 
                                         <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -213,6 +245,53 @@ const Pipeline = () => {
                         loadData();
                     }}
                 />
+            )}
+            {/* PIPELINE CONFIG MODAL */}
+            {showPipelineConfig && (
+                <div className="modal-overlay">
+                    <div className="card" style={{ width: '500px', padding: '0', overflow: 'hidden' }}>
+                        <div className="modal-header-luxury">
+                            <h2>Configurar Fluxo de Vendas</h2>
+                            <button onClick={() => setShowPipelineConfig(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle size={22} /></button>
+                        </div>
+                        <div style={{ padding: '2rem' }}>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                                Defina as etapas do seu funil comercial.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem', maxHeight: '300px', overflowY: 'auto' }}>
+                                {tempStages.map((stage, idx) => (
+                                    <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: '#f8fafc', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-soft)' }}>
+                                        <Layers size={14} color="var(--gold-500)" />
+                                        <input
+                                            className="input-premium"
+                                            style={{ flex: 1, padding: '0.4rem', border: 'none', background: 'transparent' }}
+                                            value={stage}
+                                            onChange={(e) => {
+                                                const newStages = [...tempStages];
+                                                newStages[idx] = e.target.value;
+                                                setTempStages(newStages);
+                                            }}
+                                        />
+                                        <button onClick={() => setTempStages(tempStages.filter((_, i) => i !== idx))} style={{ color: 'var(--error)', padding: '0.4rem' }}>
+                                            <XCircle size={16} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                className="btn-secondary"
+                                style={{ width: '100%', marginBottom: '2rem', borderStyle: 'dashed' }}
+                                onClick={() => setTempStages([...tempStages, "Nova Etapa"])}
+                            >
+                                <Plus size={18} /> Adicionar Etapa
+                            </button>
+                            <footer style={{ display: 'flex', gap: '1rem' }}>
+                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowPipelineConfig(false)}>Cancelar</button>
+                                <button type="button" className="btn-primary" style={{ flex: 2 }} onClick={handleSavePipelineConfig}>Salvar Estrutura</button>
+                            </footer>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

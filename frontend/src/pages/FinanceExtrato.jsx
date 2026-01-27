@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getFinanceEntries, deleteFinanceEntry, updateFinanceEntryStatus } from '../services/api';
+import { getFinanceEntries, deleteFinanceEntry, updateFinanceEntryStatus, exportFinanceEntries } from '../services/api';
 import { Search, Filter, Download, Plus, ArrowUpCircle, ArrowDownCircle, MoreVertical, Trash2, CheckCircle2, AlertCircle, Clock, XCircle, DollarSign, Wallet } from 'lucide-react';
 import FinanceWizard from '../components/FinanceWizard';
 import '../styles/tenant-luxury.css';
@@ -18,6 +18,21 @@ const FinanceExtrato = () => {
             setEntries(res.data);
             setFiltered(res.data);
         } catch (e) { console.error(e); }
+    };
+
+    const handleExport = async () => {
+        try {
+            const res = await exportFinanceEntries();
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `financeiro_${new Date().toISOString().split('T')[0]}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (e) {
+            alert("Erro ao exportar");
+        }
     };
 
     useEffect(() => {
@@ -52,9 +67,14 @@ const FinanceExtrato = () => {
                     <h1>Extrato Financeiro</h1>
                     <p>Gestão de fluxo de caixa e conciliação bancária</p>
                 </div>
-                <button className="btn-luxury-gold" onClick={() => setShowWizard(true)} style={{ borderRadius: '12px', padding: '0.75rem 1.5rem' }}>
-                    <Plus size={20} /> Novo Lançamento
-                </button>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button className="btn-primary" onClick={handleExport}>
+                        <Download size={18} /> Exportar Excel
+                    </button>
+                    <button className="btn-primary" onClick={() => setShowWizard(true)}>
+                        <Plus size={20} /> Novo Lançamento
+                    </button>
+                </div>
             </header>
 
             <div className="indicator-grid">

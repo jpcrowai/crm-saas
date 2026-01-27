@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     X, Phone, Mail, MessageSquare, History, CheckSquare,
     Save, Plus, Trash2, ChevronRight, User, MapPin,
-    Calendar, DollarSign, Clock, Send
+    Calendar, DollarSign, Clock, Send, Trophy, CheckCircle
 } from 'lucide-react';
 import {
     updateLead, getLeadHistory, addLeadHistory,
@@ -266,14 +266,28 @@ const LeadDetailsModal = ({ lead, onClose, onUpdate, pipelineStages = [] }) => {
                 {/* Footer / Quick Actions */}
                 <div style={{ padding: '1rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', gap: '0.5rem' }}>
                     <button
+                        className="btn-primary"
+                        onClick={async () => {
+                            if (window.confirm("Deseja converter este Lead em Cliente?")) {
+                                try {
+                                    await updateLead(lead.id, { status: 'converted', status_lead: 'converted' });
+                                    alert("Lead convertido em Cliente com sucesso!");
+                                    onUpdate();
+                                } catch (e) {
+                                    alert("Erro ao converter lead");
+                                }
+                            }
+                        }}
+                        style={{ flex: 2, justifyContent: 'center', background: 'var(--success)', border: 'none' }}
+                    >
+                        <Trophy size={18} /> Converter em Cliente
+                    </button>
+                    <button
                         className="btn-secondary"
-                        onClick={() => window.open(`https://wa.me/${(editedLead.telefone || editedLead.whatsapp).replace(/\D/g, '')}`)}
+                        onClick={() => window.open(`https://wa.me/${(editedLead.telefone || editedLead.whatsapp || '').replace(/\D/g, '')}`)}
                         style={{ flex: 1, justifyContent: 'center', background: '#25D366', color: 'white', border: 'none' }}
                     >
                         <MessageSquare size={18} /> WhatsApp
-                    </button>
-                    <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
-                        <Phone size={18} /> Ligar
                     </button>
                 </div>
             </div>

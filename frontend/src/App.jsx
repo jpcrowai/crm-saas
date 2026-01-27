@@ -17,6 +17,7 @@ import FinanceSettings from './pages/FinanceSettings'
 import ProductCatalog from './pages/ProductCatalog'
 import Plans from './pages/Plans'
 import Subscriptions from './pages/Subscriptions'
+import GoogleCallback from './pages/GoogleCallback'
 import PrivateRoute from './routes/PrivateRoute'
 import ModuleRoute from './routes/ModuleRoute'
 import { useAuth } from './context/AuthContext'
@@ -127,6 +128,11 @@ function App() {
             <ModuleRoute module="assinaturas">
               <Subscriptions />
             </ModuleRoute>
+          </PrivateRoute>
+        } />
+        <Route path="/google-callback" element={
+          <PrivateRoute>
+            <GoogleCallback />
           </PrivateRoute>
         } />
       </Route>

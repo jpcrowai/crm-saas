@@ -124,6 +124,54 @@ button:disabled {
   transform: translateY(-2px);
 }
 
+/* GLOBAL PREMIUM BUTTONS */
+.btn-primary-premium,
+.btn-primary {
+  background: var(--grad-gold);
+  color: var(--navy-950) !important;
+  padding: 0.75rem 1.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: var(--transition);
+}
+
+.btn-primary-premium:hover,
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(184, 134, 11, 0.4);
+}
+
+.btn-secondary-premium,
+.btn-secondary {
+  background: var(--navy-900);
+  color: var(--text-on-dark) !important;
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: var(--transition);
+}
+
+.btn-secondary-premium:hover,
+.btn-secondary:hover {
+  background: var(--navy-800);
+  transform: translateY(-2px);
+}
+
 /* GLOBAL FORM ELEMENTS */
 input,
 select,
@@ -174,4 +222,84 @@ label {
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-md);
+}
+
+/* PREMIUM ICON BUTTONS */
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  background: var(--white);
+  color: var(--navy-700);
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  background: var(--navy-900);
+  color: var(--white);
+  border-color: var(--navy-900);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+/* Icon Button - Delete/Danger Variant */
+.btn-icon-danger,
+.btn-icon.danger {
+  border-color: rgba(239, 68, 68, 0.2);
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.btn-icon-danger:hover,
+.btn-icon.danger:hover {
+  background: var(--error);
+  color: var(--white);
+  border-color: var(--error);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Icon Button - Settings Variant */
+.btn-icon-settings {
+  border-color: var(--border-soft);
+  color: var(--text-muted);
+  background: var(--bg-app);
+}
+
+.btn-icon-settings:hover {
+  background: var(--gold-500);
+  color: var(--navy-950);
+  border-color: var(--gold-500);
+}
+
+/* Modal Close Button */
+.btn-close-modal {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-close-modal:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg) scale(1.1);
+}
+
+/* Small Icon Button */
+.btn-icon-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
 }

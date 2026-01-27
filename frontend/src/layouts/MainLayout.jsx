@@ -89,7 +89,7 @@ const MainLayout = () => {
           </div>
         )}
 
-        <div style={{ flex: 1, padding: '2.5rem' }}>
+        <div style={{ flex: 1 }}>
           <Outlet />
         </div>
       </main>

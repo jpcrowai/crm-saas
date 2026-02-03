@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
+import uuid
+from datetime import datetime
 
 class Token(BaseModel):
     access_token: str
@@ -118,16 +120,14 @@ class UserPasswordChange(BaseModel):
 
 class NicheCreate(BaseModel):
     name: str
-    columns: Optional[List[str]] = []
-    pipeline_stages: Optional[List[str]] = None
+    description: Optional[str] = None
     ativo: bool = True
 
 class Niche(BaseModel):
-    id: str
+    id: uuid.UUID
     name: str
-    columns: List[str]
-    pipeline_stages: Optional[List[str]] = None
-    created_at: str
+    description: Optional[str] = None
+    created_at: datetime
     ativo: bool = True
 
 class AppointmentBase(BaseModel):

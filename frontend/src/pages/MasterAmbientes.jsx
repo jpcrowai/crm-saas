@@ -33,7 +33,7 @@ const MasterAmbientes = () => {
   const [editingEnv, setEditingEnv] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
 
-  const [newNiche, setNewNiche] = useState({ id: null, name: '', columns_json: '', pipeline_stages_json: '' });
+  const [newNiche, setNewNiche] = useState({ id: null, name: '', description: '' });
 
   const { login, logout } = useAuth();
   const navigate = useNavigate();
@@ -124,19 +124,15 @@ const MasterAmbientes = () => {
   const handleCreateNiche = async (e) => {
     e.preventDefault();
     try {
-      const columns = newNiche.columns_json.split(',').map(s => s.trim()).filter(s => s);
-      const pipeline_stages = newNiche.pipeline_stages_json
-        ? newNiche.pipeline_stages_json.split(',').map(s => s.trim()).filter(s => s)
-        : ["Novo", "Em Contato", "Agendado"];
-
       if (newNiche.id) {
         const { updateNiche } = await import('../services/api');
-        await updateNiche(newNiche.id, { name: newNiche.name, columns, pipeline_stages, ativo: true });
+        await updateNiche(newNiche.id, { name: newNiche.name, description: newNiche.description, ativo: true });
       } else {
-        await createNiche({ name: newNiche.name, columns, pipeline_stages });
+        await createNiche({ name: newNiche.name, description: newNiche.description });
       }
-      setNewNiche({ id: null, name: '', columns_json: '', pipeline_stages_json: '' });
+      setNewNiche({ id: null, name: '', description: '' });
       loadData();
+      toast.success("Nicho salvo com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar nicho.");
     }
@@ -462,8 +458,8 @@ const MasterAmbientes = () => {
                     <input className="input-premium" placeholder="Ex: Academia, Clínica..." value={newNiche.name} onChange={e => setNewNiche({ ...newNiche, name: e.target.value })} required />
                   </div>
                   <div className="form-group">
-                    <label>Campos Dinâmicos (CSV)</label>
-                    <textarea className="input-premium" rows={2} placeholder="registro, data_expiracao..." value={newNiche.columns_json} onChange={e => setNewNiche({ ...newNiche, columns_json: e.target.value })} />
+                    <label>Descrição</label>
+                    <textarea className="input-premium" rows={3} placeholder="Descreva as características deste nicho..." value={newNiche.description} onChange={e => setNewNiche({ ...newNiche, description: e.target.value })} />
                   </div>
                   <button type="submit" className="btn-primary" style={{ width: '100%' }}>Salvar Nicho</button>
                 </form>
@@ -474,7 +470,9 @@ const MasterAmbientes = () => {
                     {niches.map(n => (
                       <div key={n.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border-soft)', background: 'var(--white)' }}>
                         <span style={{ fontWeight: 600, color: 'var(--navy-900)' }}>{n.name}</span>
-                        <button className="btn-icon" onClick={() => setNewNiche({ id: n.id, name: n.name, columns_json: n.columns.join(','), pipeline_stages_json: (n.pipeline_stages || []).join(',') })}><Settings size={14} /></button>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button className="btn-icon" onClick={() => setNewNiche({ id: n.id, name: n.name, description: n.description || '' })}><Settings size={14} /></button>
+                        </div>
                       </div>
                     ))}
                   </div>

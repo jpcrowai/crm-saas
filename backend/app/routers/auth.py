@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.schemas import MasterLogin, TenantLogin, Token, SelectTenant, TokenData, UserPasswordChange
-from app.services.auth_service import authenticate_master, authenticate_tenant_user, create_access_token, get_tenant_file, change_user_password
-from app.services.excel_service import read_sheet
+from app.services.auth_service import authenticate_master, authenticate_tenant_user, create_access_token, get_tenant_by_slug, change_user_password
 from app.deps import get_current_user_token_data, get_current_master
-from typing import Any
+from app.database import get_db, SessionLocal # Use SessionLocal for simple one-offs if dependency injection not passed
+from sqlalchemy.orm import Session
+from app.models.sql_models import Tenant, User # Direct access for 'me' endpoint
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login-master", response_model=Token)
-async def login_master(user_in: MasterLogin):
-    user = authenticate_master(user_in.email, user_in.password)
+async def login_master(user_in: MasterLogin, db: Session = Depends(get_db)):
+    user = authenticate_master(db, user_in.email, user_in.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -24,10 +25,10 @@ async def login_master(user_in: MasterLogin):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/select-tenant", response_model=Token)
-async def select_tenant(payload: SelectTenant, current_user: TokenData = Depends(get_current_master)):
-    # Check if tenant exists (Master can enter even if inactive)
-    excel_file = get_tenant_file(payload.tenant_slug, allow_inactive=True)
-    if not excel_file:
+async def select_tenant(payload: SelectTenant, current_user: TokenData = Depends(get_current_master), db: Session = Depends(get_db)):
+    # Check if tenant exists via auth_service helper (now DB backed)
+    tenant_obj = get_tenant_by_slug(db, payload.tenant_slug, allow_inactive=True)
+    if not tenant_obj:
         raise HTTPException(status_code=404, detail="Tenant not found")
         
     # Generate new token with tenant context
@@ -41,8 +42,8 @@ async def select_tenant(payload: SelectTenant, current_user: TokenData = Depends
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login-tenant", response_model=Token)
-async def login_tenant(user_in: TenantLogin):
-    user = authenticate_tenant_user(user_in.tenant_slug, user_in.email, user_in.password)
+async def login_tenant(user_in: TenantLogin, db: Session = Depends(get_db)):
+    user = authenticate_tenant_user(db, user_in.tenant_slug, user_in.email, user_in.password)
     if not user:
          raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -60,31 +61,24 @@ async def login_tenant(user_in: TenantLogin):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me")
-async def read_users_me(current_user: TokenData = Depends(get_current_user_token_data)):
+async def read_users_me(current_user: TokenData = Depends(get_current_user_token_data), db: Session = Depends(get_db)):
     nome_empresa = None
     logo_url = None
     nicho_nome = None
     cor_principal = None
     payment_status = None
-    modulos_habilitados = []
+    modulos_habilitados = [] # Feature flags can be stored in JSON/columns
     
     if current_user.tenant_slug:
-        ambientes = read_sheet("ambientes", "ambientes")
-        env = next((a for a in ambientes if a["slug"] == current_user.tenant_slug), None)
+        env = db.query(Tenant).filter(Tenant.slug == current_user.tenant_slug).first()
         if env:
-            nome_empresa = env.get("nome_empresa")
-            logo_url = env.get("logo_url")
-            cor_principal = env.get("cor_principal")
-            payment_status = env.get("payment_status")
-            modulos_habilitados = env.get("modulos_habilitados") or []
-            
-            # Lookup Niche Name
-            nicho_id = env.get("nicho_id")
-            if nicho_id:
-                niches_data = read_sheet("niches", "niches")
-                niche = next((n for n in niches_data if str(n.get("id")) == str(nicho_id)), None)
-                if niche:
-                    nicho_nome = niche.get("name")
+            nome_empresa = env.name # or business_name
+            logo_url = env.logo_url
+            cor_principal = env.primary_color
+            payment_status = env.payment_status
+            modulos_habilitados = env.modulos_habilitados or []
+            if env.niche:
+                nicho_nome = env.niche.name
             
     return {
         "email": current_user.email,
@@ -101,17 +95,15 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user_token
 
 @router.post("/exit-tenant", response_model=Token)
 async def exit_tenant(current_user: TokenData = Depends(get_current_master)):
-    # Simply issue a new token without tenant_slug
-    # Validation of 'master' role is done by dependency get_current_master
-    
     access_token = create_access_token(
         data={"sub": current_user.email, "role_global": "master"}
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/change-password")
-async def change_password(payload: UserPasswordChange, current_user: TokenData = Depends(get_current_user_token_data)):
+async def change_password(payload: UserPasswordChange, current_user: TokenData = Depends(get_current_user_token_data), db: Session = Depends(get_db)):
     success = change_user_password(
+        db=db,
         email=current_user.email, 
         old_password=payload.old_password, 
         new_password=payload.new_password,

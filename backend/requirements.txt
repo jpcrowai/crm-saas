@@ -9,3 +9,7 @@ fpdf2
 google-auth
 google-auth-oauthlib
 google-api-python-client
+sqlalchemy
+psycopg2-binary
+supabase
+python-dotenv

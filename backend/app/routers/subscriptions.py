@@ -9,6 +9,7 @@ from fpdf import FPDF
 from app.deps import get_current_tenant_user
 from app.models.schemas import TokenData
 from app.services.excel_service import read_sheet, write_sheet
+from app.services import storage_service
 
 router = APIRouter(prefix="/tenant", tags=["subscriptions"])
 
@@ -247,11 +248,25 @@ def generate_contract_pdf(tenant_slug: str, sub_data: Dict[str, Any], plan_data:
     pdf.set_text_color(255, 255, 255)
     pdf.cell(0, 10, "Documento gerado eletronicamente via CRMaster", 0, 0, 'C')
     
+    # Upload PDF to Supabase Storage
+    pdf_content = pdf.output(dest='S').encode('latin1')
     filename = f"contrato_{sub_data['id']}.pdf"
-    filepath = os.path.join("storage", tenant_slug, filename)
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    pdf.output(filepath)
-    return filepath
+    
+    try:
+        public_url = storage_service.upload_file(
+            pdf_content,
+            filename,
+            tenant_slug,
+            "contratos"
+        )
+        return public_url
+    except Exception as e:
+        print(f"Error uploading to Supabase Storage: {e}")
+        # Fallback to local
+        filepath = os.path.join("storage", tenant_slug, filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        pdf.output(filepath)
+        return filepath
 
 # --- Endpoints ---
 
@@ -378,16 +393,25 @@ async def upload_signed_contract(sub_id: str, file: UploadFile = File(...), curr
     if idx == -1:
         raise HTTPException(status_code=404, detail="Assinatura não encontrada")
         
-    # Save file
-    storage_dir = os.path.join("storage", current_user.tenant_slug, "contracts_signed")
-    os.makedirs(storage_dir, exist_ok=True)
-    
+    # Save file to Supabase Storage
     filename = f"signed_{sub_id}_{uuid.uuid4().hex[:6]}.pdf"
-    filepath = os.path.join(storage_dir, filename)
     
-    with open(filepath, "wb") as buffer:
-        from shutil import copyfileobj
-        copyfileobj(file.file, buffer)
+    try:
+        filepath = storage_service.upload_file(
+            file.file,
+            filename,
+            current_user.tenant_slug,
+            "contratos_assinados"
+        )
+    except Exception as e:
+        print(f"Error uploading to Supabase Storage: {e}")
+        # Fallback to local
+        storage_dir = os.path.join("storage", current_user.tenant_slug, "contracts_signed")
+        os.makedirs(storage_dir, exist_ok=True)
+        filepath = os.path.join(storage_dir, filename)
+        with open(filepath, "wb") as buffer:
+            from shutil import copyfileobj
+            copyfileobj(file.file, buffer)
         
     # Update Subscription
     subs[idx]["contrato_assinado_url"] = filepath

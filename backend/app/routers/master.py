@@ -4,9 +4,13 @@ import uuid
 import os
 import json
 import shutil
+from sqlalchemy.orm import Session
+from app.database import get_db
 from app.deps import get_current_master
 from app.models.schemas import Environment, TokenData, EnvironmentUpdate
-from app.services.excel_service import read_sheet, write_sheet, init_excel_file
+from app.models.sql_models import Tenant, User, Niche
+from app.services.auth_service import get_password_hash
+from app.services import storage_service
 
 from datetime import datetime
 from fpdf import FPDF
@@ -132,88 +136,85 @@ def generate_environment_contract_pdf(env_data: dict) -> str:
     pdf.set_fill_color(15, 23, 42)
     pdf.rect(0, 275, 210, 25, 'F')
     
+    # Upload PDF to Supabase Storage
+    pdf_content = pdf.output(dest='S').encode('latin1')  # Get PDF as bytes
     filename = f"contrato_ambiente_{env_data['slug']}.pdf"
-    storage_dir = os.path.join("storage", env_data['slug'])
-    os.makedirs(storage_dir, exist_ok=True)
-    filepath = os.path.join(storage_dir, filename)
-    pdf.output(filepath)
-    return filepath
+    
+    try:
+        public_url = storage_service.upload_file(
+            pdf_content,
+            filename,
+            env_data['slug'],
+            "contratos"
+        )
+        return public_url
+    except Exception as e:
+        print(f"Error uploading to Supabase Storage: {e}")
+        # Fallback to local storage
+        storage_dir = os.path.join("storage", env_data['slug'])
+        os.makedirs(storage_dir, exist_ok=True)
+        filepath = os.path.join(storage_dir, filename)
+        pdf.output(filepath)
+        return filepath
 
 @router.get("/ambientes/{slug}/contract")
-async def get_environment_contract(slug: str, current_user: TokenData = Depends(get_current_master)):
-    ambientes = read_sheet("ambientes", "ambientes")
-    env = next((a for a in ambientes if a["slug"] == slug), None)
+async def get_environment_contract(slug: str, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_master)):
+    tenant = db.query(Tenant).filter(Tenant.slug == slug).first()
     
-    if not env:
+    if not tenant:
         raise HTTPException(status_code=404, detail="Environment not found")
             
     # If signed exists, return it, otherwise return generated
-    pdf_path = env.get("contract_generated_url")
+    pdf_path = tenant.contract_generated_url
     download_name = f"contrato_licenciamento_{slug}.pdf"
-
-    if env.get("contract_status") == "signed" and env.get("contract_signed_url"):
-        # If user specifically wants the blank one maybe we need another param?
-        # But usually 'Download PDF' implies the one to be signed.
-        pass
 
     if not pdf_path or not os.path.exists(pdf_path):
         # Regenerate if missing
         try:
-            pdf_path = generate_environment_contract_pdf(env)
-            # Update env with path if it was missing logic
-            env_idx = next((i for i, a in enumerate(ambientes) if a["slug"] == slug), -1)
-            ambientes[env_idx]["contract_generated_url"] = pdf_path
-            write_sheet("ambientes", "ambientes", ambientes)
+            # Map DB model to dict for pdf generator
+            env_data = {
+                "slug": tenant.slug,
+                "nome_empresa": tenant.name,
+                "cnpj": tenant.document,
+                "endereco": tenant.address,
+                "modulos_habilitados": [] # TODO: Store this in DB? For now empty
+            }
+            pdf_path = generate_environment_contract_pdf(env_data)
+            tenant.contract_generated_url = pdf_path
+            db.commit()
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error generating contract: {str(e)}")
             
     return FileResponse(pdf_path, filename=download_name)
 
 @router.get("/ambientes", response_model=List[Environment])
-async def get_ambientes(current_user: TokenData = Depends(get_current_master)):
-    ambientes_raw = read_sheet("ambientes", "ambientes")
+async def get_ambientes(db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_master)):
+    tenants = db.query(Tenant).all()
     valid_ambientes = []
-    for a in ambientes_raw:
+    for t in tenants:
         try:
-            slug = a.get("slug")
-            if not slug:
-                continue
-            
-            # Map values ensuring we don't pass None to fields that expect strings/bools/lists
             processed = {
-                "id": a.get("id") or str(uuid.uuid4()),
-                "slug": slug,
-                "nome_empresa": a.get("nome_empresa") or a.get("nome") or "Empresa sem Nome",
-                "cnpj": a.get("cnpj") or "",
-                "endereco": a.get("endereco") or "",
-                "nicho_id": a.get("nicho_id") or a.get("nicho") or "",
-                "logo_url": a.get("logo_url"),
-                "cor_principal": a.get("cor_principal") or "#d4af37",
-                "plan": a.get("plan") or "basic",
-                "payment_status": a.get("payment_status") or "trial",
-                "contract_generated_url": a.get("contract_generated_url"),
-                "contract_signed_url": a.get("contract_signed_url"),
-                "contract_status": a.get("contract_status") or "pending_generation",
-                "ativo": a.get("ativo") if a.get("ativo") is not None else True, # Default True for legacy compatibility
-                "excel_file": a.get("excel_file") or f"{slug}.xlsx",
-                "nome": a.get("nome") or a.get("nome_empresa") or "Empresa sem Nome"
+                "id": str(t.id),
+                "slug": t.slug,
+                "nome_empresa": t.name,
+                "cnpj": t.document or "",
+                "endereco": t.address or "",
+                "nicho_id": str(t.niche_id) if t.niche_id else "",
+                "logo_url": t.logo_url,
+                "cor_principal": t.primary_color or "#d4af37",
+                "plan": t.plan_tier or "basic",
+                "payment_status": t.payment_status or "trial",
+                "contract_generated_url": t.contract_generated_url,
+                "contract_signed_url": t.contract_signed_url,
+                "contract_status": t.contract_status or "pending_generation",
+                "ativo": t.active,
+                "excel_file": f"{t.slug}.xlsx", # Legacy
+                "nome": t.name,
+                "modulos_habilitados": t.modulos_habilitados or []
             }
-
-            # Handle modulos_habilitados specifically
-            mods = a.get("modulos_habilitados")
-            if mods is None:
-                processed["modulos_habilitados"] = []
-            elif isinstance(mods, str):
-                try:
-                    processed["modulos_habilitados"] = json.loads(mods)
-                except:
-                    processed["modulos_habilitados"] = []
-            else:
-                processed["modulos_habilitados"] = mods
-            
             valid_ambientes.append(Environment(**processed))
         except Exception as e:
-            print(f"Error processing record {a.get('slug')}: {e}")
+            print(f"Error processing tenant {t.slug}: {e}")
             continue
             
     return valid_ambientes
@@ -232,109 +233,122 @@ async def create_ambiente(
     modulos_habilitados: Optional[str] = Form(None), # JSON string from frontend
     logo: Optional[UploadFile] = File(None),
     contract_file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_master)
 ):
-    ambientes = read_sheet("ambientes", "ambientes")
-    
-    if any(a["slug"] == slug for a in ambientes):
-        raise HTTPException(status_code=400, detail="Slug already exists")
-    
-    # Process modulos_habilitados
-    mods = ["dashboard", "leads_pipeline", "agenda", "clientes", "equipe", "financeiro", "produtos", "assinaturas"]
-    if modulos_habilitados:
-        try:
-            mods = json.loads(modulos_habilitados)
-        except:
-            pass
+    if db.query(Tenant).filter(Tenant.slug == slug).first():
+        raise HTTPException(status_code=400, detail=f"O slug '{slug}' já está em uso por outro ambiente.")
 
-    # Save Logo
+    if db.query(User).filter(User.email == admin_email).first():
+        raise HTTPException(status_code=400, detail=f"O e-mail '{admin_email}' já está cadastrado no sistema.")
+
+    # Save Logo to Supabase Storage
     logo_url = ""
     if logo:
-        static_dir = os.path.join("static", "logos")
-        os.makedirs(static_dir, exist_ok=True)
         file_ext = logo.filename.split(".")[-1]
         filename = f"{slug}_{uuid.uuid4().hex[:8]}.{file_ext}"
-        filepath = os.path.join(static_dir, filename)
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(logo.file, buffer)
-        logo_url = f"/static/logos/{filename}"
+        
+        try:
+            logo_url = storage_service.upload_file(
+                logo.file,
+                filename,
+                slug,
+                "logos"
+            )
+        except Exception as e:
+            print(f"Error uploading logo: {e}")
+            # Fallback to local
+            static_dir = os.path.join("static", "logos")
+            os.makedirs(static_dir, exist_ok=True)
+            filepath = os.path.join(static_dir, filename)
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(logo.file, buffer)
+            logo_url = f"/static/logos/{filename}"
 
-    new_id = str(uuid.uuid4())
-    excel_filename = f"{slug}.xlsx"
-    
-    new_env = {
-        "id": new_id,
-        "slug": slug,
-        "nome_empresa": nome_empresa,
-        "cnpj": cnpj,
-        "endereco": endereco,
-        "excel_file": excel_filename,
-        "logo_url": logo_url,
-        "nicho_id": nicho_id or "",
-        "cor_principal": cor_principal,
-        "plan": plan,
-        "payment_status": "trial",
-        "ativo": False, # Pendente de Contrato
-        "contract_status": "pending_generation",
-        "modulos_habilitados": mods
-    }
-    
-    # Generate Contract PDF (Always generated for record)
+    # Generate deterministic UUID from slug
+    namespace = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8') # DNS Namespace
+    tenant_id = uuid.uuid5(namespace, slug)
+
+    new_tenant = Tenant(
+        id=tenant_id,
+        slug=slug,
+        name=nome_empresa,
+        document=cnpj,
+        address=endereco,
+        logo_url=logo_url,
+        niche_id=nicho_id if nicho_id else None,
+        primary_color=cor_principal,
+        plan_tier=plan,
+        payment_status="trial",
+        active=False, # Pendente de contrato
+        contract_status="pending_generation",
+        modulos_habilitados=json.loads(modulos_habilitados) if modulos_habilitados else []
+    )
+    db.add(new_tenant)
+    db.flush() # get ID
+
+    # Generate Contract
     try:
-        pdf_path = generate_environment_contract_pdf(new_env)
-        new_env["contract_generated_url"] = pdf_path
-        new_env["contract_status"] = "generated"
+        env_data = {
+            "slug": slug,
+            "nome_empresa": nome_empresa,
+            "cnpj": cnpj,
+            "endereco": endereco,
+            "modulos_habilitados": json.loads(modulos_habilitados) if modulos_habilitados else []
+        }
+        pdf_path = generate_environment_contract_pdf(env_data)
+        new_tenant.contract_generated_url = pdf_path
+        new_tenant.contract_status = "generated"
     except Exception as e:
         print(f"Error generating contract: {e}")
 
-    # Handle Signed Contract Upload
+    # Handle Signed Contract - Upload to Supabase Storage
     if contract_file:
-        static_dir = os.path.join("storage", slug)
-        os.makedirs(static_dir, exist_ok=True)
-        if contract_file.content_type == "application/pdf":
-            filename = f"contrato_assinado_{uuid.uuid4().hex[:6]}.pdf"
-            filepath = os.path.join(static_dir, filename)
+        filename = f"contrato_assinado_{uuid.uuid4().hex[:6]}.pdf"
+        try:
+            signed_url = storage_service.upload_file(
+                contract_file.file,
+                filename,
+                slug,
+                "contratos_assinados"
+            )
+            new_tenant.contract_signed_url = signed_url
+            new_tenant.contract_status = "signed"
+        except Exception as e:
+            print(f"Error uploading signed contract: {e}")
+            # Fallback to local
+            storage_dir = os.path.join("storage", slug)
+            os.makedirs(storage_dir, exist_ok=True)
+            filepath = os.path.join(storage_dir, filename)
             with open(filepath, "wb") as buffer:
                 shutil.copyfileobj(contract_file.file, buffer)
-            
-            new_env["contract_signed_url"] = filepath
-            new_env["contract_status"] = "signed"
-            # Optional: Auto-activate if signed contract provided?
-            # new_env["ativo"] = True 
+            new_tenant.contract_signed_url = filepath
+            new_tenant.contract_status = "signed"
 
-    # Init tenant excel
-    from app.services.auth_service import get_password_hash
-    admin_user = {
-        "id": str(uuid.uuid4()),
-        "email": admin_email,
-        "name": "Admin",
-        "role": "admin",
-        "password_hash": get_password_hash(admin_password)
-    }
+    # Create Admin User
+    admin_user = User(
+        email=admin_email,
+        name="Admin",
+        role="admin",
+        password_hash=get_password_hash(admin_password),
+        tenant_id=new_tenant.id
+    )
+    db.add(admin_user)
     
-    lead_columns = ["id", "name", "email", "phone", "status", "value", "created_at"]
-    if nicho_id:
-        try:
-            niches_data = read_sheet("niches", "niches")
-            selected_niche = next((n for n in niches_data if str(n.get("id")) == str(nicho_id)), None)
-            if selected_niche:
-                cols = selected_niche.get("columns") or []
-                for c in cols:
-                    if c not in lead_columns:
-                        lead_columns.append(c)
-        except Exception as e:
-            print(f"Error loading niche columns: {e}")
+    db.commit()
+    db.refresh(new_tenant)
     
-    init_excel_file(slug, {
-        "users": ["id", "email", "name", "role", "password_hash"],
-        "leads": lead_columns
-    })
-    
-    write_sheet(slug, "users", [admin_user])
-    ambientes.append(new_env)
-    write_sheet("ambientes", "ambientes", ambientes)
-    
-    return Environment(**new_env)
+    return Environment(
+        id=str(new_tenant.id),
+        slug=new_tenant.slug,
+        nome_empresa=new_tenant.name,
+        cnpj=new_tenant.document or "",
+        endereco=new_tenant.address or "",
+        nicho_id=str(new_tenant.niche_id) if new_tenant.niche_id else "",
+        logo_url=new_tenant.logo_url,
+        ativo=new_tenant.active,
+        modulos_habilitados=json.loads(modulos_habilitados) if modulos_habilitados else []
+    )
 
 @router.put("/ambientes/{slug}", response_model=Environment)
 async def update_ambiente(
@@ -345,79 +359,100 @@ async def update_ambiente(
     nicho_id: Optional[str] = Form(None),
     plan: Optional[str] = Form(None),
     payment_status: Optional[str] = Form(None),
-    ativo: Optional[str] = Form(None), # From frontend often sent as string "true"/"false"
-    modulos_habilitados: Optional[str] = Form(None), # JSON from frontend
+    ativo: Optional[str] = Form(None),
+    modulos_habilitados: Optional[str] = Form(None),
     logo: Optional[UploadFile] = File(None),
     contract_file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_master)
 ):
-    ambientes = read_sheet("ambientes", "ambientes")
-    env_idx = next((i for i, a in enumerate(ambientes) if a["slug"] == slug), -1)
-    
-    if env_idx == -1:
+    tenant = db.query(Tenant).filter(Tenant.slug == slug).first()
+    if not tenant:
         raise HTTPException(status_code=404, detail="Environment not found")
     
-    env = ambientes[env_idx]
-    
-    if nome_empresa is not None: env["nome_empresa"] = nome_empresa
-    if cnpj is not None: env["cnpj"] = cnpj
-    if endereco is not None: env["endereco"] = endereco
-    if nicho_id is not None: env["nicho_id"] = nicho_id
-    if plan is not None: env["plan"] = plan
-    if payment_status is not None: env["payment_status"] = payment_status
-    
+    if nome_empresa is not None: tenant.name = nome_empresa
+    if cnpj is not None: tenant.document = cnpj
+    if endereco is not None: tenant.address = endereco
+    if nicho_id is not None: tenant.niche_id = nicho_id
+    if plan is not None: tenant.plan_tier = plan
+    if payment_status is not None: tenant.payment_status = payment_status
     if modulos_habilitados is not None:
-        try:
-            env["modulos_habilitados"] = json.loads(modulos_habilitados)
-        except:
-            pass
-            
+        tenant.modulos_habilitados = json.loads(modulos_habilitados)
+    
     if logo:
-        static_dir = os.path.join("static", "logos")
-        os.makedirs(static_dir, exist_ok=True)
         file_ext = logo.filename.split(".")[-1]
         filename = f"{slug}_{uuid.uuid4().hex[:8]}.{file_ext}"
-        filepath = os.path.join(static_dir, filename)
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(logo.file, buffer)
-        env["logo_url"] = f"/static/logos/{filename}"
+        
+        try:
+            logo_url = storage_service.upload_file(
+                logo.file,
+                filename,
+                slug,
+                "logos"
+            )
+            tenant.logo_url = logo_url
+        except Exception as e:
+            print(f"Error uploading logo: {e}")
+            # Fallback
+            static_dir = os.path.join("static", "logos")
+            os.makedirs(static_dir, exist_ok=True)
+            filepath = os.path.join(static_dir, filename)
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(logo.file, buffer)
+            tenant.logo_url = f"/static/logos/{filename}"
         
     if contract_file:
-        storage_dir = os.path.join("storage", slug)
-        os.makedirs(storage_dir, exist_ok=True)
-        # Verify it's PDF
         if contract_file.content_type != "application/pdf":
             raise HTTPException(status_code=400, detail="Apenas arquivos PDF são permitidos para o contrato.")
-            
-        filename = f"contrato_assinado_{uuid.uuid4().hex[:6]}.pdf"
-        filepath = os.path.join(storage_dir, filename)
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(contract_file.file, buffer)
         
-        env["contract_signed_url"] = filepath
-        env["contract_status"] = "signed"
+        filename = f"contrato_assinado_{uuid.uuid4().hex[:6]}.pdf"
+        try:
+            signed_url = storage_service.upload_file(
+                contract_file.file,
+                filename,
+                slug,
+                "contratos_assinados"
+            )
+            tenant.contract_signed_url = signed_url
+            tenant.contract_status = "signed"
+        except Exception as e:
+            print(f"Error uploading signed contract: {e}")
+            # Fallback
+            storage_dir = os.path.join("storage", slug)
+            os.makedirs(storage_dir, exist_ok=True)
+            filepath = os.path.join(storage_dir, filename)
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(contract_file.file, buffer)
+            tenant.contract_signed_url = filepath
+            tenant.contract_status = "signed"
 
-    # Status Logic
     if ativo is not None:
         is_active = str(ativo).lower() == 'true'
-        if is_active and env.get("contract_status") != "signed":
-            # If trying to activate but no signed contract
+        if is_active and tenant.contract_status != "signed":
             raise HTTPException(status_code=400, detail="Não é possível ativar o ambiente sem um contrato assinado.")
-        env["ativo"] = is_active
+        tenant.active = is_active
 
-    ambientes[env_idx] = env
-    write_sheet("ambientes", "ambientes", ambientes)
+    db.commit()
+    db.refresh(tenant)
     
-    return Environment(**env)
+    return Environment(
+        id=str(tenant.id),
+        slug=tenant.slug,
+        nome_empresa=tenant.name,
+        cnpj=tenant.document or "",
+        endereco=tenant.address or "",
+        nicho_id=str(tenant.niche_id) if tenant.niche_id else "",
+        logo_url=tenant.logo_url,
+        ativo=tenant.active,
+        modulos_habilitados=json.loads(modulos_habilitados) if modulos_habilitados else []
+    )
 
 @router.delete("/ambientes/{slug}")
-async def delete_ambiente(slug: str, current_user: TokenData = Depends(get_current_master)):
-    ambientes = read_sheet("ambientes", "ambientes")
-    env_idx = next((i for i, a in enumerate(ambientes) if a["slug"] == slug), -1)
-    if env_idx == -1: raise HTTPException(status_code=404)
-    env = ambientes[env_idx]
-    excel_path = os.path.join("data", f"{slug}.xlsx")
-    if os.path.exists(excel_path): os.remove(excel_path)
-    ambientes.pop(env_idx)
-    write_sheet("ambientes", "ambientes", ambientes)
-    return {"message": f"Ambiente '{env.get('nome_empresa', slug)}' excluído"}
+async def delete_ambiente(slug: str, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_master)):
+    tenant = db.query(Tenant).filter(Tenant.slug == slug).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    db.delete(tenant)
+    db.commit()
+    return {"message": f"Ambiente '{tenant.name}' excluído"}

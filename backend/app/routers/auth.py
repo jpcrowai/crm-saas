@@ -36,7 +36,8 @@ async def select_tenant(payload: SelectTenant, current_user: TokenData = Depends
         data={
             "sub": current_user.email,
             "role_global": "master",
-            "tenant_slug": payload.tenant_slug
+            "tenant_slug": payload.tenant_slug,
+            "tenant_id": str(tenant_obj.id)
         }
     )
     return {"access_token": access_token, "token_type": "bearer"}
@@ -55,7 +56,8 @@ async def login_tenant(user_in: TenantLogin, db: Session = Depends(get_db)):
         data={
             "sub": user["email"],
             "role_local": user.get("role", "user"),
-            "tenant_slug": user_in.tenant_slug
+            "tenant_slug": user_in.tenant_slug,
+            "tenant_id": user.get("tenant_id")
         }
     )
     return {"access_token": access_token, "token_type": "bearer"}

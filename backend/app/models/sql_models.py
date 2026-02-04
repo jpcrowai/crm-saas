@@ -6,7 +6,7 @@ import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
 def generate_uuid():
-    return str(uuid.uuid4())
+    return uuid.uuid4()
 
 class Tenant(Base):
     __tablename__ = "tenants"
@@ -87,7 +87,7 @@ class Customer(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     email = Column(String)
     phone = Column(String)
@@ -106,7 +106,7 @@ class Product(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     description = Column(Text)
     price = Column(Numeric(12, 2), default=0.00)
@@ -122,7 +122,7 @@ class Plan(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     description = Column(Text)
     base_price = Column(Numeric(12, 2), nullable=False)
@@ -155,7 +155,7 @@ class FinanceCategory(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     type = Column(String, nullable=False) # entrada, saida, ambos
     active = Column(Boolean, default=True)
@@ -168,7 +168,7 @@ class FinanceEntry(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads.id", ondelete="SET NULL"), nullable=True)
     category_id = Column(UUID(as_uuid=True), ForeignKey("public.finance_categories.id", ondelete="SET NULL"), nullable=True)
     
@@ -197,7 +197,7 @@ class PipelineStage(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     color = Column(String, default="#000000")
     order_index = Column(Integer, default=0, nullable=False)
@@ -212,7 +212,7 @@ class Subscription(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     customer_id = Column(UUID(as_uuid=True), ForeignKey("public.customers.id", ondelete="RESTRICT"), nullable=False)
     plan_id = Column(UUID(as_uuid=True), ForeignKey("public.plans.id", ondelete="SET NULL"), nullable=True)
     
@@ -236,7 +236,7 @@ class Integration(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     provider = Column(String, nullable=False)
     credentials = Column(JSON)
     active = Column(Boolean, default=False)
@@ -252,7 +252,7 @@ class Notification(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=True)
     title = Column(String, nullable=False)
     message = Column(Text, nullable=False)
@@ -270,7 +270,7 @@ class Appointment(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("crm.tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     customer_id = Column(UUID(as_uuid=True), ForeignKey("public.customers.id", ondelete="SET NULL"), nullable=True)
     lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads.id", ondelete="SET NULL"), nullable=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="SET NULL"), nullable=True)

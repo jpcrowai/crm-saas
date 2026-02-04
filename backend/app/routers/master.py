@@ -14,7 +14,7 @@ from app.services import storage_service
 
 from datetime import datetime
 from fpdf import FPDF
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 router = APIRouter(prefix="/master", tags=["master"])
 
@@ -137,7 +137,7 @@ def generate_environment_contract_pdf(env_data: dict) -> str:
     pdf.rect(0, 275, 210, 25, 'F')
     
     # Upload PDF to Supabase Storage
-    pdf_content = pdf.output(dest='S').encode('latin1')  # Get PDF as bytes
+    pdf_content = pdf.output(dest='S')  # Get PDF as bytearray (no need to encode)
     filename = f"contrato_ambiente_{env_data['slug']}.pdf"
     
     try:
@@ -167,6 +167,9 @@ async def get_environment_contract(slug: str, db: Session = Depends(get_db), cur
     # If signed exists, return it, otherwise return generated
     pdf_path = tenant.contract_generated_url
     download_name = f"contrato_licenciamento_{slug}.pdf"
+
+    if pdf_path and (pdf_path.startswith("http://") or pdf_path.startswith("https://")):
+        return RedirectResponse(url=pdf_path)
 
     if not pdf_path or not os.path.exists(pdf_path):
         # Regenerate if missing

@@ -55,7 +55,7 @@ def authenticate_tenant_user(db: Session, tenant_slug: str, email: str, password
     if not verify_password(password, user.password_hash):
         return None
         
-    return {"email": user.email, "role": user.role}
+    return {"email": user.email, "role": user.role, "tenant_id": str(tenant.id)}
 
 def get_tenant_by_slug(db: Session, tenant_slug: str, allow_inactive: bool = False):
     tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()

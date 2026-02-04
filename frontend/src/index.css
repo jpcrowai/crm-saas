@@ -4,7 +4,7 @@
 
 /* Conteúdo principal (área branca do app) */
 .app-content {
-  background: var(--gray-50);
+  background: var(--navy-900);
   min-height: 100%;
 }
 

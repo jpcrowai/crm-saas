@@ -211,12 +211,12 @@ const Plans = () => {
 
             {showModal && (
                 <div className="modal-overlay">
-                    <div className="card" style={{ width: '640px', padding: '0', overflow: 'hidden' }}>
+                    <div className="card-dark" style={{ maxWidth: '640px', width: '90%', maxHeight: '90vh', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                         <div className="modal-header-luxury">
                             <h2>{editingPlan ? 'Editar Plano' : 'Novo Pacote'}</h2>
                             <button onClick={() => setShowModal(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
                         </div>
-                        <form onSubmit={handleSubmit} style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <form onSubmit={handleSubmit} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', overflowY: 'auto' }}>
                             <div className="form-group-luxury">
                                 <label>Nome do Plano</label>
                                 <input
@@ -268,57 +268,55 @@ const Plans = () => {
                                     maxHeight: '250px',
                                     overflowY: 'auto',
                                     padding: '1rem',
-                                    background: '#f1f5f9',
-                                    borderRadius: '12px'
+                                    background: 'rgba(255,255,255,0.05)',
+                                    borderRadius: '12px',
+                                    border: '1px solid rgba(255,255,255,0.1)'
                                 }}>
                                     {items.map(product => {
                                         const selected = formData.items.find(it => it.product_id === product.id);
                                         return (
-                                            <div key={product.id} style={{
-                                                background: selected ? '#fff' : 'transparent',
-                                                padding: '1rem',
-                                                borderRadius: '8px',
-                                                border: selected ? '2px solid var(--gold-400)' : '1px solid #cbd5e1'
-                                            }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1 }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={!!selected}
-                                                            onChange={() => handleToggleItem(product)}
-                                                        />
-                                                        <span style={{ fontWeight: 700 }}>{product.name}</span>
-                                                    </label>
-                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                        R$ {parseFloat(product.price).toLocaleString('pt-BR')}
-                                                    </span>
-                                                </div>
-
-                                                {selected && (
-                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginTop: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '6px' }}>
-                                                        <div>
-                                                            <label style={{ fontSize: '0.7rem', fontWeight: 800 }}>QTD</label>
-                                                            <input
-                                                                type="number" min="1"
-                                                                value={selected.quantity}
-                                                                onChange={(e) => updateItemDetail(product.id, 'quantity', e.target.value)}
-                                                                style={{ width: '100%', padding: '0.4rem' }}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label style={{ fontSize: '0.7rem', fontWeight: 800 }}>FREQUÊNCIA</label>
-                                                            <select
-                                                                value={selected.frequency}
-                                                                onChange={(e) => updateItemDetail(product.id, 'frequency', e.target.value)}
-                                                                style={{ width: '100%', padding: '0.4rem' }}
-                                                            >
-                                                                <option value="monthly">Mensal</option>
-                                                                <option value="weekly">Semanal</option>
-                                                                <option value="once">Única</option>
-                                                            </select>
-                                                        </div>
+                                            <div key={product.id} className={`selection-card ${selected ? 'selected' : ''}`} onClick={() => handleToggleItem(product)}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!selected}
+                                                    onChange={() => { }} // Managed by parent click
+                                                />
+                                                <div className="selection-card-content">
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{product.name}</span>
+                                                        <span style={{ fontSize: '0.8rem', color: 'var(--gold-400)', fontWeight: 800 }}>
+                                                            R$ {parseFloat(product.price).toLocaleString('pt-BR')}
+                                                        </span>
                                                     </div>
-                                                )}
+
+                                                    {selected && (
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginTop: '1rem', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }} onClick={(e) => e.stopPropagation()}>
+                                                            <div>
+                                                                <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gold-400)', marginBottom: '4px' }}>QTD</label>
+                                                                <input
+                                                                    type="number" min="1"
+                                                                    className="input-premium"
+                                                                    value={selected.quantity}
+                                                                    onChange={(e) => updateItemDetail(product.id, 'quantity', e.target.value)}
+                                                                    style={{ padding: '0.4rem' }}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gold-400)', marginBottom: '4px' }}>FREQUÊNCIA</label>
+                                                                <select
+                                                                    className="input-premium"
+                                                                    value={selected.frequency}
+                                                                    onChange={(e) => updateItemDetail(product.id, 'frequency', e.target.value)}
+                                                                    style={{ padding: '0.4rem' }}
+                                                                >
+                                                                    <option value="monthly">Mensal</option>
+                                                                    <option value="weekly">Semanal</option>
+                                                                    <option value="once">Única</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -326,7 +324,7 @@ const Plans = () => {
                             </div>
 
                             <footer style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Cancelar</button>
+                                <button type="button" className="btn-secondary" style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }} onClick={() => setShowModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn-primary" style={{ flex: 2 }} disabled={loading}>
                                     {loading ? 'Processando...' : (
                                         <>

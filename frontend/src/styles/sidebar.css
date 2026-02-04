@@ -100,6 +100,7 @@
 .sidebar-footer {
   padding: 1.5rem;
   border-top: 1px solid var(--navy-700);
+  background: var(--navy-800);
 }
 
 .user-role {
@@ -115,16 +116,15 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.05);
   color: var(--gray-400);
-  border: 1px solid var(--navy-700);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0.6rem 1rem;
   border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.2s;
   justify-content: center;
-  /* Centered when collapsed if needed, but flex handles it */
 }
 
 .sidebar.collapsed .logout-btn {
@@ -134,7 +134,7 @@
 .logout-btn:hover {
   border-color: var(--gold-500);
   color: var(--gold-400);
-  background: rgba(212, 175, 55, 0.05);
+  background: rgba(212, 175, 55, 0.1);
 }
 
 /* Alignment fixes for collapsed state */

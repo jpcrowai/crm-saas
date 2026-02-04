@@ -11,9 +11,16 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    # Fallback to a placeholder or error if not set
     print("WARNING: DATABASE_URL not set in .env")
     DATABASE_URL = "postgresql://user:password@localhost/dbname"
+
+if DATABASE_URL:
+    try:
+        from urllib.parse import urlparse
+        p = urlparse(DATABASE_URL)
+        print(f"DEBUG: Connecting to {p.hostname}:{p.port} as {p.username}")
+    except:
+        pass
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

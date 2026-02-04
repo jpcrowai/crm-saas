@@ -11,6 +11,7 @@ class TokenData(BaseModel):
     email: Optional[str] = None
     role_global: Optional[str] = None
     tenant_slug: Optional[str] = None
+    tenant_id: Optional[str] = None
     role_local: Optional[str] = None
 
 class MasterLogin(BaseModel):

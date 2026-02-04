@@ -21,11 +21,13 @@ async def get_current_user_token_data(token: str = Depends(oauth2_scheme)):
         role_global = payload.get("role_global")
         tenant_slug = payload.get("tenant_slug")
         role_local = payload.get("role_local")
+        tenant_id = payload.get("tenant_id")
         
         token_data = TokenData(
             email=email, 
             role_global=role_global,
             tenant_slug=tenant_slug,
+            tenant_id=tenant_id,
             role_local=role_local
         )
     except JWTError:

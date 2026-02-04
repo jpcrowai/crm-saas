@@ -62,11 +62,32 @@ body,
 }
 
 body {
-  background-color: var(--bg-app);
-  color: var(--text-main);
+  background-color: var(--navy-950);
+  color: var(--text-on-dark);
   font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* CUSTOM SCROLLBARS - Premium Dark Style */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--navy-950);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--navy-700);
+  border-radius: 5px;
+  border: 2px solid var(--navy-950);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-500);
 }
 
 button,
@@ -222,6 +243,94 @@ label {
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-md);
+}
+
+.card-dark {
+  background: var(--navy-900);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-premium);
+  color: var(--white);
+}
+
+.card-dark label {
+  color: var(--gold-400);
+}
+
+.card-dark .input-premium {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--white) !important;
+}
+
+.card-dark .input-premium:focus {
+  border-color: var(--gold-500) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.card-dark .form-section-title {
+  color: var(--gold-400);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* SELECTION COMPONENTS (Standardized) */
+.selection-card {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 1rem !important;
+  padding: 1rem !important;
+  border-radius: var(--radius-md) !important;
+  border: 2px solid var(--border-soft) !important;
+  background: var(--white) !important;
+  cursor: pointer !important;
+  transition: var(--transition) !important;
+  position: relative;
+  width: 100%;
+}
+
+.selection-card:hover {
+  border-color: var(--gold-400) !important;
+  background: var(--gold-50) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.selection-card.selected {
+  border-color: var(--gold-500) !important;
+  background: var(--gold-50) !important;
+  box-shadow: var(--shadow-md);
+}
+
+.selection-card input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  margin-top: 2px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+
+.selection-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dark variant for Selection Card */
+.card-dark .selection-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--white) !important;
+}
+
+.card-dark .selection-card:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: var(--gold-400) !important;
+}
+
+.card-dark .selection-card.selected {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: var(--gold-500) !important;
 }
 
 /* PREMIUM ICON BUTTONS */

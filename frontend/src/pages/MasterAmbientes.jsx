@@ -266,12 +266,14 @@ const MasterAmbientes = () => {
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Controle granular de acesso do tenant.</p>
                   <div className="modules-selector-grid">
                     {AVAILABLE_MODULES.map(m => (
-                      <label key={m.id} className={`module-option ${newEnv.modulos_habilitados.includes(m.id) ? 'selected' : ''}`}>
+                      <label key={m.id} className={`selection-card ${newEnv.modulos_habilitados.includes(m.id) ? 'selected' : ''}`}>
                         <input type="checkbox" checked={newEnv.modulos_habilitados.includes(m.id)} onChange={e => {
                           const mods = e.target.checked ? [...newEnv.modulos_habilitados, m.id] : newEnv.modulos_habilitados.filter(x => x !== m.id);
                           setNewEnv({ ...newEnv, modulos_habilitados: mods });
                         }} />
-                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{m.label}</span>
+                        <div className="selection-card-content">
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{m.label}</span>
+                        </div>
                       </label>
                     ))}
                   </div>
@@ -375,12 +377,14 @@ const MasterAmbientes = () => {
                   <h4 className="form-section-title">Permissões de Acesso</h4>
                   <div className="modules-selector-grid">
                     {AVAILABLE_MODULES.map(m => (
-                      <label key={m.id} className={`module-option ${editingEnv.modulos_habilitados.includes(m.id) ? 'selected' : ''}`}>
+                      <label key={m.id} className={`selection-card ${editingEnv.modulos_habilitados.includes(m.id) ? 'selected' : ''}`}>
                         <input type="checkbox" checked={editingEnv.modulos_habilitados.includes(m.id)} onChange={e => {
                           const mods = e.target.checked ? [...editingEnv.modulos_habilitados, m.id] : editingEnv.modulos_habilitados.filter(x => x !== m.id);
                           setEditingEnv({ ...editingEnv, modulos_habilitados: mods });
                         }} />
-                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{m.label}</span>
+                        <div className="selection-card-content">
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{m.label}</span>
+                        </div>
                       </label>
                     ))}
                   </div>

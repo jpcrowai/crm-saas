@@ -98,10 +98,10 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
           {!collapsed && inTenantContext && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <span className="logo-text" style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--navy-900)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              <span className="logo-text" style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--white)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                 {user?.nome_empresa || user?.tenant_slug}
               </span>
-              <span style={{ fontSize: '0.65rem', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>Ambiente</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--gold-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>Ambiente</span>
             </div>
           )}
         </div>
@@ -136,23 +136,23 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           <div style={{
             margin: '0 1rem 1.5rem',
             padding: '1rem',
-            background: 'var(--gold-50)',
+            background: 'rgba(255, 255, 255, 0.05)',
             borderRadius: '12px',
-            border: '1px solid var(--gold-400)',
+            border: '1px solid var(--gold-500)',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.5rem'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--gold-700)', fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--gold-400)', fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '4px' }}>
               <Shield size={14} /> Sessão Master
             </div>
             <div style={{ fontSize: '0.75rem' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.6rem', textTransform: 'uppercase' }}>Nicho</div>
-              <div style={{ fontWeight: 700, color: 'var(--navy-900)' }}>{user?.nicho_nome || 'Não definido'}</div>
+              <div style={{ color: 'var(--gray-400)', fontSize: '0.6rem', textTransform: 'uppercase' }}>Nicho</div>
+              <div style={{ fontWeight: 700, color: 'var(--white)' }}>{user?.nicho_nome || 'Não definido'}</div>
             </div>
             <div style={{ fontSize: '0.75rem' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.6rem', textTransform: 'uppercase' }}>Plano / Status</div>
-              <div style={{ fontWeight: 700, color: 'var(--navy-900)' }}>
+              <div style={{ color: 'var(--gray-400)', fontSize: '0.6rem', textTransform: 'uppercase' }}>Plano / Status</div>
+              <div style={{ fontWeight: 700, color: 'var(--white)' }}>
                 {user?.plan?.toUpperCase()} | <span style={{ color: user?.payment_status === 'paid' ? 'var(--success)' : 'var(--error)' }}>{user?.payment_status?.toUpperCase()}</span>
               </div>
             </div>

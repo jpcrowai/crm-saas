@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, ChevronRight, ChevronLeft, CreditCard, ShoppingBag, User } from 'lucide-react';
+import { X, XCircle, Check, ChevronRight, ChevronLeft, CreditCard, ShoppingBag, User } from 'lucide-react';
 import { createFinance, getLeads } from '../services/api';
 
 const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData }) => {
@@ -47,29 +47,29 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
             case 1:
                 return (
                     <div className="wizard-step">
-                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Etapa 1: Tipo e Origem</h4>
+                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem', color: 'var(--gold-400)' }}>Etapa 1: Tipo e Origem</h4>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                             <button
-                                className={`card ${formData.tipo === 'receita' ? 'active-border' : ''}`}
+                                className={`selection-card ${formData.tipo === 'receita' ? 'selected' : ''}`}
                                 onClick={() => setFormData({ ...formData, tipo: 'receita' })}
-                                style={{ padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: formData.tipo === 'receita' ? '#f0fdf4' : 'white' }}
+                                style={{ padding: '1.5rem', textAlign: 'center', cursor: 'pointer', flexDirection: 'column', alignItems: 'center' }}
                                 type="button"
                             >
                                 <ArrowUpCircle color="#10b981" style={{ margin: '0 auto 0.5rem' }} />
-                                <div style={{ fontWeight: 600 }}>Receita</div>
+                                <div style={{ fontWeight: 800 }}>Receita</div>
                             </button>
                             <button
-                                className={`card ${formData.tipo === 'despesa' ? 'active-border' : ''}`}
+                                className={`selection-card ${formData.tipo === 'despesa' ? 'selected' : ''}`}
                                 onClick={() => setFormData({ ...formData, tipo: 'despesa' })}
-                                style={{ padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: formData.tipo === 'despesa' ? '#fef2f2' : 'white' }}
+                                style={{ padding: '1.5rem', textAlign: 'center', cursor: 'pointer', flexDirection: 'column', alignItems: 'center' }}
                                 type="button"
                             >
                                 <ArrowDownCircle color="#ef4444" style={{ margin: '0 auto 0.5rem' }} />
-                                <div style={{ fontWeight: 600 }}>Despesa</div>
+                                <div style={{ fontWeight: 800 }}>Despesa</div>
                             </button>
                         </div>
 
-                        <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Origem do Lançamento</label>
+                        <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Origem do Lançamento</label>
                         <select
                             className="input-premium"
                             style={{ width: '100%', marginBottom: '1rem' }}
@@ -81,7 +81,7 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                         </select>
 
                         <div className="form-group">
-                            <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Selecionar Venda/Lead</label>
+                            <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Selecionar Venda/Lead</label>
                             <select
                                 className="input-premium"
                                 value={formData.lead_id}
@@ -106,29 +106,29 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
             case 2:
                 return (
                     <div className="wizard-step">
-                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Etapa 2: Valores e Vencimento</h4>
+                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem', color: 'var(--gold-400)' }}>Etapa 2: Valores e Vencimento</h4>
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             <div className="form-group">
-                                <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Descrição</label>
+                                <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Descrição</label>
                                 <input className="input-premium" value={formData.descricao} onChange={e => setFormData({ ...formData, descricao: e.target.value })} placeholder="Ex: Pagamento Fornecedor X" />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="form-group">
-                                    <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Valor Total (R$)</label>
+                                    <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Valor Total (R$)</label>
                                     <input className="input-premium" type="number" step="0.01" value={formData.valor} onChange={e => setFormData({ ...formData, valor: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Número de Parcelas</label>
+                                    <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Número de Parcelas</label>
                                     <input className="input-premium" type="number" min="1" value={formData.parcelas} onChange={e => setFormData({ ...formData, parcelas: e.target.value })} />
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="form-group">
-                                    <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Data de Vencimento</label>
+                                    <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Data de Vencimento</label>
                                     <input className="input-premium" type="date" value={formData.data_vencimento} onChange={e => setFormData({ ...formData, data_vencimento: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Forma de Pagamento</label>
+                                    <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Forma de Pagamento</label>
                                     <select className="input-premium" value={formData.forma_pagamento} onChange={e => setFormData({ ...formData, forma_pagamento: e.target.value })}>
                                         <option value="">Selecione...</option>
                                         {(methods || []).map(m => <option key={m.id} value={m.nome}>{m.nome}</option>)}
@@ -141,10 +141,10 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
             case 3:
                 return (
                     <div className="wizard-step">
-                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Etapa 3: Categorização</h4>
+                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem', color: 'var(--gold-400)' }}>Etapa 3: Categorização</h4>
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             <div>
-                                <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Categoria Financeira</label>
+                                <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Categoria Financeira</label>
                                 <select className="input-premium" style={{ width: '100%' }} value={formData.categoria} onChange={e => setFormData({ ...formData, categoria: e.target.value })}>
                                     <option value="">Selecione...</option>
                                     {(categories || []).filter(c => c.tipo === (formData.tipo === 'receita' ? 'entrada' : 'saida') || c.tipo === 'ambos').map(c => (
@@ -153,11 +153,11 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                                 </select>
                             </div>
                             <div>
-                                <label className="label-premium" style={{ color: 'var(--navy-800)' }}>Observações Internas</label>
+                                <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Observações Internas</label>
                                 <textarea className="input-premium" style={{ width: '100%', height: '100px' }} value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} />
                             </div>
-                            <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white', marginBottom: 0 }}>
                                     <input
                                         type="checkbox"
                                         checked={formData.status === 'pago'}
@@ -172,40 +172,40 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
             case 4:
                 return (
                     <div className="wizard-step">
-                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Etapa 4: Resumo Final</h4>
-                        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem', color: 'var(--gold-400)' }}>Etapa 4: Resumo Final</h4>
+                        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', rowGap: '1.5rem' }}>
                                 <div>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Tipo/Descrição</p>
-                                    <p style={{ margin: 0, fontWeight: 700 }}>{formData.tipo.toUpperCase()} - {formData.descricao}</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Tipo/Descrição</p>
+                                    <p style={{ margin: 0, fontWeight: 700, color: 'white' }}>{formData.tipo.toUpperCase()} - {formData.descricao}</p>
                                 </div>
                                 <div>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Valor Total</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Valor Total</p>
                                     <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem', color: formData.tipo === 'receita' ? '#10b981' : '#ef4444' }}>
                                         R$ {parseFloat(formData.valor || 0).toLocaleString('pt-BR')}
                                     </p>
                                 </div>
                                 <div>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Parcelamento</p>
-                                    <p style={{ margin: 0, fontWeight: 600 }}>{formData.parcelas}x de R$ {(parseFloat(formData.valor || 0) / parseInt(formData.parcelas || 1)).toLocaleString('pt-BR')}</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Parcelamento</p>
+                                    <p style={{ margin: 0, fontWeight: 600, color: 'white' }}>{formData.parcelas}x de R$ {(parseFloat(formData.valor || 0) / parseInt(formData.parcelas || 1)).toLocaleString('pt-BR')}</p>
                                 </div>
                                 <div>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Vencimento Inicial</p>
-                                    <p style={{ margin: 0, fontWeight: 600 }}>{new Date(formData.data_vencimento).toLocaleDateString('pt-BR')}</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Vencimento Inicial</p>
+                                    <p style={{ margin: 0, fontWeight: 600, color: 'white' }}>{new Date(formData.data_vencimento).toLocaleDateString('pt-BR')}</p>
                                 </div>
                                 <div>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Categoria / Pagamento</p>
-                                    <p style={{ margin: 0, fontWeight: 600 }}>{formData.categoria || 'Não definida'} • {formData.forma_pagamento || '-'}</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Categoria / Pagamento</p>
+                                    <p style={{ margin: 0, fontWeight: 600, color: 'white' }}>{formData.categoria || 'Não definida'} • {formData.forma_pagamento || '-'}</p>
                                 </div>
                                 <div>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Status</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--gold-400)' }}>Status</p>
                                     <span className={`badge ${formData.status === 'pago' ? 'badge-active' : 'badge-inactive'}`}>
                                         {formData.status.toUpperCase()}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '1.5rem', textAlign: 'center' }}>
+                        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '1.5rem', textAlign: 'center' }}>
                             Confira as informações antes de finalizar. {formData.parcelas > 1 && `Serão gerados ${formData.parcelas} lançamentos automáticos.`}
                         </p>
                     </div>
@@ -216,27 +216,27 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
 
     return (
         <div className="modal-overlay">
-            <div className="card" style={{ width: '600px', maxWidth: '95%', padding: 0, overflow: 'hidden' }}>
-                <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0 }}>Novo Lançamento</h3>
-                    <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X /></button>
+            <div className="card-dark" style={{ width: '600px', maxWidth: '95%', padding: 0, overflow: 'hidden', border: '1px solid var(--gold-500)' }}>
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, color: 'var(--gold-400)', fontWeight: 800 }}>Novo Lançamento</h3>
+                    <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><XCircle /></button>
                 </div>
 
                 {/* Progress Bar */}
-                <div style={{ display: 'flex', height: '4px', background: '#f1f5f9' }}>
-                    <div style={{ width: `${(step / 4) * 100}%`, background: 'var(--primary-color)', transition: 'width 0.3s ease' }}></div>
+                <div style={{ display: 'flex', height: '4px', background: 'rgba(255,255,255,0.05)' }}>
+                    <div style={{ width: `${(step / 4) * 100}%`, background: 'var(--gold-500)', transition: 'width 0.3s ease' }}></div>
                 </div>
 
                 <div style={{ padding: '2rem' }}>
                     {renderStep()}
                 </div>
 
-                <div style={{ padding: '1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.1)' }}>
                     <button
                         onClick={handleBack}
                         disabled={step === 1}
                         className="btn-secondary"
-                        style={{ visibility: step === 1 ? 'hidden' : 'visible' }}
+                        style={{ visibility: step === 1 ? 'hidden' : 'visible', background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
                     >
                         <ChevronLeft size={18} /> Voltar
                     </button>
@@ -246,7 +246,7 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                             Continuar <ChevronRight size={18} />
                         </button>
                     ) : (
-                        <button onClick={handleSubmit} className="btn-primary" style={{ background: '#10b981' }}>
+                        <button onClick={handleSubmit} className="btn-primary" style={{ background: 'var(--success)', border: 'none' }}>
                             <Check size={18} /> Confirmar e Salvar
                         </button>
                     )}

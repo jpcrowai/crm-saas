@@ -1,0 +1,444 @@
+﻿WARNING: DATABASE_URL not set in .env
+WARNING: SUPABASE_URL or SUPABASE_SERVICE_KEY not set in .env
+[
+  {
+    "path": "/openapi.json",
+    "methods": [
+      "HEAD",
+      "GET"
+    ]
+  },
+  {
+    "path": "/docs",
+    "methods": [
+      "HEAD",
+      "GET"
+    ]
+  },
+  {
+    "path": "/docs/oauth2-redirect",
+    "methods": [
+      "HEAD",
+      "GET"
+    ]
+  },
+  {
+    "path": "/redoc",
+    "methods": [
+      "HEAD",
+      "GET"
+    ]
+  },
+  {
+    "path": "/static",
+    "methods": []
+  },
+  {
+    "path": "/auth/login-master",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/auth/select-tenant",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/auth/login-tenant",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/auth/me",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/auth/exit-tenant",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/auth/change-password",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/master/ambientes/{slug}/contract",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/master/ambientes",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/master/ambientes",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/master/ambientes/{slug}",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/master/ambientes/{slug}",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "path": "/tenant/users",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/users",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/niche-config",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/pipeline-stages",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/leads",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/leads",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/leads/{lead_id}",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/tenant/stats",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/admin-stats",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/revenue-chart",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/leads/{lead_id}/history",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/leads/{lead_id}/history",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/leads/{lead_id}/tasks",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/leads/{lead_id}/tasks",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/tasks/{task_id}",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/tenant/leads/import-excel",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/customers",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/customers",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/customers/{cust_id}",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "path": "/tenant/reports",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/niches/",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/niches/",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/niches/{niche_id}",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/niches/{niche_id}",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "path": "/tenant/appointments/",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/appointments/",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/appointments/auth-url",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/appointments/callback",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/appointments/calendar-info",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/appointments/config",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/finances",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/finances",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/finances/{finance_id}",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/tenant/finances/{finance_id}",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "path": "/tenant/categories",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/categories",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/categories/{cat_id}",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/tenant/categories/{cat_id}",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "path": "/tenant/payment-methods",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/reports/cashflow",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/export",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/products",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/products",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/products/{product_id}",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/tenant/products/{product_id}",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "path": "/tenant/products/template",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/products/import",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/plans",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/plans",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/plans/{plan_id}",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/tenant/subscriptions",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/tenant/subscriptions",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/subscriptions/{sub_id}/sign",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/tenant/subscriptions/{sub_id}",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/tenant/subscriptions/{sub_id}/upload_signed_contract",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/tenant/subscriptions/{sub_id}/contract",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/",
+    "methods": [
+      "GET"
+    ]
+  }
+]

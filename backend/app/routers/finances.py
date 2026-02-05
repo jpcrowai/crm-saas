@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import get_current_tenant_user
 from app.models.schemas import TokenData
-from app.models.sql_models import FinanceEntry as SQLFinanceEntry, FinanceCategory as SQLFinanceCategory
+from app.models.sql_models import FinanceEntry as SQLFinanceEntry, FinanceCategory as SQLFinanceCategory, PaymentMethod as SQLPaymentMethod
 
 router = APIRouter(prefix="/tenant", tags=["finances"])
 
@@ -28,6 +28,8 @@ class FinanceEntry(BaseModel):
     origem: str  # venda / avulso (origin)
     lead_id: Optional[str] = None
     customer_id: Optional[str] = None
+    service_id: Optional[str] = None
+    appointment_id: Optional[str] = None
     categoria: Optional[str] = None  # category_id
     forma_pagamento: Optional[str] = None  # payment_method
     parcela: int = 1  # installment_number
@@ -50,6 +52,8 @@ class FinanceCreate(BaseModel):
     origem: str = "avulso"
     lead_id: Optional[str] = None
     customer_id: Optional[str] = None
+    service_id: Optional[str] = None
+    appointment_id: Optional[str] = None
     categoria: Optional[str] = None
     forma_pagamento: Optional[str] = None
     parcelas: int = 1
@@ -72,23 +76,31 @@ async def get_finances(
     current_user: TokenData = Depends(get_current_tenant_user),
     db: Session = Depends(get_db)
 ):
-    entries = db.query(SQLFinanceEntry).filter(
+    # Join with categories to get names
+    query = db.query(
+        SQLFinanceEntry, 
+        SQLFinanceCategory.name.label("category_name")
+    ).outerjoin(
+        SQLFinanceCategory, SQLFinanceEntry.category_id == SQLFinanceCategory.id
+    ).filter(
         SQLFinanceEntry.tenant_id == current_user.tenant_id
-    ).order_by(SQLFinanceEntry.due_date.desc()).all()
+    ).order_by(SQLFinanceEntry.due_date.desc())
+    
+    entries_with_names = query.all()
     
     # Auto-update overdue statuses
     today = date.today()
-    for entry in entries:
+    for entry, cat_name in entries_with_names:
         if entry.status == "pendente" and entry.due_date < today:
             entry.status = "atrasado"
     db.commit()
     
     result = []
-    for entry in entries:
+    for entry, cat_name in entries_with_names:
         result.append({
             "id": str(entry.id),
             "data_vencimento": entry.due_date.isoformat(),
-            "data_pagamento": None,  # Not stored in DB yet
+            "data_pagamento": None,
             "data_competencia": entry.due_date.isoformat(),
             "descricao": entry.description,
             "tipo": entry.type,
@@ -96,8 +108,11 @@ async def get_finances(
             "status": entry.status,
             "origem": entry.origin,
             "lead_id": str(entry.lead_id) if entry.lead_id else None,
-            "customer_id": None,
+            "customer_id": str(entry.customer_id) if entry.customer_id else None,
+            "service_id": str(entry.service_id) if entry.service_id else None,
+            "appointment_id": str(entry.appointment_id) if entry.appointment_id else None,
             "categoria": str(entry.category_id) if entry.category_id else None,
+            "categoria_nome": cat_name,
             "forma_pagamento": entry.payment_method,
             "parcela": entry.installment_number,
             "total_parcelas": entry.total_installments,
@@ -309,17 +324,67 @@ async def delete_category(
     return {"message": "Deletado"}
 
 
-# --- Payment Methods (simple list, not stored in DB) ---
-
+# --- Payment Methods CRUD ---
 @router.get("/payment-methods")
-async def get_payment_methods(current_user: TokenData = Depends(get_current_tenant_user)):
+async def get_payment_methods(
+    current_user: TokenData = Depends(get_current_tenant_user),
+    db: Session = Depends(get_db)
+):
+    methods = db.query(SQLPaymentMethod).filter(
+        SQLPaymentMethod.tenant_id == current_user.tenant_id,
+        SQLPaymentMethod.active == True
+    ).all()
+    
+    if not methods:
+        # Default seeds if none exist for this tenant
+        defaults = ["Dinheiro", "PIX", "Cartão de Crédito", "Transferência"]
+        for d in defaults:
+            new_m = SQLPaymentMethod(tenant_id=current_user.tenant_id, name=d)
+            db.add(new_m)
+        db.commit()
+        methods = db.query(SQLPaymentMethod).filter(
+            SQLPaymentMethod.tenant_id == current_user.tenant_id,
+            SQLPaymentMethod.active == True
+        ).all()
+        
     return [
-        {"id": "1", "nome": "PIX", "ativo": True},
-        {"id": "2", "nome": "Dinheiro", "ativo": True},
-        {"id": "3", "nome": "Cartão de Crédito", "ativo": True},
-        {"id": "4", "nome": "Cartão de Débito", "ativo": True},
-        {"id": "5", "nome": "Boleto", "ativo": True}
+        {"id": str(m.id), "nome": m.name, "ativo": m.active}
+        for m in methods
     ]
+
+
+@router.post("/payment-methods")
+async def create_payment_method(
+    payload: Dict[str, Any],
+    current_user: TokenData = Depends(get_current_tenant_user),
+    db: Session = Depends(get_db)
+):
+    new_method = SQLPaymentMethod(
+        tenant_id=current_user.tenant_id,
+        name=payload.get("nome", ""),
+        active=True
+    )
+    db.add(new_method)
+    db.commit()
+    db.refresh(new_method)
+    return {"id": str(new_method.id), "nome": new_method.name, "ativo": new_method.active}
+
+
+@router.delete("/payment-methods/{method_id}")
+async def delete_payment_method(
+    method_id: str,
+    current_user: TokenData = Depends(get_current_tenant_user),
+    db: Session = Depends(get_db)
+):
+    method = db.query(SQLPaymentMethod).filter(
+        SQLPaymentMethod.id == method_id,
+        SQLPaymentMethod.tenant_id == current_user.tenant_id
+    ).first()
+    if not method:
+        raise HTTPException(status_code=404)
+    method.active = False
+    db.commit()
+    return {"message": "Deletado"}
 
 
 # --- Reports ---

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from typing import List, Optional, Dict, Any
-import uuid
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
@@ -21,27 +20,25 @@ class Product(BaseModel):
     description: Optional[str] = ""
     price: float
     category: str = ""
-    unit: str = "unit"  # monthly, hourly, unit, package
-    status: str = "Active"  # Active / Inactive
+    duration: int = 30
+    unit: str = "unit"
+    status: str = "Active"
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
     class Config:
         from_attributes = True
 
-
 def clean_price(val):
     if val is None or pd.isna(val): return 0.0
     if isinstance(val, (int, float)): return float(val)
     if isinstance(val, str):
-        # Remove R$, dots (thousands), and replace comma with dot
         clean = val.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
         try:
             return float(clean)
         except:
             return 0.0
     return 0.0
-
 
 @router.get("/products", response_model=List[Product])
 async def get_products(
@@ -56,18 +53,18 @@ async def get_products(
     for p in products:
         result.append({
             "id": str(p.id),
-            "sku": p.name[:20],  # Using name as SKU for now (legacy compatibility)
+            "sku": p.sku if p.sku else "",
             "name": p.name,
             "description": p.description or "",
             "price": float(p.price),
-            "category": "",  # Not in SQL model
-            "unit": "unit",  # Not in SQL model
+            "category": "Service" if p.type == "service" else "Product",
+            "duration": p.duration_minutes or 30,
+            "unit": "unit",
             "status": "Active" if p.active else "Inactive",
             "created_at": p.created_at.isoformat() if p.created_at else None
         })
     
     return result
-
 
 @router.post("/products", response_model=Product)
 async def create_product(
@@ -75,20 +72,24 @@ async def create_product(
     current_user: TokenData = Depends(get_current_tenant_user),
     db: Session = Depends(get_db)
 ):
-    # Check if product with same name exists
-    existing = db.query(SQLProduct).filter(
-        SQLProduct.tenant_id == current_user.tenant_id,
-        SQLProduct.name == product.name
-    ).first()
+    if product.sku:
+        existing = db.query(SQLProduct).filter(
+            SQLProduct.tenant_id == current_user.tenant_id,
+            SQLProduct.sku == product.sku
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Product with code {product.sku} already exists")
     
-    if existing:
-        raise HTTPException(status_code=400, detail="Product with this name already exists")
-    
+    p_type = "service" if product.category.lower() == "service" else "product"
+
     new_product = SQLProduct(
         tenant_id=current_user.tenant_id,
+        sku=product.sku,
         name=product.name,
         description=product.description,
         price=product.price,
+        type=p_type,
+        duration_minutes=product.duration,
         active=(product.status == "Active")
     )
     
@@ -98,16 +99,16 @@ async def create_product(
     
     return Product(
         id=str(new_product.id),
-        sku=product.sku,
+        sku=new_product.sku or "",
         name=new_product.name,
         description=new_product.description or "",
         price=float(new_product.price),
         category=product.category,
+        duration=new_product.duration_minutes or 30,
         unit=product.unit,
         status="Active" if new_product.active else "Inactive",
         created_at=new_product.created_at.isoformat()
     )
-
 
 @router.put("/products/{product_id}", response_model=Product)
 async def update_product(
@@ -124,7 +125,8 @@ async def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    # Update fields
+    if "sku" in product_in:
+        product.sku = product_in["sku"]
     if "name" in product_in:
         product.name = product_in["name"]
     if "description" in product_in:
@@ -133,22 +135,28 @@ async def update_product(
         product.price = clean_price(product_in["price"])
     if "status" in product_in:
         product.active = (product_in["status"] == "Active")
+    if "category" in product_in:
+        product.type = "service" if product_in["category"].lower() == "service" else "product"
+    if "duration" in product_in:
+        try:
+            product.duration_minutes = int(product_in["duration"])
+        except: pass
     
     db.commit()
     db.refresh(product)
     
     return Product(
         id=str(product.id),
-        sku=product_in.get("sku", product.name[:20]),
+        sku=product.sku or "",
         name=product.name,
         description=product.description or "",
         price=float(product.price),
-        category=product_in.get("category", ""),
+        category="Service" if product.type == "service" else "Product",
+        duration=product.duration_minutes or 30,
         unit=product_in.get("unit", "unit"),
         status="Active" if product.active else "Inactive",
         created_at=product.created_at.isoformat()
     )
-
 
 @router.delete("/products/{product_id}")
 async def delete_product(
@@ -164,11 +172,10 @@ async def delete_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    db.delete(product)
+    product.active = False
     db.commit()
     
-    return {"message": "Product deleted successfully"}
-
+    return {"message": "Product deactivated successfully"}
 
 @router.get("/products/template")
 async def get_product_template(
@@ -182,18 +189,20 @@ async def get_product_template(
     data = []
     for p in products:
         data.append({
-            "Código": p.name[:20],
+            "Código": p.sku or "",
             "Nome": p.name,
             "Descrição": p.description or "",
             "Preço Unitário": float(p.price),
+            "Tipo": "Serviço" if p.type == "service" else "Produto",
+            "Duração (min)": p.duration_minutes or 30,
             "Categoria": "",
             "Unidade": "unit",
-            "Status": "Active" if p.active else "Inactive"
+            "Status": "Ativo" if p.active else "Inativo"
         })
     
     df = pd.DataFrame(data)
     if df.empty:
-        df = pd.DataFrame(columns=["Código", "Nome", "Descrição", "Preço Unitário", "Categoria", "Unidade", "Status"])
+        df = pd.DataFrame(columns=["Código", "Nome", "Descrição", "Preço Unitário", "Tipo", "Duração (min)", "Categoria", "Unidade", "Status"])
     
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -205,7 +214,6 @@ async def get_product_template(
         f.write(output.read())
         
     return FileResponse(filename, filename=filename, background=None)
-
 
 @router.post("/products/import")
 async def import_products(
@@ -220,13 +228,14 @@ async def import_products(
         contents = await file.read()
         df = pd.read_excel(BytesIO(contents))
         
-        # Robust Mapping
         mapping = {
             "sku": ["código", "codigo", "code", "id", "sku"],
             "name": ["nome", "name", "produto", "serviço", "servico"],
             "description": ["descrição", "descricao", "description", "obs"],
             "price": ["preço unitário", "preco unitario", "preço", "valor", "price"],
-            "status": ["status", "ativo", "situacao"]
+            "status": ["status", "ativo", "situacao"],
+            "type": ["tipo", "type", "categoria"],
+            "duration": ["duração", "duracao", "duration", "duração (min)"]
         }
         
         def find_col(possible_names):
@@ -244,14 +253,33 @@ async def import_products(
         
         for _, row in df.iterrows():
             try:
-                name = str(row[actual_mapping["name"]] if actual_mapping["name"] else row[actual_mapping["sku"]]).strip()
-                if not name or pd.isna(name): continue
+                name = ""
+                if actual_mapping["name"]:
+                    name = str(row[actual_mapping["name"]]).strip()
                 
-                # Check if product exists
-                existing = db.query(SQLProduct).filter(
-                    SQLProduct.tenant_id == current_user.tenant_id,
-                    SQLProduct.name == name
-                ).first()
+                sku = ""
+                if actual_mapping["sku"]:
+                    val_sku = row[actual_mapping["sku"]]
+                    if pd.notnull(val_sku):
+                        sku = str(val_sku).strip()
+                    
+                if not name and sku:
+                    name = sku
+                
+                if not name: continue
+                
+                existing = None
+                if sku:
+                    existing = db.query(SQLProduct).filter(
+                        SQLProduct.tenant_id == current_user.tenant_id,
+                        SQLProduct.sku == sku
+                    ).first()
+                
+                if not existing:
+                    existing = db.query(SQLProduct).filter(
+                        SQLProduct.tenant_id == current_user.tenant_id,
+                        SQLProduct.name == name
+                    ).first()
                 
                 price = 0.0
                 if actual_mapping["price"] and pd.notnull(row[actual_mapping["price"]]):
@@ -265,19 +293,38 @@ async def import_products(
                 if actual_mapping["status"] and pd.notnull(row[actual_mapping["status"]]):
                     status_val = str(row[actual_mapping["status"]]).lower()
                     active = status_val in ["active", "ativo", "ativa", "sim", "yes", "true", "1"]
+
+                p_type = "product"
+                if actual_mapping["type"] and pd.notnull(row[actual_mapping["type"]]):
+                    val_type = str(row[actual_mapping["type"]]).lower()
+                    if "serv" in val_type:
+                        p_type = "service"
+
+                duration = 30
+                if actual_mapping["duration"] and pd.notnull(row[actual_mapping["duration"]]):
+                    try:
+                        duration = int(float(row[actual_mapping["duration"]]))
+                    except: pass
                 
                 if existing:
+                    if sku: existing.sku = sku
+                    existing.name = name
                     existing.description = description
                     existing.price = price
                     existing.active = active
+                    existing.type = p_type
+                    existing.duration_minutes = duration
                     stats["updated"] += 1
                 else:
                     new_product = SQLProduct(
                         tenant_id=current_user.tenant_id,
+                        sku=sku,
                         name=name,
                         description=description,
                         price=price,
-                        active=active
+                        active=active,
+                        type=p_type,
+                        duration_minutes=duration
                     )
                     db.add(new_product)
                     stats["created"] += 1

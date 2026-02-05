@@ -7,6 +7,8 @@ const GoogleCallback = () => {
     const [status, setStatus] = useState("Finalizando conexão com o Google...");
     const [error, setError] = useState(null);
 
+    const called = React.useRef(false);
+
     useEffect(() => {
         const code = searchParams.get('code');
         const state = searchParams.get('state');
@@ -14,9 +16,10 @@ const GoogleCallback = () => {
 
         if (errorParam) {
             setError(`O Google retornou um erro: ${errorParam}`);
-        } else if (code) {
+        } else if (code && !called.current) {
+            called.current = true;
             handleCallback(code, state);
-        } else {
+        } else if (!code && !errorParam) {
             setError("O código de autorização não foi encontrado. Por favor, tente vincular novamente.");
         }
     }, [searchParams]);

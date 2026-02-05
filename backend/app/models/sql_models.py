@@ -26,7 +26,6 @@ class Tenant(Base):
     contract_generated_url = Column(Text)
     contract_signed_url = Column(Text)
     contract_status = Column(String, default="pending_generation")
-    active = Column(Boolean, default=True)
     modulos_habilitados = Column(JSON, default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -37,6 +36,7 @@ class Tenant(Base):
     products = relationship("Product", back_populates="tenant", cascade="all, delete")
     plans = relationship("Plan", back_populates="tenant", cascade="all, delete")
     finance_categories = relationship("FinanceCategory", back_populates="tenant", cascade="all, delete")
+    payment_methods = relationship("PaymentMethod", back_populates="tenant", cascade="all, delete")
     finance_entries = relationship("FinanceEntry", back_populates="tenant", cascade="all, delete")
     pipeline_stages = relationship("PipelineStage", back_populates="tenant", cascade="all, delete")
     integrations = relationship("Integration", back_populates="tenant", cascade="all, delete")
@@ -107,9 +107,12 @@ class Product(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
+    sku = Column(String, nullable=True)
     name = Column(String, nullable=False)
     description = Column(Text)
     price = Column(Numeric(12, 2), default=0.00)
+    type = Column(String, default="product") # product, service
+    duration_minutes = Column(Integer, default=30)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -163,6 +166,19 @@ class FinanceCategory(Base):
     tenant = relationship("Tenant", back_populates="finance_categories")
 
 
+class PaymentMethod(Base):
+    __tablename__ = "payment_methods"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    active = Column(Boolean, default=True)
+
+    tenant = relationship("Tenant", back_populates="payment_methods")
+
+
 class FinanceEntry(Base):
     __tablename__ = "finance_entries"
     __table_args__ = {'schema': 'public'}
@@ -170,6 +186,8 @@ class FinanceEntry(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads.id", ondelete="SET NULL"), nullable=True)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("public.customers.id", ondelete="SET NULL"), nullable=True)
+    service_id = Column(UUID(as_uuid=True), ForeignKey("public.products.id", ondelete="SET NULL"), nullable=True)
     category_id = Column(UUID(as_uuid=True), ForeignKey("public.finance_categories.id", ondelete="SET NULL"), nullable=True)
     
     type = Column(String, nullable=False) # receita, despesa
@@ -190,6 +208,8 @@ class FinanceEntry(Base):
 
     tenant = relationship("Tenant", back_populates="finance_entries")
     lead = relationship("Lead", back_populates="finance_entries")
+    appointment = relationship("Appointment", back_populates="finance_entries")
+    appointment_id = Column(UUID(as_uuid=True), ForeignKey("public.appointments.id", ondelete="SET NULL"), nullable=True)
 
 
 class PipelineStage(Base):
@@ -274,6 +294,19 @@ class Appointment(Base):
     customer_id = Column(UUID(as_uuid=True), ForeignKey("public.customers.id", ondelete="SET NULL"), nullable=True)
     lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads.id", ondelete="SET NULL"), nullable=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="SET NULL"), nullable=True)
+    
+    # New Service Fields
+    # Service/Product Link
+    service_id = Column(UUID(as_uuid=True), ForeignKey("public.products.id", ondelete="RESTRICT"), nullable=True)
+    service_duration_minutes = Column(Integer, nullable=False, default=30)
+    service_value = Column(Numeric(10, 2), nullable=False, default=0.00)
+    
+    # Plan Link
+    plan_id = Column(UUID(as_uuid=True), ForeignKey("public.plans.id", ondelete="SET NULL"), nullable=True)
+    
+    # Billing Status: open, covered_by_plan, paid, cancelled
+    billing_status = Column(String, default="open")
+
     title = Column(String, nullable=False)
     description = Column(Text)
     start_time = Column(DateTime(timezone=True), nullable=False)
@@ -288,6 +321,10 @@ class Appointment(Base):
     tenant = relationship("Tenant", back_populates="appointments")
     customer = relationship("Customer", back_populates="appointments")
     lead = relationship("Lead", back_populates="appointments")
+    service = relationship("Product")
+    finance_entries = relationship("FinanceEntry", back_populates="appointment")
+
+
 
 
 class Niche(Base):

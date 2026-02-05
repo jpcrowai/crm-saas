@@ -314,6 +314,8 @@ export const saveGoogleConfig = (data) => api.post('/tenant/appointments/config'
 export const getAuthUrl = () => api.get('/tenant/appointments/auth-url');
 export const googleCallback = (data) => api.post('/tenant/appointments/callback', data);
 export const getCalendarInfo = () => api.get('/tenant/appointments/calendar-info');
+export const getCustomerPlans = (customerId) => api.get(`/tenant/appointments/customer-plans/${customerId}`);
+export const getServices = () => api.get('/tenant/services/');
 export const savePipelineStages = (stages) => api.post('/tenant/pipeline-stages', { stages });
 
 export default api;

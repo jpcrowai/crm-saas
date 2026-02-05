@@ -249,7 +249,7 @@ def generate_contract_pdf(tenant_slug: str, sub_data: Dict[str, Any], plan_data:
     pdf.cell(0, 10, "Documento gerado eletronicamente via CRMaster", 0, 0, 'C')
     
     # Upload PDF to Supabase Storage
-    pdf_content = pdf.output(dest='S').encode('latin1')
+    pdf_content = pdf.output(dest='S')  # Already returns bytes in fpdf2
     filename = f"contrato_{sub_data['id']}.pdf"
     
     try:
@@ -320,6 +320,20 @@ async def create_subscription(sub: Subscription, background_tasks: BackgroundTas
     new_sub["id"] = str(uuid.uuid4())
     new_sub["created_at"] = datetime.now().isoformat()
     
+    # Calculate subscription end date based on periodicity and data_fim (if provided)
+    start_date = datetime.fromisoformat(sub.data_inicio)
+    if not sub.data_fim:
+        # Auto-calculate based on periodicity
+        periodicity_map = {
+            "mensal": 1,
+            "trimestral": 3,
+            "semestral": 6,
+            "anual": 12
+        }
+        months = periodicity_map.get(sub.periodicidade.lower(), 1)
+        end_date = start_date + timedelta(days=months * 30)  # Approximation
+        new_sub["data_fim"] = end_date.isoformat()
+    
     # Generate Contract
     pdf_path = generate_contract_pdf(current_user.tenant_slug, new_sub, plan)
     new_sub["contrato_pdf"] = pdf_path
@@ -337,6 +351,45 @@ async def create_subscription(sub: Subscription, background_tasks: BackgroundTas
         "data_geracao": datetime.now().isoformat()
     })
     write_sheet(current_user.tenant_slug, "contracts", contracts)
+    
+    # ===== GENERATE FUTURE FINANCE ENTRIES =====
+    from app.routers.finances import ensure_finance_sheets
+    ensure_finance_sheets(current_user.tenant_slug)
+    finances = read_sheet(current_user.tenant_slug, "finances")
+    
+    # Calculate number of installments based on periodicity
+    periodicity_map = {
+        "mensal": 1,
+        "trimestral": 3,
+        "semestral": 6,
+        "anual": 12
+    }
+    interval_months = periodicity_map.get(sub.periodicidade.lower(), 1)
+    
+    # Calculate total duration in months
+    end_date = datetime.fromisoformat(new_sub["data_fim"])
+    total_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
+    num_installments = max(1, total_months // interval_months)
+    
+    # Generate finance entries for each installment
+    for i in range(num_installments):
+        due_date = start_date + timedelta(days=interval_months * 30 * i)
+        
+        finance_entry = {
+            "id": str(uuid.uuid4()),
+            "tipo": "receita",
+            "descricao": f"Mensalidade {plan['nome']} - Parcela {i+1}/{num_installments}",
+            "valor": sub.valor_total,
+            "data": due_date.date().isoformat(),
+            "status": "pendente",
+            "categoria": "Assinatura",
+            "customer_id": sub.customer_id,
+            "subscription_id": new_sub["id"],  # Link to subscription
+            "created_at": datetime.now().isoformat()
+        }
+        finances.append(finance_entry)
+    
+    write_sheet(current_user.tenant_slug, "finances", finances)
     
     return new_sub
 

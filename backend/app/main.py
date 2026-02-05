@@ -3,6 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, master, tenant_users
 from fastapi.staticfiles import StaticFiles
 import os
+from app.database import engine, Base
+import app.models.sql_models as sql_models
+
+# Initialize SQL database tables
+sql_models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="CRM SaaS Multi-tenant")
 
@@ -38,6 +43,8 @@ from app.routers import products
 app.include_router(products.router)
 from app.routers import subscriptions
 app.include_router(subscriptions.router)
+from app.routers import services
+app.include_router(services.router)
 
 @app.get("/")
 def root():

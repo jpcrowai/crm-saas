@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getFinanceEntries, deleteFinanceEntry, updateFinanceEntryStatus, exportFinanceEntries } from '../services/api';
-import { Search, Filter, Download, Plus, ArrowUpCircle, ArrowDownCircle, MoreVertical, Trash2, CheckCircle2, AlertCircle, Clock, XCircle, DollarSign, Wallet } from 'lucide-react';
+import { Search, Filter, Download, Plus, ArrowUpCircle, ArrowDownCircle, MoreVertical, Trash2, CheckCircle2, AlertCircle, Clock, XCircle, DollarSign, Wallet, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import FinanceWizard from '../components/FinanceWizard';
 import '../styles/tenant-luxury.css';
 
@@ -68,6 +69,11 @@ const FinanceExtrato = () => {
                     <p>Gestão de fluxo de caixa e conciliação bancária</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
+                    <Link to="/finances/settings">
+                        <button className="btn-secondary" style={{ padding: '0.75rem 1rem' }}>
+                            <Settings size={20} />
+                        </button>
+                    </Link>
                     <button className="btn-primary" onClick={handleExport}>
                         <Download size={18} /> Exportar Excel
                     </button>

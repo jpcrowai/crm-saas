@@ -67,14 +67,20 @@ const Subscriptions = () => {
             const plan = plans.find(p => p.id === newSub.plan_id);
             if (!plan) throw new Error("Plano não selecionado");
 
+            const startDate = new Date();
+            const durationMonths = newSub.duration_months || 12;
+            const endDate = new Date(startDate);
+            endDate.setMonth(endDate.getMonth() + durationMonths);
+
             const payload = {
                 customer_id: newSub.customer_id,
                 plano_id: newSub.plan_id,
-                data_inicio: new Date().toISOString().split('T')[0],
-                periodicidade: plan.periodicity || plan.periodicidade || 'monthly',
+                data_inicio: startDate.toISOString().split('T')[0],
+                data_fim: endDate.toISOString().split('T')[0],
+                periodicidade: plan.periodicity || plan.periodicidade || 'mensal',
                 valor_total: parseFloat(plan.price || plan.valor_base || 0),
                 status: 'Pendente Assinatura',
-                itens: (plan.items || []).map(i => ({
+                itens: (plan.items || plan.itens || []).map(i => ({
                     product_id: i.product_id || i.id,
                     descricao: i.name || i.nome,
                     quantidade: parseFloat(i.quantity || i.quantidade || 1),
@@ -85,7 +91,7 @@ const Subscriptions = () => {
 
             await createSubscription(payload);
             setShowForm(false);
-            setNewSub({ customer_id: '', plan_id: '' });
+            setNewSub({ customer_id: '', plan_id: '', duration_months: 12 });
             loadData();
         } catch (e) {
             console.error(e);
@@ -229,8 +235,21 @@ const Subscriptions = () => {
                                 <label>Pacote de Destino</label>
                                 <select className="input-premium" value={newSub.plan_id} onChange={e => setNewSub({ ...newSub, plan_id: e.target.value })} required>
                                     <option value="">Escolha um plano...</option>
-                                    {plans.map(p => <option key={p.id} value={p.id}>{p.name} - R$ {p.price}</option>)}
+                                    {plans.map(p => <option key={p.id} value={p.id}>{p.nome || p.name} - R$ {p.valor_base || p.price}</option>)}
                                 </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Duração da Assinatura</label>
+                                <select className="input-premium" value={newSub.duration_months || 12} onChange={e => setNewSub({ ...newSub, duration_months: parseInt(e.target.value) })} required>
+                                    <option value="1">1 mês</option>
+                                    <option value="3">3 meses (Trimestral)</option>
+                                    <option value="6">6 meses (Semestral)</option>
+                                    <option value="12">12 meses (Anual)</option>
+                                    <option value="24">24 meses (2 Anos)</option>
+                                </select>
+                                <small style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                                    O sistema criará automaticamente as parcelas futuras
+                                </small>
                             </div>
 
                             <div style={{ background: 'var(--gold-50)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--gold-400)', display: 'flex', gap: '0.75rem' }}>

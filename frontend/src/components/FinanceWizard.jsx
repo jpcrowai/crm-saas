@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, XCircle, Check, ChevronRight, ChevronLeft, CreditCard, ShoppingBag, User } from 'lucide-react';
-import { createFinance, getLeads } from '../services/api';
+import { createFinance, getLeads, getCategories, getPaymentMethods } from '../services/api';
 
 const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData }) => {
     const [step, setStep] = useState(1);
@@ -20,11 +20,26 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
     };
     const [formData, setFormData] = useState({ ...defaultData, ...initialData });
 
+    const [internalCategories, setInternalCategories] = useState([]);
+    const [internalMethods, setInternalMethods] = useState([]);
+
     useEffect(() => {
         if (formData.origem === 'venda') {
             getLeads().then(res => setLeads(res.data));
         }
     }, [formData.origem]);
+
+    useEffect(() => {
+        if (!categories || categories.length === 0) {
+            getCategories().then(res => setInternalCategories(res.data));
+        }
+        if (!methods || methods.length === 0) {
+            getPaymentMethods().then(res => setInternalMethods(res.data));
+        }
+    }, []);
+
+    const activeCategories = categories || internalCategories;
+    const activeMethods = methods || internalMethods;
 
     const handleNext = () => setStep(s => s + 1);
     const handleBack = () => setStep(s => s - 1);
@@ -131,7 +146,7 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                                     <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Forma de Pagamento</label>
                                     <select className="input-premium" value={formData.forma_pagamento} onChange={e => setFormData({ ...formData, forma_pagamento: e.target.value })}>
                                         <option value="">Selecione...</option>
-                                        {(methods || []).map(m => <option key={m.id} value={m.nome}>{m.nome}</option>)}
+                                        {(activeMethods || []).map(m => <option key={m.id} value={m.nome}>{m.nome}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -147,8 +162,8 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                                 <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Categoria Financeira</label>
                                 <select className="input-premium" style={{ width: '100%' }} value={formData.categoria} onChange={e => setFormData({ ...formData, categoria: e.target.value })}>
                                     <option value="">Selecione...</option>
-                                    {(categories || []).filter(c => c.tipo === (formData.tipo === 'receita' ? 'entrada' : 'saida') || c.tipo === 'ambos').map(c => (
-                                        <option key={c.id} value={c.nome}>{c.nome}</option>
+                                    {(activeCategories || []).filter(c => c.tipo === (formData.tipo === 'receita' ? 'entrada' : 'saida') || c.tipo === 'ambos').map(c => (
+                                        <option key={c.id} value={c.id}>{c.nome}</option>
                                     ))}
                                 </select>
                             </div>

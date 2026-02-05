@@ -519,7 +519,11 @@ async def get_reports(current_user: TokenData = Depends(get_current_tenant_user)
         customers = []
 
     total_leads = len(leads)
-    total_revenue = sum(float(l.get("value", 0)) for l in leads if l.get("status") == "converted")
+    
+    # Calculate revenue from CONFIRMED financial transactions (receitas pagas)
+    total_revenue = sum(float(f.get("valor", 0)) for f in finances if f.get("tipo") == "receita" and f.get("status") == "pago")
+    
+    # Calculate expenses from CONFIRMED financial transactions (despesas pagas)
     total_expenses = sum(float(f.get("valor", 0)) for f in finances if f.get("tipo") == "despesa" and f.get("status") == "pago")
     
     # Customer ranking (from finances if possible)

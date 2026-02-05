@@ -197,20 +197,33 @@ button:disabled {
 input,
 select,
 textarea {
-  background: var(--white) !important;
-  color: var(--navy-950) !important;
-  border: 1px solid var(--border-soft) !important;
-  border-radius: var(--radius-md) !important;
+  background: var(--white);
+  color: var(--navy-950);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
   width: 100%;
   transition: var(--transition);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+select {
+  cursor: pointer;
+}
+
+/* Option appearance for standard/light backgrounds */
+option {
+  background-color: #ffffff;
+  color: #0f172a;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
+  outline: none;
   border-color: var(--gold-500) !important;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15) !important;
 }
 
 label {
@@ -262,11 +275,22 @@ label {
   background: rgba(255, 255, 255, 0.05) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
   color: var(--white) !important;
+  color-scheme: dark;
+}
+
+/* Fix for all dropdown options in dark contexts */
+.card-dark select option,
+.card-dark .input-premium option,
+select.input-premium option,
+.modal-overlay select option {
+  background-color: var(--navy-800) !important;
+  color: #ffffff !important;
 }
 
 .card-dark .input-premium:focus {
   border-color: var(--gold-500) !important;
   background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2) !important;
 }
 
 .card-dark .form-section-title {

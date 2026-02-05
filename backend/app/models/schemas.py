@@ -131,21 +131,54 @@ class Niche(BaseModel):
     created_at: datetime
     ativo: bool = True
 
+class ServiceBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    duration_minutes: int = 30
+    value: float = 0.0
+    primary_color: str = "#0055FF"
+    active: bool = True
+
+class ServiceCreate(ServiceBase):
+    pass
+
+class Service(ServiceBase):
+    id: uuid.UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
 class AppointmentBase(BaseModel):
     title: str
     start_time: Optional[str] = None # ISO format
     end_time: Optional[str] = None # ISO format
     appointment_date: Optional[str] = None # Legacy/Frontend compatibility
     customer_id: Optional[str] = None
-    staff_id: Optional[str] = None
+    lead_id: Optional[str] = None
+    user_id: Optional[str] = None
+    staff_id: Optional[str] = None # Legacy/Frontend compatibility
     status: str = "scheduled" # scheduled, completed, cancelled
     description: Optional[str] = None
+    
+    # New Service/Billing fields
+    service_id: Optional[str] = None
+    service_duration_minutes: Optional[int] = 30
+    service_value: Optional[float] = 0.0
+    plan_id: Optional[str] = None
+    billing_status: Optional[str] = "open"
 
 class AppointmentCreate(AppointmentBase):
     pass
 
 class Appointment(AppointmentBase):
-    id: str
-    created_at: str
-    # Optional expanded details for frontend convenience if we join data, 
-    # but strictly matching excel columns is safer for base model.
+    id: str | uuid.UUID
+    created_at: datetime | str
+    start_time: Optional[datetime | str] = None
+    end_time: Optional[datetime | str] = None
+    customer_id: Optional[str | uuid.UUID] = None
+    service_id: Optional[str | uuid.UUID] = None
+    plan_id: Optional[str | uuid.UUID] = None
+    
+    class Config:
+        from_attributes = True

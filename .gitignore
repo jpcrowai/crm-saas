@@ -25,3 +25,19 @@ backend/excel/*.xlsx
 .vscode/
 .idea/
 *.log
+
+# Temp Scripts & Data
+read_users.py
+read_users_v2.py
+list_tenants.py
+list_tenants_v2.py
+list_barbearia.py
+list_db.py
+list_db_v2.py
+seed_demos.py
+check_niches.py
+*.txt
+*.json
+!package.json
+!package-lock.json
+!composer.json

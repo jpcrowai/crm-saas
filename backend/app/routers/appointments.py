@@ -98,7 +98,10 @@ async def get_appointments(
     db: Session = Depends(get_db)
 ):
     # 1. Get Local Appointments from SQL
-    local_appts_models = db.query(SQLAppointment).filter(
+    from app.models.sql_models import Professional as SQLProfessional
+    local_appts_models = db.query(SQLAppointment).outerjoin(
+        SQLProfessional, SQLAppointment.professional_id == SQLProfessional.id
+    ).filter(
         SQLAppointment.tenant_id == current_user.tenant_id
     ).all()
     
@@ -232,6 +235,7 @@ async def create_appointment(
     new_appt = SQLAppointment(
         tenant_id=current_user.tenant_id,
         customer_id=appt_in.customer_id,
+        professional_id=appt_in.professional_id,
         lead_id=appt_in.lead_id,
         user_id=appt_in.user_id,
         title=appt_in.title,
@@ -378,6 +382,7 @@ async def update_appointment(
     appt.plan_id = appt_in.plan_id
     appt.billing_status = "covered_by_plan" if appt_in.plan_id else "open"
     appt.customer_id = appt_in.customer_id or appt.customer_id
+    appt.professional_id = appt_in.professional_id or appt.professional_id
     
     db.commit()
     db.refresh(appt)

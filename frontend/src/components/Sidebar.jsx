@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon, DollarSign, Activity, Settings, Package, Layers, FileText, Shield
+  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon, DollarSign, Activity, Settings, Package, Layers, FileText, Shield, Building
 } from 'lucide-react';
 import '../styles/sidebar.css';
 import { useAuth } from '../context/AuthContext';
@@ -51,7 +51,8 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       { label: 'Pipeline', icon: <Briefcase size={20} />, path: '/pipeline', module: 'leads_pipeline' },
       { label: 'Agenda', icon: <CalendarIcon size={20} />, path: '/calendar', module: 'agenda' },
       { label: 'Clientes', icon: <Users size={20} />, path: '/customers', module: 'clientes' },
-      { label: 'Equipe', icon: <Users size={20} />, path: '/team', module: 'equipe' },
+      { label: 'Fornecedores', icon: <Building size={20} />, path: '/suppliers', module: 'equipe' },
+      { label: 'Profissionais', icon: <Briefcase size={20} />, path: '/professionals', module: 'equipe' },
       { label: 'Financeiro', icon: <DollarSign size={20} />, path: '/finances', module: 'financeiro' },
       { label: 'Relatórios', icon: <Activity size={20} />, path: '/reports', module: 'dashboard' },
       { label: 'Produtos', icon: <Package size={20} />, path: '/products', module: 'produtos' },

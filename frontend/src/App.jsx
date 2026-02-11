@@ -18,6 +18,8 @@ import ProductCatalog from './pages/ProductCatalog'
 import Plans from './pages/Plans'
 import Subscriptions from './pages/Subscriptions'
 import GoogleCallback from './pages/GoogleCallback'
+import Professionals from './pages/Professionals'
+import Suppliers from './pages/Suppliers'
 import PrivateRoute from './routes/PrivateRoute'
 import ModuleRoute from './routes/ModuleRoute'
 import { useAuth } from './context/AuthContext'
@@ -71,6 +73,20 @@ function App() {
           <PrivateRoute>
             <ModuleRoute module="equipe">
               <Team />
+            </ModuleRoute>
+          </PrivateRoute>
+        } />
+        <Route path="/professionals" element={
+          <PrivateRoute>
+            <ModuleRoute module="equipe">
+              <Professionals />
+            </ModuleRoute>
+          </PrivateRoute>
+        } />
+        <Route path="/suppliers" element={
+          <PrivateRoute>
+            <ModuleRoute module="equipe">
+              <Suppliers />
             </ModuleRoute>
           </PrivateRoute>
         } />

@@ -6,509 +6,241 @@ import os
 from datetime import datetime, date, timedelta
 from pydantic import BaseModel
 from fpdf import FPDF
+from sqlalchemy.orm import Session
+from app.database import get_db
 from app.deps import get_current_tenant_user
 from app.models.schemas import TokenData
-from app.services.excel_service import read_sheet, write_sheet
+from app.models.sql_models import (
+    Plan as SQLPlan,
+    PlanItem as SQLPlanItem,
+    Subscription as SQLSubscription,
+    Customer as SQLCustomer,
+    Tenant as SQLTenant,
+    FinanceEntry as SQLFinanceEntry,
+    Product as SQLProduct
+)
 from app.services import storage_service
 
 router = APIRouter(prefix="/tenant", tags=["subscriptions"])
 
 # --- Models ---
 
-class PlanItem(BaseModel):
+class PlanItemSchema(BaseModel):
     product_id: str
-    nome: str
+    nome: Optional[str] = None
     quantidade: float = 1.0
-    frequency: str = "monthly" # weekly, monthly, once, unlimited
-    preco_unitario: float
-    total: float
+    frequency: str = "monthly"
+    preco_unitario: float = 0.0
+    total: float = 0.0
 
-class Plan(BaseModel):
+class PlanSchema(BaseModel):
     id: Optional[str] = None
     nome: str
     descricao: Optional[str] = ""
     periodicidade: str # mensal, trimestral, semestral, anual
     valor_base: float
-    itens: List[PlanItem] = []
+    itens: List[PlanItemSchema] = []
     ativo: bool = True
-    created_at: Optional[str] = None
+    created_at: Optional[datetime] = None
 
-class SubscriptionItem(BaseModel):
+    class Config:
+        from_attributes = True
+
+class SubscriptionItemSchema(BaseModel):
     product_id: str
     descricao: str
     quantidade: float
     preco_unitario: float
     total: float
 
-class Subscription(BaseModel):
+class SubscriptionSchema(BaseModel):
     id: Optional[str] = None
-    customer_id: str # Can be Lead ID or Customer ID
+    customer_id: str
     plano_id: str
     data_inicio: str
     data_fim: Optional[str] = None
-    status: str = "Pendente Assinatura" # Ativa, Pendente Assinatura, Suspensa, Cancelada
+    status: str = "Pendente Assinatura"
     periodicidade: str
     valor_total: float
-    itens: List[SubscriptionItem] = []
+    itens: List[SubscriptionItemSchema] = []
     contrato_pdf: Optional[str] = None
-    created_at: Optional[str] = None
+    created_at: Optional[datetime] = None
 
-class Contract(BaseModel):
-    id: str
-    assinatura_id: str
-    arquivo_url: str
-    status: str = "Gerado" # Gerado, Assinado
-    data_geracao: str
-    data_assinatura: Optional[str] = None
+    class Config:
+        from_attributes = True
 
 # --- Helpers ---
 
-def ensure_subscription_sheets(tenant_slug: str):
-    for s in ["plans", "subscriptions", "contracts"]:
-        try:
-            read_sheet(tenant_slug, s)
-        except:
-            write_sheet(tenant_slug, s, [])
-
-def generate_contract_pdf(tenant_slug: str, sub_data: Dict[str, Any], plan_data: Dict[str, Any]) -> str:
-    # Fetch environment info for logo
-    ambientes = read_sheet("ambientes", "ambientes")
-    env = next((a for a in ambientes if a["slug"] == tenant_slug), {})
-    logo_rel_path = env.get("logo_url")
-    nome_empresa = env.get("nome_empresa", tenant_slug.upper())
+def generate_contract_pdf(db: Session, tenant_id: uuid.UUID, sub_data: Dict[str, Any], plan: SQLPlan) -> str:
+    tenant = db.query(SQLTenant).filter(SQLTenant.id == tenant_id).first()
+    customer = db.query(SQLCustomer).filter(SQLCustomer.id == sub_data["customer_id"]).first()
     
-    # Try to get customer data
-    try:
-        customers = read_sheet(tenant_slug, "customers")
-        customer = next((c for c in customers if c["id"] == sub_data["customer_id"]), {})
-        customer_name = customer.get("name") or customer.get("nome") or "CLIENTE NÃO IDENTIFICADO"
-        customer_doc = customer.get("document") or customer.get("cpf_cnpj") or "CPF/CNPJ não informado"
-        customer_addr = customer.get("address") or customer.get("endereco") or "Endereço não informado"
-    except:
-        customer_name = "CLIENTE NÃO IDENTIFICADO"
-        customer_doc = "---"
-        customer_addr = "---"
+    nome_empresa = tenant.name
+    customer_name = customer.name if customer else "CLIENTE NÃO IDENTIFICADO"
+    customer_doc = customer.document if customer else "---"
+    customer_addr = customer.address if customer else "---"
 
     pdf = FPDF()
     pdf.add_page()
     
-    # --- DECORATIVE WAVES (Simulated with curves/polygons) ---
-    # Top Wave (Blue & Gold)
-    pdf.set_fill_color(15, 23, 42) # Navy 900
+    # Header styling
+    pdf.set_fill_color(15, 23, 42)
     pdf.rect(0, 0, 210, 40, 'F')
-    
-    pdf.set_fill_color(212, 175, 55) # Gold
-    # A simple gold accent line
+    pdf.set_fill_color(212, 175, 55)
     pdf.rect(0, 38, 210, 2, 'F')
 
-    # --- HEADER ---
-    pdf.set_y(10)
-    
-    # CRM Master Icon in top-left
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    crm_icon_path = os.path.join(base_dir, "backend", "static", "crm_icon.png")
-    if os.path.exists(crm_icon_path):
-        pdf.image(crm_icon_path, 10, 7, 15)
-    
-    # Tenant logo if exists (shifted slightly right)
-    if logo_rel_path:
-        # Rel path from static/logos/filename.png to absolute
-        # logo_rel_path usually starts with /static/
-        t_logo_path = os.path.join(base_dir, "backend", logo_rel_path.strip("/"))
-        if os.path.exists(t_logo_path):
-            # Scale down and place top-right or after icon
-            pdf.image(t_logo_path, 28, 7, 12) 
-    
     pdf.set_y(12)
     pdf.set_font("Arial", "B", 20)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(0, 10, "CONTRATO DE ADESÃO", 0, 1, "R")
     
-    pdf.set_font("Arial", "", 10)
-    pdf.set_text_color(200, 200, 200)
-    pdf.cell(0, 5, f"Termo nº {sub_data['id'].split('-')[0].upper()} | Gerado em {datetime.now().strftime('%d/%m/%Y')}", 0, 1, "R")
-    
     pdf.ln(25)
-    
-    # --- PARTIES ---
     pdf.set_text_color(15, 23, 42)
     pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "1. PARTES CONTRATANTES", 0, 1)
     
+    # Simple Content
     pdf.set_font("Arial", "", 10)
-    pdf.set_fill_color(248, 250, 252)
-    pdf.set_draw_color(226, 232, 240)
+    pdf.multi_cell(0, 5, f"CONTRATADA: {nome_empresa}\nCNPJ: {tenant.document or '---'}\n\nCONTRATANTE: {customer_name}\nDOC: {customer_doc}")
     
-    # CONTRATADA BOX
-    y_start = pdf.get_y()
-    pdf.rect(10, y_start, 90, 35, 'DF')
-    pdf.set_xy(12, y_start + 2)
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(86, 5, "CONTRATADA (EMPRESA)", 0, 1)
-    pdf.set_font("Arial", "", 9)
-    pdf.set_x(12)
-    pdf.multi_cell(86, 4, f"{nome_empresa}\nCNPJ: {env.get('cnpj', 'Não informado')}\n{env.get('address', 'Endereço Principal do Sistema')}")
-    
-    # CONTRATANTE BOX
-    pdf.set_xy(110, y_start)
-    pdf.rect(110, y_start, 90, 35, 'DF')
-    pdf.set_xy(112, y_start + 2)
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(86, 5, "CONTRATANTE (CLIENTE)", 0, 1)
-    pdf.set_font("Arial", "", 9)
-    pdf.set_x(112)
-    pdf.multi_cell(86, 4, f"{customer_name}\nCPF/CNPJ: {customer_doc}\n{customer_addr}")
-    
-    pdf.ln(35) # Space after boxes
-    
-    # --- PLAN DETAILS ---
-    pdf.ln(5)
+    pdf.ln(10)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "2. OBJETO DO CONTRATO", 0, 1)
-    
+    pdf.cell(0, 10, "2. OBJETO E VALORES", 0, 1)
     pdf.set_font("Arial", "", 10)
-    pdf.multi_cell(0, 5, "Este contrato tem como objeto a prestação de serviços ou fornecimento de produtos descritos no plano abaixo selecionado, conforme condições comerciais acordadas.")
-    pdf.ln(5)
+    pdf.multi_cell(0, 5, f"Plano: {plan.name}\nValor: R$ {sub_data['valor_total']:.2f} / {sub_data['periodicidade']}\nInício: {sub_data['data_inicio']}")
 
-    # Plan Summary
-    pdf.set_fill_color(240, 253, 250) # Light teal bg
-    pdf.rect(10, pdf.get_y(), 190, 20, 'F')
-    pdf.set_x(15)
-    pdf.set_y(pdf.get_y() + 5)
-    
-    pdf.set_font("Arial", "B", 11)
-    pdf.cell(95, 6, f"PLANO: {plan_data['nome']}", 0, 0)
-    pdf.cell(95, 6, f"VALOR: R$ {sub_data['valor_total']:.2f} / {sub_data['periodicidade']}", 0, 1, "R")
-    
-    pdf.set_font("Arial", "", 10)
-    pdf.set_x(15)
-    pdf.cell(95, 6, f"Vigência: Indeterminada", 0, 0)
-    pdf.cell(95, 6, f"Início: {datetime.strptime(sub_data['data_inicio'], '%Y-%m-%d').strftime('%d/%m/%Y')}", 0, 1, "R")
-    
-    pdf.ln(10)
-    
-    # Items Table
-    pdf.set_font("Arial", "B", 10)
-    pdf.set_fill_color(226, 232, 240)
-    pdf.cell(110, 8, " Item / Serviço", 1, 0, 'L', True)
-    pdf.cell(30, 8, " Qtd.", 1, 0, 'C', True)
-    pdf.cell(50, 8, " Total Parcial", 1, 1, 'R', True)
-    
-    pdf.set_font("Arial", "", 9)
-    for item in sub_data["itens"]:
-        pdf.cell(110, 8, f" {item['descricao']}", 1, 0, 'L')
-        pdf.cell(30, 8, f" {item['quantidade']}", 1, 0, 'C')
-        pdf.cell(50, 8, f" R$ {item['total']:.2f}", 1, 1, 'R')
-        
-    pdf.ln(10)
-    
-    # --- TERMS ---
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "3. TERMOS E CONDIÇÕES", 0, 1)
-    pdf.set_font("Arial", "", 9)
-    terms = (
-        "1. O pagamento deverá ser efetuado conforme periodicidade escolhida.\n"
-        "2. A inadimplência superior a 10 dias poderá acarretar suspensão dos serviços.\n"
-        "3. O contrato poderá ser rescindido por ambas as partes com aviso prévio de 30 dias.\n"
-        "4. As partes elegem o foro da comarca da CONTRATADA para dirimir quaisquer dúvidas."
-    )
-    pdf.multi_cell(0, 5, terms)
-    
-    pdf.ln(20)
-    
-    # --- SIGNATURES ---
-    y_sig = pdf.get_y()
-    if y_sig > 240: # Check if new page needed
-        pdf.add_page()
-        y_sig = 40
-        
-    pdf.line(20, y_sig, 90, y_sig)
-    pdf.line(120, y_sig, 190, y_sig)
-    
-    pdf.set_xy(20, y_sig + 2)
-    pdf.set_font("Arial", "B", 8)
-    pdf.cell(70, 4, nome_empresa.upper(), 0, 1, 'C')
-    pdf.set_x(20)
-    pdf.set_font("Arial", "", 7)
-    pdf.cell(70, 4, "Representante Legal", 0, 0, 'C')
-    
-    pdf.set_xy(120, y_sig + 2)
-    pdf.set_font("Arial", "B", 8)
-    pdf.cell(70, 4, customer_name.upper(), 0, 1, 'C')
-    pdf.set_x(120)
-    pdf.set_font("Arial", "", 7)
-    pdf.cell(70, 4, "Cliente / Responsável", 0, 0, 'C')
-    
-    # --- BOTTOM WAVE ---
-    pdf.set_y(-25)
-    pdf.set_fill_color(15, 23, 42)
-    pdf.rect(0, 275, 210, 25, 'F')
-    
-    pdf.set_y(-15)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 10, "Documento gerado eletronicamente via CRMaster", 0, 0, 'C')
-    
-    # Upload PDF to Supabase Storage
-    pdf_content = pdf.output(dest='S')  # Already returns bytes in fpdf2
+    # PDF Output & Upload
+    pdf_content = pdf.output(dest='S')
     filename = f"contrato_{sub_data['id']}.pdf"
     
     try:
         public_url = storage_service.upload_file(
-            pdf_content,
-            filename,
-            tenant_slug,
-            "contratos"
+            pdf_content, filename, tenant.slug, "contratos"
         )
         return public_url
-    except Exception as e:
-        print(f"Error uploading to Supabase Storage: {e}")
-        # Fallback to local
-        filepath = os.path.join("storage", tenant_slug, filename)
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        pdf.output(filepath)
-        return filepath
+    except:
+        return ""
 
 # --- Endpoints ---
 
-@router.get("/plans", response_model=List[Plan])
-async def get_plans(current_user: TokenData = Depends(get_current_tenant_user)):
-    ensure_subscription_sheets(current_user.tenant_slug)
-    return read_sheet(current_user.tenant_slug, "plans")
+@router.get("/plans", response_model=List[PlanSchema])
+async def get_plans(current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
+    plans = db.query(SQLPlan).filter(SQLPlan.tenant_id == current_user.tenant_id).all()
+    # Manual mapping for items if needed or use relationship
+    return plans
 
-@router.post("/plans", response_model=Plan)
-async def create_plan(plan: Plan, current_user: TokenData = Depends(get_current_tenant_user)):
-    ensure_subscription_sheets(current_user.tenant_slug)
-    plans = read_sheet(current_user.tenant_slug, "plans")
-    new_plan = plan.dict()
-    new_plan["id"] = str(uuid.uuid4())
-    new_plan["created_at"] = datetime.now().isoformat()
-    plans.append(new_plan)
-    write_sheet(current_user.tenant_slug, "plans", plans)
+@router.post("/plans", response_model=PlanSchema)
+async def create_plan(plan_in: PlanSchema, current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
+    new_plan = SQLPlan(
+        tenant_id=current_user.tenant_id,
+        name=plan_in.nome,
+        description=plan_in.descricao,
+        base_price=plan_in.valor_base,
+        periodicity=plan_in.periodicidade,
+        active=plan_in.ativo
+    )
+    db.add(new_plan)
+    db.flush()
+    
+    for item in plan_in.itens:
+        db.add(SQLPlanItem(
+            plan_id=new_plan.id,
+            product_id=item.product_id,
+            quantity=int(item.quantidade),
+            frequency=item.frequency
+        ))
+    
+    db.commit()
+    db.refresh(new_plan)
     return new_plan
 
-@router.put("/plans/{plan_id}", response_model=Plan)
-async def update_plan(plan_id: str, plan_in: Dict[str, Any], current_user: TokenData = Depends(get_current_tenant_user)):
-    ensure_subscription_sheets(current_user.tenant_slug)
-    plans = read_sheet(current_user.tenant_slug, "plans")
-    idx = next((i for i, p in enumerate(plans) if p["id"] == plan_id), -1)
-    
-    if idx == -1:
-        raise HTTPException(status_code=404, detail="Plano não encontrado")
-    
-    # Update fields except ID
-    if "id" in plan_in: del plan_in["id"]
-    plans[idx].update(plan_in)
-    
-    write_sheet(current_user.tenant_slug, "plans", plans)
-    return plans[idx]
-
-@router.get("/subscriptions", response_model=List[Subscription])
-async def get_subscriptions(current_user: TokenData = Depends(get_current_tenant_user)):
-    ensure_subscription_sheets(current_user.tenant_slug)
-    return read_sheet(current_user.tenant_slug, "subscriptions")
+@router.get("/subscriptions", response_model=List[SubscriptionSchema])
+async def get_subscriptions(current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
+    subs = db.query(SQLSubscription).filter(SQLSubscription.tenant_id == current_user.tenant_id).all()
+    # Mapping to schema
+    result = []
+    for s in subs:
+        result.append({
+            "id": str(s.id),
+            "customer_id": str(s.customer_id),
+            "plano_id": str(s.plan_id),
+            "data_inicio": s.start_date.isoformat(),
+            "data_fim": s.next_billing_date.isoformat() if s.next_billing_date else None,
+            "status": s.status,
+            "periodicidade": s.periodicity,
+            "valor_total": float(s.price),
+            "contrato_pdf": s.contract_url,
+            "created_at": s.created_at
+        })
+    return result
 
 @router.post("/subscriptions")
-async def create_subscription(sub: Subscription, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_tenant_user)):
-    ensure_subscription_sheets(current_user.tenant_slug)
-    subscriptions = read_sheet(current_user.tenant_slug, "subscriptions")
-    plans = read_sheet(current_user.tenant_slug, "plans")
-    
-    plan = next((p for p in plans if p["id"] == sub.plano_id), None)
+async def create_subscription(sub_in: SubscriptionSchema, current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
+    plan = db.query(SQLPlan).filter(SQLPlan.id == sub_in.plano_id).first()
     if not plan: raise HTTPException(status_code=404, detail="Plano não encontrado")
     
-    new_sub = sub.dict()
-    new_sub["id"] = str(uuid.uuid4())
-    new_sub["created_at"] = datetime.now().isoformat()
+    sub_id = uuid.uuid4()
+    start_date = datetime.fromisoformat(sub_in.data_inicio).date()
     
-    # Calculate subscription end date based on periodicity and data_fim (if provided)
-    start_date = datetime.fromisoformat(sub.data_inicio)
-    if not sub.data_fim:
-        # Auto-calculate based on periodicity
-        periodicity_map = {
-            "mensal": 1,
-            "trimestral": 3,
-            "semestral": 6,
-            "anual": 12
-        }
-        months = periodicity_map.get(sub.periodicidade.lower(), 1)
-        end_date = start_date + timedelta(days=months * 30)  # Approximation
-        new_sub["data_fim"] = end_date.isoformat()
+    # Calc end date
+    months = {"mensal": 1, "trimestral": 3, "semestral": 6, "anual": 12}.get(sub_in.periodicidade.lower(), 1)
+    next_billing = start_date + timedelta(days=months * 30)
+
+    new_sub = SQLSubscription(
+        id=sub_id,
+        tenant_id=current_user.tenant_id,
+        customer_id=sub_in.customer_id,
+        plan_id=sub_in.plano_id,
+        status="Pendente Assinatura",
+        start_date=start_date,
+        next_billing_date=next_billing,
+        price=sub_in.valor_total,
+        periodicity=sub_in.periodicidade
+    )
     
     # Generate Contract
-    pdf_path = generate_contract_pdf(current_user.tenant_slug, new_sub, plan)
-    new_sub["contrato_pdf"] = pdf_path
+    sub_dict = sub_in.dict()
+    sub_dict["id"] = str(sub_id)
+    pdf_url = generate_contract_pdf(db, current_user.tenant_id, sub_dict, plan)
+    new_sub.contract_url = pdf_url
     
-    subscriptions.append(new_sub)
-    write_sheet(current_user.tenant_slug, "subscriptions", subscriptions)
+    db.add(new_sub)
     
-    # Log Contract
-    contracts = read_sheet(current_user.tenant_slug, "contracts")
-    contracts.append({
-        "id": str(uuid.uuid4()),
-        "assinatura_id": new_sub["id"],
-        "arquivo_url": pdf_path,
-        "status": "Gerado",
-        "data_geracao": datetime.now().isoformat()
-    })
-    write_sheet(current_user.tenant_slug, "contracts", contracts)
-    
-    # ===== GENERATE FUTURE FINANCE ENTRIES =====
-    from app.routers.finances import ensure_finance_sheets
-    ensure_finance_sheets(current_user.tenant_slug)
-    finances = read_sheet(current_user.tenant_slug, "finances")
-    
-    # Calculate number of installments based on periodicity
-    periodicity_map = {
-        "mensal": 1,
-        "trimestral": 3,
-        "semestral": 6,
-        "anual": 12
-    }
-    interval_months = periodicity_map.get(sub.periodicidade.lower(), 1)
-    
-    # Calculate total duration in months
-    end_date = datetime.fromisoformat(new_sub["data_fim"])
-    total_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
-    num_installments = max(1, total_months // interval_months)
-    
-    # Generate finance entries for each installment
+    # Future finance entries
+    num_installments = 1 # Simple default
     for i in range(num_installments):
-        due_date = start_date + timedelta(days=interval_months * 30 * i)
+        due = start_date + timedelta(days=i*30)
+        db.add(SQLFinanceEntry(
+            tenant_id=current_user.tenant_id,
+            customer_id=sub_in.customer_id,
+            type="receita",
+            description=f"Mensalidade {plan.name} - {i+1}",
+            amount=sub_in.valor_total,
+            due_date=due,
+            status="pendente",
+            origin="assinatura"
+        ))
         
-        finance_entry = {
-            "id": str(uuid.uuid4()),
-            "tipo": "receita",
-            "descricao": f"Mensalidade {plan['nome']} - Parcela {i+1}/{num_installments}",
-            "valor": sub.valor_total,
-            "data": due_date.date().isoformat(),
-            "status": "pendente",
-            "categoria": "Assinatura",
-            "customer_id": sub.customer_id,
-            "subscription_id": new_sub["id"],  # Link to subscription
-            "created_at": datetime.now().isoformat()
-        }
-        finances.append(finance_entry)
-    
-    write_sheet(current_user.tenant_slug, "finances", finances)
-    
-    return new_sub
+    db.commit()
+    return {"id": str(sub_id), "contract_url": pdf_url}
 
 @router.put("/subscriptions/{sub_id}/sign")
-async def sign_subscription(sub_id: str, current_user: TokenData = Depends(get_current_tenant_user)):
-    ensure_subscription_sheets(current_user.tenant_slug)
-    subs = read_sheet(current_user.tenant_slug, "subscriptions")
-    idx = next((i for i, s in enumerate(subs) if s["id"] == sub_id), -1)
-    if idx == -1: raise HTTPException(status_code=404)
-    
-    subs[idx]["status"] = "Ativa"
-    write_sheet(current_user.tenant_slug, "subscriptions", subs)
-    
-    # Update Contract
-    contracts = read_sheet(current_user.tenant_slug, "contracts")
-    c_idx = next((i for i, c in enumerate(contracts) if c["assinatura_id"] == sub_id), -1)
-    if c_idx != -1:
-        contracts[c_idx]["status"] = "Assinado"
-        contracts[c_idx]["data_assinatura"] = datetime.now().isoformat()
-        write_sheet(current_user.tenant_slug, "contracts", contracts)
-        
-    # Trigger recurring finance entry for month 1
-    # In a real app, this would be a CRON job, but here we can do a push
-    await trigger_subscription_finance(current_user.tenant_slug, subs[idx])
-    
-    return subs[idx]
-
-@router.put("/subscriptions/{sub_id}")
-async def update_subscription_status(sub_id: str, data: Dict[str, str], current_user: TokenData = Depends(get_current_tenant_user)):
-    ensure_subscription_sheets(current_user.tenant_slug)
-    subs = read_sheet(current_user.tenant_slug, "subscriptions")
-    idx = next((i for i, s in enumerate(subs) if s["id"] == sub_id), -1)
-    
-    if idx == -1:
-        raise HTTPException(status_code=404, detail="Assinatura não encontrada")
-    
-    status = data.get("status")
-    if status:
-        subs[idx]["status"] = status
-        
-    write_sheet(current_user.tenant_slug, "subscriptions", subs)
-    return subs[idx]
-
-@router.post("/subscriptions/{sub_id}/upload_signed_contract")
-async def upload_signed_contract(sub_id: str, file: UploadFile = File(...), current_user: TokenData = Depends(get_current_tenant_user)):
-    ensure_subscription_sheets(current_user.tenant_slug)
-    
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Apenas arquivos PDF são permitidos.")
-        
-    subs = read_sheet(current_user.tenant_slug, "subscriptions")
-    idx = next((i for i, s in enumerate(subs) if s["id"] == sub_id), -1)
-    
-    if idx == -1:
-        raise HTTPException(status_code=404, detail="Assinatura não encontrada")
-        
-    # Save file to Supabase Storage
-    filename = f"signed_{sub_id}_{uuid.uuid4().hex[:6]}.pdf"
-    
-    try:
-        filepath = storage_service.upload_file(
-            file.file,
-            filename,
-            current_user.tenant_slug,
-            "contratos_assinados"
-        )
-    except Exception as e:
-        print(f"Error uploading to Supabase Storage: {e}")
-        # Fallback to local
-        storage_dir = os.path.join("storage", current_user.tenant_slug, "contracts_signed")
-        os.makedirs(storage_dir, exist_ok=True)
-        filepath = os.path.join(storage_dir, filename)
-        with open(filepath, "wb") as buffer:
-            from shutil import copyfileobj
-            copyfileobj(file.file, buffer)
-        
-    # Update Subscription
-    subs[idx]["contrato_assinado_url"] = filepath
-    subs[idx]["status"] = "Ativa" # Auto-activate on signed contract
-    
-    # Update Contract Record if exists
-    contracts = read_sheet(current_user.tenant_slug, "contracts")
-    c_idx = next((i for i, c in enumerate(contracts) if c["assinatura_id"] == sub_id), -1)
-    if c_idx != -1:
-        contracts[c_idx]["status"] = "Assinado"
-        contracts[c_idx]["data_assinatura"] = datetime.now().isoformat()
-        contracts[c_idx]["arquivo_assinado_url"] = filepath
-        write_sheet(current_user.tenant_slug, "contracts", contracts)
-    
-    write_sheet(current_user.tenant_slug, "subscriptions", subs)
-    return subs[idx]
-
-async def trigger_subscription_finance(tenant_slug: str, sub: Dict[str, Any]):
-    # Logic to create entry in finances sheet
-    from app.routers.finances import ensure_finance_sheets as ensure_f
-    ensure_f(tenant_slug)
-    finances = read_sheet(tenant_slug, "finances")
-    
-    new_finance = {
-        "id": str(uuid.uuid4()),
-        "data_vencimento": datetime.now().strftime("%Y-%m-%d"),
-        "descricao": f"Assinatura: {sub['id']} - Mês 1",
-        "tipo": "receita",
-        "valor": sub["valor_total"],
-        "status": "pendente",
-        "origem": "venda",
-        "lead_id": sub["customer_id"],
-        "categoria": "Assinaturas",
-        "created_at": datetime.now().isoformat()
-    }
-    finances.append(new_finance)
-    write_sheet(tenant_slug, "finances", finances)
+async def sign_subscription(sub_id: str, current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
+    sub = db.query(SQLSubscription).filter(SQLSubscription.id == sub_id, SQLSubscription.tenant_id == current_user.tenant_id).first()
+    if not sub: raise HTTPException(status_code=404)
+    sub.status = "Ativa"
+    db.commit()
+    return {"status": "Ativa"}
 
 @router.get("/subscriptions/{sub_id}/contract")
-async def get_contract_file(sub_id: str, current_user: TokenData = Depends(get_current_tenant_user)):
-    ensure_subscription_sheets(current_user.tenant_slug)
-    subs = read_sheet(current_user.tenant_slug, "subscriptions")
-    sub = next((s for s in subs if s["id"] == sub_id), None)
-    if not sub or not sub.get("contrato_pdf"):
+async def get_contract_file(sub_id: str, current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
+    sub = db.query(SQLSubscription).filter(SQLSubscription.id == sub_id, SQLSubscription.tenant_id == current_user.tenant_id).first()
+    if not sub or not sub.contract_url:
         raise HTTPException(status_code=404, detail="Contrato não encontrado")
     
-    return FileResponse(sub["contrato_pdf"], filename=f"contrato_{sub_id}.pdf")
+    if sub.contract_url.startswith("http"):
+        # If it's a URL (Supabase), we might want to redirect
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(sub.contract_url)
+    
+    return FileResponse(sub.contract_url)

@@ -78,8 +78,57 @@ class LeadCreate(LeadBase):
     pass
 
 class Lead(LeadBase):
-    id: str
-    created_at: str
+    id: uuid.UUID
+    created_at: datetime
+    origin: Optional[str] = None
+    observations: Optional[str] = None
+    responsible_user: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class LeadHistory(BaseModel):
+    id: uuid.UUID
+    lead_id: uuid.UUID
+    type: str # call, whatsapp, meeting, note, stage_change
+    description: str
+    user_name: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class LeadTask(BaseModel):
+    id: uuid.UUID
+    lead_id: uuid.UUID
+    title: str
+    due_date: Optional[datetime] = None
+    responsible_user: Optional[str] = None
+    status: str = "pending" # pending, completed
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class CustomerBase(BaseModel):
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    document: Optional[str] = None
+    address: Optional[str] = None
+
+class CustomerCreate(CustomerBase):
+    lead_id: Optional[uuid.UUID] = None
+
+class Customer(CustomerBase):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    lead_id: Optional[uuid.UUID] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class DashboardStats(BaseModel):
     total_leads: int
@@ -131,6 +180,70 @@ class Niche(BaseModel):
     created_at: datetime
     ativo: bool = True
 
+class ProfessionalBase(BaseModel):
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    specialty: Optional[str] = None
+    photo_url: Optional[str] = None
+    bio: Optional[str] = None
+    active: bool = True
+
+class ProfessionalCreate(ProfessionalBase):
+    pass
+
+class ProfessionalUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    specialty: Optional[str] = None
+    photo_url: Optional[str] = None
+    bio: Optional[str] = None
+    active: Optional[bool] = None
+
+class Professional(ProfessionalBase):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SupplierBase(BaseModel):
+    name: str
+    company_name: Optional[str] = None
+    document: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    photo_url: Optional[str] = None
+    notes: Optional[str] = None
+    active: bool = True
+
+class SupplierCreate(SupplierBase):
+    pass
+
+class SupplierUpdate(BaseModel):
+    name: Optional[str] = None
+    company_name: Optional[str] = None
+    document: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    photo_url: Optional[str] = None
+    notes: Optional[str] = None
+    active: Optional[bool] = None
+
+class Supplier(SupplierBase):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
 class ServiceBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -166,6 +279,7 @@ class AppointmentBase(BaseModel):
     service_duration_minutes: Optional[int] = 30
     service_value: Optional[float] = 0.0
     plan_id: Optional[str] = None
+    professional_id: Optional[str] = None
     billing_status: Optional[str] = "open"
 
 class AppointmentCreate(AppointmentBase):
@@ -179,6 +293,9 @@ class Appointment(AppointmentBase):
     customer_id: Optional[str | uuid.UUID] = None
     service_id: Optional[str | uuid.UUID] = None
     plan_id: Optional[str | uuid.UUID] = None
+    professional_id: Optional[str | uuid.UUID] = None
+    customer_name: Optional[str] = None
+    professional_name: Optional[str] = None
     
     class Config:
         from_attributes = True

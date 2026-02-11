@@ -20,7 +20,8 @@ def read_sheet(file_name: str, sheet_name: str) -> List[Dict[str, Any]]:
         return []
     
     try:
-        workbook = openpyxl.load_workbook(path)
+        # Optimization: use read_only for faster loading
+        workbook = openpyxl.load_workbook(path, read_only=True, data_only=True)
         if sheet_name not in workbook.sheetnames:
             return []
         
@@ -53,6 +54,16 @@ def read_sheet(file_name: str, sheet_name: str) -> List[Dict[str, Any]]:
         return result
     except Exception as e:
         print(f"Error reading excel {file_name}/{sheet_name}: {e}")
+        return []
+
+def get_sheet_names(file_name: str) -> List[str]:
+    path = _get_file_path(file_name)
+    if not os.path.exists(path):
+        return []
+    try:
+        workbook = openpyxl.load_workbook(path, read_only=True)
+        return workbook.sheetnames
+    except:
         return []
 
 def write_sheet(file_name: str, sheet_name: str, rows: List[Dict[str, Any]]) -> None:

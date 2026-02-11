@@ -316,6 +316,22 @@ export const googleCallback = (data) => api.post('/tenant/appointments/callback'
 export const getCalendarInfo = () => api.get('/tenant/appointments/calendar-info');
 export const getCustomerPlans = (customerId) => api.get(`/tenant/appointments/customer-plans/${customerId}`);
 export const getServices = () => api.get('/tenant/services/');
+
+// Professional Module
+export const getProfessionals = () => api.get('/tenant/professionals/');
+export const getProfessional = (id) => api.get(`/tenant/professionals/${id}`);
+export const createProfessional = (data) => api.post('/tenant/professionals/', data);
+export const updateProfessional = (id, data) => api.put(`/tenant/professionals/${id}`, data);
+export const deleteProfessional = (id) => api.delete(`/tenant/professionals/${id}`);
+
+// Supplier Module
+export const getSuppliers = () => api.get('/tenant/suppliers/');
+export const getSupplier = (id) => api.get(`/tenant/suppliers/${id}`);
+export const getSupplierDebts = (id) => api.get(`/tenant/suppliers/${id}/debts`);
+export const createSupplier = (data) => api.post('/tenant/suppliers/', data);
+export const updateSupplier = (id, data) => api.put(`/tenant/suppliers/${id}`, data);
+export const deleteSupplier = (id) => api.delete(`/tenant/suppliers/${id}`);
+
 export const savePipelineStages = (stages) => api.post('/tenant/pipeline-stages', { stages });
 
 export default api;

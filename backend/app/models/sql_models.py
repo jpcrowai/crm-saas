@@ -26,11 +26,14 @@ class Tenant(Base):
     contract_generated_url = Column(Text)
     contract_signed_url = Column(Text)
     contract_status = Column(String, default="pending_generation")
+    active = Column(Boolean, default=True)
     modulos_habilitados = Column(JSON, default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     users = relationship("User", back_populates="tenant", cascade="all, delete")
+    professionals = relationship("Professional", back_populates="tenant", cascade="all, delete")
+    suppliers = relationship("Supplier", back_populates="tenant", cascade="all, delete")
     leads = relationship("Lead", back_populates="tenant", cascade="all, delete")
     customers = relationship("Customer", back_populates="tenant", cascade="all, delete")
     products = relationship("Product", back_populates="tenant", cascade="all, delete")
@@ -63,6 +66,47 @@ class User(Base):
     notifications = relationship("Notification", back_populates="user")
 
 
+class Professional(Base):
+    __tablename__ = "professionals"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    email = Column(String)
+    phone = Column(String)
+    specialty = Column(String)
+    photo_url = Column(Text)
+    bio = Column(Text)
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    tenant = relationship("Tenant", back_populates="professionals")
+
+
+class Supplier(Base):
+    __tablename__ = "suppliers"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    company_name = Column(String)
+    document = Column(String)  # CNPJ/CPF
+    email = Column(String)
+    phone = Column(String)
+    address = Column(Text)
+    photo_url = Column(Text)
+    notes = Column(Text)
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    tenant = relationship("Tenant", back_populates="suppliers")
+    finance_entries = relationship("FinanceEntry", back_populates="supplier")
+
+
 class Lead(Base):
     __tablename__ = "leads"
     __table_args__ = {'schema': 'public'}
@@ -80,6 +124,13 @@ class Lead(Base):
     tenant = relationship("Tenant", back_populates="leads")
     finance_entries = relationship("FinanceEntry", back_populates="lead")
     appointments = relationship("Appointment", back_populates="lead")
+    history = relationship("LeadHistory", back_populates="lead", cascade="all, delete")
+    tasks = relationship("LeadTask", back_populates="lead", cascade="all, delete")
+
+    # Mapping Excel fields
+    origin = Column(String)
+    observations = Column(Text)
+    responsible_user = Column(String) # Name or email from team
 
 
 class Customer(Base):
@@ -99,6 +150,8 @@ class Customer(Base):
     tenant = relationship("Tenant", back_populates="customers")
     subscriptions = relationship("Subscription", back_populates="customer")
     appointments = relationship("Appointment", back_populates="customer")
+    
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads.id", ondelete="SET NULL"), nullable=True)
 
 
 class Product(Base):
@@ -189,6 +242,7 @@ class FinanceEntry(Base):
     customer_id = Column(UUID(as_uuid=True), ForeignKey("public.customers.id", ondelete="SET NULL"), nullable=True)
     service_id = Column(UUID(as_uuid=True), ForeignKey("public.products.id", ondelete="SET NULL"), nullable=True)
     category_id = Column(UUID(as_uuid=True), ForeignKey("public.finance_categories.id", ondelete="SET NULL"), nullable=True)
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("public.suppliers.id", ondelete="SET NULL"), nullable=True)
     
     type = Column(String, nullable=False) # receita, despesa
     description = Column(String, nullable=False)
@@ -208,6 +262,7 @@ class FinanceEntry(Base):
 
     tenant = relationship("Tenant", back_populates="finance_entries")
     lead = relationship("Lead", back_populates="finance_entries")
+    supplier = relationship("Supplier", back_populates="finance_entries")
     appointment = relationship("Appointment", back_populates="finance_entries")
     appointment_id = Column(UUID(as_uuid=True), ForeignKey("public.appointments.id", ondelete="SET NULL"), nullable=True)
 
@@ -307,6 +362,8 @@ class Appointment(Base):
     # Billing Status: open, covered_by_plan, paid, cancelled
     billing_status = Column(String, default="open")
 
+    professional_id = Column(UUID(as_uuid=True), ForeignKey("public.professionals.id", ondelete="SET NULL"), nullable=True)
+
     title = Column(String, nullable=False)
     description = Column(Text)
     start_time = Column(DateTime(timezone=True), nullable=False)
@@ -322,7 +379,16 @@ class Appointment(Base):
     customer = relationship("Customer", back_populates="appointments")
     lead = relationship("Lead", back_populates="appointments")
     service = relationship("Product")
+    professional = relationship("Professional")
     finance_entries = relationship("FinanceEntry", back_populates="appointment")
+
+    @property
+    def customer_name(self):
+        return self.customer.name if self.customer else "Cliente"
+
+    @property
+    def professional_name(self):
+        return self.professional.name if self.professional else "Não definido"
 
 
 
@@ -337,3 +403,32 @@ class Niche(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     tenants = relationship("Tenant", back_populates="niche")
+
+
+class LeadHistory(Base):
+    __tablename__ = "lead_history"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads.id", ondelete="CASCADE"), nullable=False)
+    type = Column(String) # call, whatsapp, meeting, note, stage_change
+    description = Column(Text)
+    user_name = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    lead = relationship("Lead", back_populates="history")
+
+
+class LeadTask(Base):
+    __tablename__ = "lead_tasks"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False)
+    due_date = Column(DateTime(timezone=True))
+    responsible_user = Column(String)
+    status = Column(String, default="pending") # pending, completed
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    lead = relationship("Lead", back_populates="tasks")

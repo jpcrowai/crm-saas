@@ -45,6 +45,10 @@ from app.routers import subscriptions
 app.include_router(subscriptions.router)
 from app.routers import services
 app.include_router(services.router)
+from app.routers import professionals
+app.include_router(professionals.router)
+from app.routers import suppliers
+app.include_router(suppliers.router)
 
 @app.get("/")
 def root():

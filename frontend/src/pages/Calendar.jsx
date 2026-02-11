@@ -10,6 +10,7 @@ const AppointmentsCalendar = () => {
     const [date, setDate] = useState(new Date());
     const [appointments, setAppointments] = useState([]);
     const [customers, setCustomers] = useState([]);
+    const [professionals, setProfessionals] = useState([]);
     const [showGoogleConfig, setShowGoogleConfig] = useState(false);
     const [googleConfig, setGoogleConfig] = useState({
         client_id: '',
@@ -20,8 +21,11 @@ const AppointmentsCalendar = () => {
     const [services, setServices] = useState([]);
     const [customerPlans, setCustomerPlans] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showDayModal, setShowDayModal] = useState(false);
+
     const [newAppt, setNewAppt] = useState({
         customer_id: '',
+        professional_id: '',
         title: '',
         description: '',
         appointment_date: (() => {
@@ -38,6 +42,47 @@ const AppointmentsCalendar = () => {
     });
 
     const { user } = useAuth();
+
+    useEffect(() => {
+        const cachedConn = localStorage.getItem('google_connected');
+        if (cachedConn === 'true') {
+            setConnectionInfo(prev => ({ ...prev, connected: true }));
+        }
+
+        const cachedAppts = localStorage.getItem('cached_appointments');
+        if (cachedAppts) {
+            try { setAppointments(JSON.parse(cachedAppts)); } catch (e) { }
+        }
+
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            const { getCalendarInfo, getProfessionals } = await import('../services/api');
+            const [apptRes, custRes, infoRes, servRes, profRes] = await Promise.all([
+                getAppointments(),
+                getCustomers(),
+                getCalendarInfo(),
+                getServices(),
+                getProfessionals()
+            ]);
+
+            setAppointments(apptRes.data);
+            localStorage.setItem('cached_appointments', JSON.stringify(apptRes.data));
+            setCustomers(custRes.data);
+            setProfessionals(profRes.data);
+            setConnectionInfo(infoRes.data);
+
+            if (infoRes.data.connected) {
+                localStorage.setItem('google_connected', 'true');
+            } else {
+                localStorage.removeItem('google_connected');
+            }
+
+            setServices(servRes.data);
+        } catch (e) { console.error(e); }
+    };
 
     const handleConnectGoogle = async () => {
         try {
@@ -57,7 +102,6 @@ const AppointmentsCalendar = () => {
             const res = await saveGoogleConfig(googleConfig);
             alert(res.data.message || "Configurações do Google salvas e VALIDADAS com sucesso!");
             setShowGoogleConfig(false);
-            // Refresh info or handle state
             loadData();
         } catch (e) {
             console.error(e);
@@ -65,54 +109,6 @@ const AppointmentsCalendar = () => {
             alert(errorMsg);
         }
     };
-
-    const [showDayModal, setShowDayModal] = useState(false);
-
-    // ... (existing states) ... 
-
-    useEffect(() => {
-        // Optimistic Connection Check
-        const cachedConn = localStorage.getItem('google_connected');
-        if (cachedConn === 'true') {
-            setConnectionInfo(prev => ({ ...prev, connected: true }));
-        }
-
-        // --- CACHE PERSISTENCE: Restore appointments to avoid empty screen flash ---
-        const cachedAppts = localStorage.getItem('cached_appointments');
-        if (cachedAppts) {
-            try { setAppointments(JSON.parse(cachedAppts)); } catch (e) { }
-        }
-
-        loadData();
-    }, []);
-
-    const loadData = async () => {
-        try {
-            const { getCalendarInfo } = await import('../services/api');
-            const [apptRes, custRes, infoRes, servRes] = await Promise.all([
-                getAppointments(),
-                getCustomers(),
-                getCalendarInfo(),
-                getServices()
-            ]);
-
-            // --- CACHE UPDATE: Save fresh data ---
-            setAppointments(apptRes.data);
-            localStorage.setItem('cached_appointments', JSON.stringify(apptRes.data));
-
-            setCustomers(custRes.data);
-
-            setConnectionInfo(infoRes.data);
-            if (infoRes.data.connected) {
-                localStorage.setItem('google_connected', 'true');
-            } else {
-                localStorage.removeItem('google_connected');
-            }
-
-            setServices(servRes.data);
-        } catch (e) { console.error(e); }
-    };
-
 
     const handleDayClick = (value) => {
         setDate(value);
@@ -135,7 +131,6 @@ const AppointmentsCalendar = () => {
     };
 
     const handleServiceChange = (sid) => {
-        // ... existing logic ...
         const service = services.find(s => s.id === sid);
         if (service) {
             setNewAppt({
@@ -152,41 +147,33 @@ const AppointmentsCalendar = () => {
     const handleCreate = async (e) => {
         e.preventDefault();
 
-        // --- OPTIMISTIC UI UPDATE ---
-        // 1. Create a temporary appointment object
         const tempId = 'temp_' + Date.now();
         const selectedCustomer = customers.find(c => c.id === newAppt.customer_id);
         const optimisticAppt = {
             id: tempId,
             title: newAppt.title,
             description: newAppt.description,
-            start_time: newAppt.appointment_date, // This is ISO string from input
-            // Estimate end time based on duration
+            start_time: newAppt.appointment_date,
             end_time: new Date(new Date(newAppt.appointment_date).getTime() + (newAppt.service_duration_minutes * 60000)).toISOString(),
             service_duration_minutes: newAppt.service_duration_minutes,
             service_value: newAppt.service_value,
             customer_name: selectedCustomer ? selectedCustomer.name : 'Cliente',
+            professional_name: professionals.find(p => p.id === newAppt.professional_id)?.name || 'Profissional',
             status: 'scheduled',
             location: newAppt.location,
             link_reuniao: newAppt.link_reuniao,
             billing_status: newAppt.plan_id ? 'covered_by_plan' : 'open'
         };
 
-        // 2. Update State Immediately
         setAppointments(prev => [...prev, optimisticAppt]);
         setShowModal(false);
 
         try {
-            // 3. Perform Actual API Call
             await createAppointment(newAppt);
-
-            // 4. On Success: Reload data to get real IDs and finalized server state
-            // (We could replace the temp item, but reloading ensures full sync with server logic like google calendar)
             loadData();
-
-            // Reset form
             setNewAppt({
                 customer_id: '',
+                professional_id: '',
                 title: '',
                 description: '',
                 appointment_date: (() => {
@@ -202,15 +189,12 @@ const AppointmentsCalendar = () => {
                 plan_id: ''
             });
         } catch (e) {
-            // 5. On Failure: Rollback the optimistic update
             setAppointments(prev => prev.filter(a => a.id !== tempId));
-
             const msg = e.response?.data?.detail || "Erro ao agendar";
             alert(msg);
-            setShowModal(true); // Re-open modal so user doesn't lose data
+            setShowModal(true);
         }
     };
-
 
     const dayAppointments = appointments
         .filter(a => {
@@ -218,7 +202,6 @@ const AppointmentsCalendar = () => {
             return apptDate && new Date(apptDate).toDateString() === date.toDateString();
         })
         .sort((a, b) => {
-            // Sort by start time chronologically
             const timeA = new Date(a.start_time || a.appointment_date).getTime();
             const timeB = new Date(b.start_time || b.appointment_date).getTime();
             return timeA - timeB;
@@ -251,7 +234,7 @@ const AppointmentsCalendar = () => {
                         <button
                             className="btn-primary"
                             onClick={handleConnectGoogle}
-                            style={{ background: '#4285F4', border: 'none' }} // Google Blue
+                            style={{ background: '#4285F4', border: 'none' }}
                         >
                             <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: '16px', marginRight: '8px', filter: 'brightness(10)' }} />
                             Vincular com Conta Google
@@ -276,7 +259,6 @@ const AppointmentsCalendar = () => {
                 </div>
             </header>
 
-            {/* CALENDAR CARD - FULL WIDTH */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', height: 'calc(100vh - 160px)' }}>
                 <div className="data-card-luxury" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <div className="data-card-header" style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -299,7 +281,6 @@ const AppointmentsCalendar = () => {
                 </div>
             </div>
 
-            {/* DAY DETAILS MODAL */}
             {showDayModal && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target.className === 'modal-overlay') setShowDayModal(false) }}>
                     <div className="card" style={{ width: '600px', padding: '0', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -355,6 +336,9 @@ const AppointmentsCalendar = () => {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                 <User size={14} /> {appt.customer_name || 'Cliente'}
                                             </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <User size={14} style={{ color: 'var(--gold-500)' }} /> {appt.professional_name || 'Profissional'}
+                                            </div>
                                             {appt.location && (
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                     <MapPin size={14} /> {appt.location}
@@ -378,30 +362,46 @@ const AppointmentsCalendar = () => {
                 </div>
             )}
 
-            {/* CREATE MODAL */}
             {showModal && (
                 <div className="modal-overlay">
-                    <div className="card" style={{ width: '500px', padding: '0', overflow: 'hidden' }}>
+                    <div className="card" style={{ width: '650px', padding: '0', overflow: 'hidden' }}>
                         <div className="modal-header-luxury">
                             <h2>Agendar Compromisso</h2>
                             <button onClick={() => setShowModal(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
                         </div>
-                        <form onSubmit={handleCreate} style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <form onSubmit={handleCreate} style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             <div className="form-group">
-                                <label>Título da Reunião</label>
+                                <label>TÍTULO DA REUNIÃO</label>
                                 <input className="input-premium" placeholder="Ex: Alinhamento de Projeto" value={newAppt.title} onChange={e => setNewAppt({ ...newAppt, title: e.target.value })} required />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label>Cliente Participante</label>
+                                    <label>CLIENTE PARTICIPANTE</label>
                                     <select className="input-premium" value={newAppt.customer_id} onChange={e => handleCustomerChange(e.target.value)} required>
                                         <option value="">Escolha um cliente...</option>
                                         {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label>Plano do Cliente (Opcional)</label>
+                                    <label>PROFISSIONAL RESPONSÁVEL</label>
+                                    <select className="input-premium" value={newAppt.professional_id} onChange={e => setNewAppt({ ...newAppt, professional_id: e.target.value })} required>
+                                        <option value="">Escolha um profissional...</option>
+                                        {professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                <div className="form-group">
+                                    <label>SERVIÇO</label>
+                                    <select className="input-premium" value={newAppt.service_id} onChange={e => handleServiceChange(e.target.value)} required>
+                                        <option value="">Selecione o serviço...</option>
+                                        {services.map(s => <option key={s.id} value={s.id}>{s.name} ({s.duration_minutes} min)</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>PLANO DO CLIENTE (OPCIONAL)</label>
                                     <select className="input-premium" value={newAppt.plan_id} onChange={e => setNewAppt({ ...newAppt, plan_id: e.target.value })}>
                                         <option value="">Pagamento Avulso</option>
                                         {customerPlans.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
@@ -409,25 +409,17 @@ const AppointmentsCalendar = () => {
                                 </div>
                             </div>
 
-                            <div className="form-group">
-                                <label>Serviço</label>
-                                <select className="input-premium" value={newAppt.service_id} onChange={e => handleServiceChange(e.target.value)} required>
-                                    <option value="">Selecione o serviço...</option>
-                                    {services.map(s => <option key={s.id} value={s.id}>{s.name} ({s.duration_minutes} min)</option>)}
-                                </select>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.5fr', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label>Duração (min)</label>
-                                    <input className="input-premium" type="number" value={newAppt.service_duration_minutes} readOnly style={{ opacity: 0.7 }} />
+                                    <label>DURAÇÃO (MIN)</label>
+                                    <input className="input-premium" type="number" value={newAppt.service_duration_minutes} readOnly style={{ opacity: 0.7, background: '#f8fafc' }} />
                                 </div>
                                 <div className="form-group">
-                                    <label>Valor (R$)</label>
-                                    <input className="input-premium" type="number" value={newAppt.service_value} readOnly style={{ opacity: 0.7 }} />
+                                    <label>VALOR (R$)</label>
+                                    <input className="input-premium" type="number" value={newAppt.service_value} readOnly style={{ opacity: 0.7, background: '#f8fafc' }} />
                                 </div>
                                 <div className="form-group">
-                                    <label>Data e Horário</label>
+                                    <label>DATA E HORÁRIO</label>
                                     <input
                                         className="input-premium"
                                         type="datetime-local"
@@ -439,21 +431,19 @@ const AppointmentsCalendar = () => {
                             </div>
 
                             <div className="form-group">
-                                <label>Local ou Link Virtual (Opcional)</label>
+                                <label>LOCAL OU LINK VIRTUAL (OPCIONAL)</label>
                                 <input className="input-premium" placeholder="Google Meet, Endereço Físico..." value={newAppt.location} onChange={e => setNewAppt({ ...newAppt, location: e.target.value })} />
                             </div>
 
-                            <footer style={{ marginTop: '1rem', display: 'flex', gap: '1.25rem' }}>
-                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Voltar</button>
-                                <button type="submit" className="btn-primary" style={{ flex: 2 }}>Confirmar Agendamento</button>
+                            <footer style={{ marginTop: '1rem', display: 'flex', gap: '1.5rem' }}>
+                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowModal(false)}>VOLTAR</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 2 }}>CONFIRMAR AGENDAMENTO</button>
                             </footer>
                         </form>
                     </div>
                 </div>
-            )
-            }
+            )}
 
-            {/* GOOGLE CONFIG MODAL */}
             {showGoogleConfig && (
                 <div className="modal-overlay">
                     <div className="card" style={{ width: '500px', padding: '0', overflow: 'hidden' }}>
@@ -488,10 +478,8 @@ const AppointmentsCalendar = () => {
                         </form>
                     </div>
                 </div>
-            )
-            }
+            )}
 
-            {/* INJECT CALENDAR CSS OVERRIDES */}
             <style>{`
                 .luxury-calendar-override {
                     width: 100% !important;
@@ -504,7 +492,7 @@ const AppointmentsCalendar = () => {
                 .react-calendar__viewContainer {
                     flex: 1;
                 }
-                 .react-calendar__month-view {
+                .react-calendar__month-view {
                     flex: 1;
                     display: flex;
                     flex-direction: column;
@@ -534,6 +522,15 @@ const AppointmentsCalendar = () => {
                     border-radius: 12px !important;
                     font-weight: 800 !important;
                 }
+                .react-calendar__tile:hover {
+                    background: #f1f5f9 !important;
+                    border-radius: 12px !important;
+                    transform: translateY(-2px);
+                    transition: all 0.2s ease;
+                }
+                .react-calendar__tile--active:hover {
+                    background: var(--navy-800) !important;
+                }
                 .has-appointment::after {
                     content: '•';
                     font-size: 1.5rem;
@@ -541,7 +538,7 @@ const AppointmentsCalendar = () => {
                     margin-top: -5px;
                 }
             `}</style>
-        </div >
+        </div>
     );
 };
 

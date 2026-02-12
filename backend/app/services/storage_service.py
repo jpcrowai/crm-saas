@@ -7,7 +7,8 @@ load_dotenv()
 
 # Initialize Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # Using service key for admin operations
+# Prioritize the secret service key for administrative storage operations
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY_SECRET") or os.getenv("SUPABASE_SERVICE_KEY")
 BUCKET_NAME = os.getenv("SUPABASE_BUCKET_NAME", "crm-files")
 
 if not SUPABASE_URL or not SUPABASE_KEY:

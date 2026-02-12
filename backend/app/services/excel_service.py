@@ -3,11 +3,17 @@ import openpyxl
 import json
 from typing import List, Dict, Any
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-EXCEL_DIR = os.path.join(BASE_DIR, "excel")
+# Handle Read-only filesystem on Vercel by using /tmp for temporary Excel storage
+if os.environ.get("VERCEL"):
+    EXCEL_DIR = "/tmp/excel"
+else:
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    EXCEL_DIR = os.path.join(BASE_DIR, "excel")
 
-if not os.path.exists(EXCEL_DIR):
-    os.makedirs(EXCEL_DIR)
+try:
+    os.makedirs(EXCEL_DIR, exist_ok=True)
+except Exception as e:
+    print(f"Warning: Could not create excel directory {EXCEL_DIR}: {e}")
 
 def _get_file_path(file_name: str) -> str:
     if not file_name.endswith(".xlsx"):

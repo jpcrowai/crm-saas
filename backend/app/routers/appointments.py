@@ -19,11 +19,27 @@ from app.models.sql_models import (
 )
 from app.services.excel_service import read_sheet, write_sheet # Keep for legacy configs if needed
 
-# Google API imports
-from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request as GoogleRequest
+# Google API imports (Commented out to reduce deployment size)
+# from google_auth_oauthlib.flow import Flow
+# from googleapiclient.discovery import build
+# from google.oauth2.credentials import Credentials
+# from google.auth.transport.requests import Request as GoogleRequest
+
+def build(*args, **kwargs):
+    """Dummy build function for Google API stubbing."""
+    return None
+
+class Flow:
+    """Dummy Flow class for Google API stubbing."""
+    @classmethod
+    def from_client_config(cls, *args, **kwargs):
+        raise HTTPException(status_code=501, detail="Google Calendar integration temporarily disabled for size optimization")
+
+class Credentials:
+    """Dummy Credentials class for Google API stubbing."""
+    @classmethod
+    def from_authorized_user_info(cls, *args, **kwargs):
+        return None
 
 router = APIRouter(prefix="/tenant/appointments", tags=["appointments"])
 

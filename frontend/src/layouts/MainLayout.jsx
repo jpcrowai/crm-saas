@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import { useAuth } from '../context/AuthContext'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, LayoutDashboard, Briefcase, Calendar as CalendarIcon, DollarSign, Settings } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
+import { Link, useLocation } from 'react-router-dom'
 
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false)
   const { user } = useAuth()
+  const location = useLocation()
 
   // Check if payment is overdue (for tenant users only)
   const isOverdue = user?.payment_status === 'overdue'
@@ -93,6 +95,50 @@ const MainLayout = () => {
           <Outlet />
         </div>
       </main>
+
+      {/* MOBILE BOTTOM NAVIGATION */}
+      {(user?.role_global !== 'master' || user?.tenant_slug) && (
+        <nav className="mobile-nav">
+          <div className="mobile-nav-content">
+            <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+              <LayoutDashboard size={20} />
+              <span>DASH</span>
+            </Link>
+            <Link to="/pipeline" className={`mobile-nav-item ${location.pathname === '/pipeline' ? 'active' : ''}`}>
+              <Briefcase size={20} />
+              <span>LEADS</span>
+            </Link>
+            <Link to="/calendar" className={`mobile-nav-item ${location.pathname === '/calendar' ? 'active' : ''}`}>
+              <CalendarIcon size={20} />
+              <span>AGENDA</span>
+            </Link>
+            <Link to="/finances" className={`mobile-nav-item ${location.pathname === '/finances' ? 'active' : ''}`}>
+              <DollarSign size={20} />
+              <span>FINANCE</span>
+            </Link>
+            <Link to="/profile" className={`mobile-nav-item ${location.pathname === '/profile' ? 'active' : ''}`}>
+              <Settings size={20} />
+              <span>CONTA</span>
+            </Link>
+          </div>
+        </nav>
+      )}
+
+      {/* For Master on Mobile, simple Nav */}
+      {user?.role_global === 'master' && !user?.tenant_slug && (
+        <nav className="mobile-nav">
+          <div className="mobile-nav-content">
+            <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+              <Briefcase size={20} />
+              <span>AMBIENTES</span>
+            </Link>
+            <Link to="/profile" className={`mobile-nav-item ${location.pathname === '/profile' ? 'active' : ''}`}>
+              <Settings size={20} />
+              <span>MEU PERFIL</span>
+            </Link>
+          </div>
+        </nav>
+      )}
     </div>
   )
 }

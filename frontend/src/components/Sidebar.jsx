@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon, DollarSign, Activity, Settings, Package, Layers, FileText, Shield, Building
+  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon, DollarSign, Activity, Settings, Package, Layers, FileText, Shield, Building, ChevronDown
 } from 'lucide-react';
 import '../styles/sidebar.css';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,7 @@ import logoFull from '../assets/branding/logo_full.png';
 import logoIcon from '../assets/branding/logo_icon.png';
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
+  const [servicesOpen, setServicesOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, login, logout } = useAuth();
@@ -50,20 +51,31 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/', module: 'dashboard' },
       { label: 'Pipeline', icon: <Briefcase size={20} />, path: '/pipeline', module: 'leads_pipeline' },
       { label: 'Agenda', icon: <CalendarIcon size={20} />, path: '/calendar', module: 'agenda' },
+      {
+        label: 'Serviços',
+        icon: <Layers size={20} />,
+        isGroup: true,
+        subItems: [
+          { label: 'Profissionais', icon: <Briefcase size={18} />, path: '/professionals', module: 'equipe' },
+          { label: 'Fornecedores', icon: <Building size={18} />, path: '/suppliers', module: 'equipe' },
+          { label: 'Produtos', icon: <Package size={18} />, path: '/products', module: 'produtos' },
+          { label: 'Planos', icon: <Layers size={18} />, path: '/plans', module: 'assinaturas' },
+          { label: 'Assinaturas', icon: <FileText size={18} />, path: '/subscriptions', module: 'assinaturas' },
+        ]
+      },
       { label: 'Clientes', icon: <Users size={20} />, path: '/customers', module: 'clientes' },
-      { label: 'Fornecedores', icon: <Building size={20} />, path: '/suppliers', module: 'equipe' },
-      { label: 'Profissionais', icon: <Briefcase size={20} />, path: '/professionals', module: 'equipe' },
       { label: 'Financeiro', icon: <DollarSign size={20} />, path: '/finances', module: 'financeiro' },
       { label: 'Relatórios', icon: <Activity size={20} />, path: '/reports', module: 'dashboard' },
-      { label: 'Produtos', icon: <Package size={20} />, path: '/products', module: 'produtos' },
-      { label: 'Planos', icon: <Layers size={20} />, path: '/plans', module: 'assinaturas' },
-      { label: 'Assinaturas', icon: <FileText size={20} />, path: '/subscriptions', module: 'assinaturas' },
       { label: 'Equipe', icon: <Shield size={20} />, path: '/team', module: 'equipe' },
       { label: 'Minha Conta', icon: <Settings size={20} />, path: '/profile' }
     ];
 
   const menuItems = allMenuItems.filter(item => {
     if (isMaster) return true;
+    if (item.isGroup) {
+      // Show group if any subitem is enabled
+      return item.subItems.some(sub => (user?.modulos_habilitados || []).includes(sub.module));
+    }
     if (!item.module) return true;
     return (user?.modulos_habilitados || []).includes(item.module);
   });
@@ -126,10 +138,43 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path && !inTenantContext;
-          // Active state logic might need tweak if we are "in tenant" but item is "Ambientes".
-          // If inTenantContext is true, we are effectively NOT on "Ambientes" page (which is master root).
-          // So isActive is false.
+          if (item.isGroup) {
+            const isAnySubActive = item.subItems.some(sub => location.pathname === sub.path);
+            const visibleSubItems = item.subItems.filter(sub => (user?.modulos_habilitados || []).includes(sub.module));
+
+            return (
+              <div key={item.label} className={`nav-group ${servicesOpen || isAnySubActive ? 'open' : ''}`}>
+                <button
+                  className={`nav-item group-toggle ${isAnySubActive ? 'active' : ''}`}
+                  onClick={() => setServicesOpen(!servicesOpen)}
+                >
+                  <span className="icon">{item.icon}</span>
+                  {!collapsed && (
+                    <>
+                      <span className="label">{item.label}</span>
+                      <ChevronDown size={14} className="arrow" />
+                    </>
+                  )}
+                </button>
+                {(servicesOpen || isAnySubActive) && !collapsed && (
+                  <div className="sub-menu">
+                    {visibleSubItems.map(sub => (
+                      <Link
+                        key={sub.label}
+                        to={sub.path}
+                        className={`sub-nav-item ${location.pathname === sub.path ? 'active' : ''}`}
+                      >
+                        <span className="icon-sm">{sub.icon}</span>
+                        <span className="label-sm">{sub.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          const isActive = location.pathname === item.path;
 
           return (
             <Link

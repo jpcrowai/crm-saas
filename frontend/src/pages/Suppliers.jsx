@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSuppliers, getSupplierDebts, createSupplier, updateSupplier, deleteSupplier, uploadFile } from '../services/api';
+import { useToast } from '../context/ToastContext';
 import { Plus, User, Mail, Phone, Building, Trash2, Edit, X, Users, TrendingDown, DollarSign, FileText } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 import '../styles/professionals.css';
@@ -12,6 +13,7 @@ const Suppliers = () => {
     const [supplierDebts, setSupplierDebts] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
+    const toast = useToast();
     const [loadingDebts, setLoadingDebts] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -62,7 +64,7 @@ const Suppliers = () => {
             resetForm();
             loadSuppliers();
         } catch (error) {
-            alert('Erro ao criar fornecedor');
+            toast.error('Erro ao criar fornecedor');
             console.error(error);
         }
     };
@@ -76,7 +78,7 @@ const Suppliers = () => {
             resetForm();
             loadSuppliers();
         } catch (error) {
-            alert('Erro ao atualizar fornecedor');
+            toast.error('Erro ao atualizar fornecedor');
             console.error(error);
         }
     };
@@ -639,12 +641,19 @@ const Suppliers = () => {
                                                 accept="image/*"
                                                 className="input-premium"
                                                 onChange={async (e) => {
-                                                    if (e.target.files[0]) {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        if (file.size > 4.5 * 1024 * 1024) {
+                                                            toast.error("A imagem é muito grande. O limite máximo é 4.5MB.");
+                                                            e.target.value = "";
+                                                            return;
+                                                        }
                                                         try {
-                                                            const res = await uploadFile(e.target.files[0]);
+                                                            const res = await uploadFile(file);
                                                             setFormData({ ...formData, photo_url: res.data.url });
+                                                            toast.success("Logo enviado!");
                                                         } catch (err) {
-                                                            alert("Erro ao enviar imagem");
+                                                            toast.error("Erro ao enviar imagem");
                                                         }
                                                     }
                                                 }}

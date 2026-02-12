@@ -141,6 +141,12 @@ const MasterAmbientes = () => {
   const handleFileChange = (e, isEditing = false) => {
     const file = e.target.files[0];
     if (file) {
+      // Vercel limit is 4.5MB. We'll set 4MB to be safe.
+      if (file.size > 4.5 * 1024 * 1024) {
+        toast.error("A imagem é muito grande. O limite máximo é 4.5MB.");
+        e.target.value = ""; // Clear input
+        return;
+      }
       if (isEditing) setEditingEnv({ ...editingEnv, logo: file });
       else setNewEnv({ ...newEnv, logo: file });
       setLogoPreview(URL.createObjectURL(file));

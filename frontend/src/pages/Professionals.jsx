@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getProfessionals, createProfessional, updateProfessional, deleteProfessional, uploadFile } from '../services/api';
+import { useToast } from '../context/ToastContext';
 import { Plus, User, Mail, Phone, Briefcase, Trash2, Edit, X, Users } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 import '../styles/professionals.css';
@@ -11,6 +12,7 @@ const Professionals = () => {
     const [selectedProfessional, setSelectedProfessional] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
+    const toast = useToast();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -46,7 +48,7 @@ const Professionals = () => {
             resetForm();
             loadProfessionals();
         } catch (error) {
-            alert('Erro ao criar profissional');
+            toast.error('Erro ao cadastrar profissional');
             console.error(error);
         }
     };
@@ -60,7 +62,7 @@ const Professionals = () => {
             resetForm();
             loadProfessionals();
         } catch (error) {
-            alert('Erro ao atualizar profissional');
+            toast.error('Erro ao atualizar profissional');
             console.error(error);
         }
     };
@@ -472,12 +474,19 @@ const Professionals = () => {
                                                 accept="image/*"
                                                 className="input-premium"
                                                 onChange={async (e) => {
-                                                    if (e.target.files[0]) {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        if (file.size > 4.5 * 1024 * 1024) {
+                                                            toast.error("A imagem é muito grande. O limite máximo é 4.5MB.");
+                                                            e.target.value = "";
+                                                            return;
+                                                        }
                                                         try {
-                                                            const res = await uploadFile(e.target.files[0]);
+                                                            const res = await uploadFile(file);
                                                             setFormData({ ...formData, photo_url: res.data.url });
+                                                            toast.success("Foto enviada!");
                                                         } catch (err) {
-                                                            alert("Erro ao enviar imagem");
+                                                            toast.error("Erro ao enviar imagem");
                                                         }
                                                     }
                                                 }}

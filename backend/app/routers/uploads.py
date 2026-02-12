@@ -32,23 +32,28 @@ async def upload_file(file: UploadFile = File(...)):
         
         # 1. Try Supabase Storage first (Professional way)
         try:
+            print(f"DEBUG: Attempting upload to Supabase bucket: {storage_service.BUCKET_NAME}")
             public_url = storage_service.upload_file(
                 file.file,
                 filename,
                 "generic", # Folder in bucket
                 "uploads"  # Subfolder
             )
+            print(f"DEBUG: Supabase upload success: {public_url}")
             return {"url": public_url}
         except Exception as storage_err:
-            print(f"Supabase Storage failed, falling back: {storage_err}")
+            print(f"ERROR: Supabase Storage failed: {storage_err}")
             
             # 2. Fallback to local /tmp (only works while instance is alive)
+            # IMPORTANT: Return a path that starts with /static, let frontend handle the domain
             file_path = os.path.join(UPLOAD_DIR, filename)
             file.file.seek(0) # Reset file pointer after supabase attempt
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             
-            return {"url": f"/static/uploads/{filename}"}
+            relative_url = f"/static/uploads/{filename}"
+            print(f"DEBUG: Falling back to local storage: {relative_url}")
+            return {"url": relative_url}
 
     except Exception as e:
         print(f"Critical error uploading file: {e}")

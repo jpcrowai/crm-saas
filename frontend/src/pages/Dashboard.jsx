@@ -144,14 +144,14 @@ const ClientDashboard = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '2rem' }}>
+      <div className="grid-profile">
         {/* CHART DATA CARD */}
         <div className="data-card-luxury">
           <div className="data-card-header">
             <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--navy-900)' }}>Atividade Comercial (7 Dias)</h3>
           </div>
           <div style={{ padding: '2rem' }}>
-            <div style={{ height: '320px', width: '100%' }}>
+            <div style={{ height: '320px', width: '100%', minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />

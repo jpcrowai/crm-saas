@@ -494,7 +494,11 @@ const Professionals = () => {
                                         )}
                                         {formData.photo_url && (
                                             <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
-                                                <img src={formData.photo_url.startsWith('http') ? formData.photo_url : `${API_URL}${formData.photo_url}`} alt="Preview" style={{ height: '60px', borderRadius: '8px', border: '1px solid var(--gold-500)' }} />
+                                                <img
+                                                    src={formData.photo_url.startsWith('http') ? formData.photo_url : `${API_URL}${formData.photo_url}`}
+                                                    alt="Preview"
+                                                    style={{ height: '60px', borderRadius: '8px', border: '1px solid var(--gold-500)' }}
+                                                />
                                             </div>
                                         )}
                                     </div>

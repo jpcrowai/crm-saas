@@ -8,6 +8,7 @@ import { Link, useLocation } from 'react-router-dom'
 
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false)
+  const [activeGroup, setActiveGroup] = useState(null) // Controls the 'floating' sub-menu
   const { user } = useAuth()
   const location = useLocation()
 
@@ -98,30 +99,122 @@ const MainLayout = () => {
 
       {/* MOBILE BOTTOM NAVIGATION */}
       {(user?.role_global !== 'master' || user?.tenant_slug) && (
-        <nav className="mobile-nav">
-          <div className="mobile-nav-content">
-            <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
-              <LayoutDashboard size={20} />
-              <span>DASH</span>
-            </Link>
-            <Link to="/pipeline" className={`mobile-nav-item ${location.pathname === '/pipeline' ? 'active' : ''}`}>
-              <Briefcase size={20} />
-              <span>LEADS</span>
-            </Link>
-            <Link to="/calendar" className={`mobile-nav-item ${location.pathname === '/calendar' ? 'active' : ''}`}>
-              <CalendarIcon size={20} />
-              <span>AGENDA</span>
-            </Link>
-            <Link to="/finances" className={`mobile-nav-item ${location.pathname === '/finances' ? 'active' : ''}`}>
-              <DollarSign size={20} />
-              <span>FINANCE</span>
-            </Link>
-            <Link to="/profile" className={`mobile-nav-item ${location.pathname === '/profile' ? 'active' : ''}`}>
-              <Settings size={20} />
-              <span>CONTA</span>
-            </Link>
-          </div>
-        </nav>
+        <>
+          {/* FLOATING SUB-MENU (ACTION SHEET) */}
+          {activeGroup && (
+            <div
+              className="mobile-action-sheet"
+              onClick={() => setActiveGroup(null)}
+              style={{
+                position: 'fixed',
+                bottom: '65px',
+                left: 0,
+                right: 0,
+                top: 0,
+                background: 'rgba(2, 6, 23, 0.4)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 999,
+                display: 'flex',
+                alignItems: 'flex-end'
+              }}
+            >
+              <div
+                className="action-sheet-content"
+                onClick={e => e.stopPropagation()}
+                style={{
+                  width: '100%',
+                  background: 'var(--navy-800)',
+                  borderTop: '2px solid var(--gold-500)',
+                  borderTopLeftRadius: '20px',
+                  borderTopRightRadius: '20px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  animation: 'slideUp 0.3s ease-out'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gold-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    {activeGroup === 'leads' ? 'Vendas & CRM' :
+                      activeGroup === 'finance' ? 'Gestão Financeira' : 'Configurações'}
+                  </span>
+                </div>
+
+                {activeGroup === 'leads' && (
+                  <>
+                    <Link to="/pipeline" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <Briefcase size={18} /> <span>Pipeline / Funil</span>
+                    </Link>
+                    <Link to="/customers" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <Briefcase size={18} /> <span>Base de Clientes</span>
+                    </Link>
+                  </>
+                )}
+
+                {activeGroup === 'finance' && (
+                  <>
+                    <Link to="/finances" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <DollarSign size={18} /> <span>Lançamentos (Caixa)</span>
+                    </Link>
+                    <Link to="/reports" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <Activity size={18} /> <span>Relatórios de Performance</span>
+                    </Link>
+                  </>
+                )}
+
+                {activeGroup === 'account' && (
+                  <>
+                    <Link to="/team" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <Settings size={18} /> <span>Equipe & Acessos</span>
+                    </Link>
+                    <Link to="/profile" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <Settings size={18} /> <span>Minha Conta (Perfil)</span>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          <nav className="mobile-nav">
+            <div className="mobile-nav-content">
+              <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setActiveGroup(null)}>
+                <LayoutDashboard size={20} />
+                <span>DASH</span>
+              </Link>
+
+              <button
+                className={`mobile-nav-item ${activeGroup === 'leads' ? 'active' : ''}`}
+                onClick={() => setActiveGroup(activeGroup === 'leads' ? null : 'leads')}
+              >
+                <Briefcase size={20} />
+                <span>VENDAS</span>
+              </button>
+
+              <Link to="/calendar" className={`mobile-nav-item ${location.pathname === '/calendar' ? 'active' : ''}`} onClick={() => setActiveGroup(null)}>
+                <CalendarIcon size={20} />
+                <span>AGENDA</span>
+              </Link>
+
+              <button
+                className={`mobile-nav-item ${activeGroup === 'finance' ? 'active' : ''}`}
+                onClick={() => setActiveGroup(activeGroup === 'finance' ? null : 'finance')}
+              >
+                <DollarSign size={20} />
+                <span>FINANC</span>
+              </button>
+
+              <button
+                className={`mobile-nav-item ${activeGroup === 'account' ? 'active' : ''}`}
+                onClick={() => setActiveGroup(activeGroup === 'account' ? null : 'account')}
+              >
+                <Settings size={20} />
+                <span>CONTA</span>
+              </button>
+            </div>
+          </nav>
+        </>
       )}
 
       {/* For Master on Mobile, simple Nav */}

@@ -28,7 +28,20 @@
 @media (max-width: 768px) {
     .card-grid {
         grid-template-columns: 1fr;
-        gap: 2rem;
+        gap: 1.5rem;
+    }
+
+    .env-card {
+        min-height: auto !important;
+        width: 100% !important;
+    }
+
+    .btn-access-env {
+        width: 100% !important;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 
@@ -115,6 +128,54 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 180px;
+}
+
+.mobile-nav-item span {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.mobile-nav-item button {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.action-sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    color: var(--white);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.action-sheet-item:active {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: var(--gold-500);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
 }
 
 .env-stats-row {

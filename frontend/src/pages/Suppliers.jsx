@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSuppliers, getSupplierDebts, createSupplier, updateSupplier, deleteSupplier, uploadFile } from '../services/api';
+import { getSuppliers, getSupplierDebts, createSupplier, updateSupplier, deleteSupplier, uploadFile, API_URL } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { Plus, User, Mail, Phone, Building, Trash2, Edit, X, Users, TrendingDown, DollarSign, FileText } from 'lucide-react';
 import '../styles/tenant-luxury.css';
@@ -189,7 +189,7 @@ const Suppliers = () => {
                             <div className="professional-card-header">
                                 {supplier.photo_url ? (
                                     <img
-                                        src={supplier.photo_url}
+                                        src={supplier.photo_url.startsWith('http') ? supplier.photo_url : `${API_URL}${supplier.photo_url}`}
                                         alt={supplier.name}
                                         className="professional-photo"
                                     />
@@ -400,7 +400,7 @@ const Suppliers = () => {
                                 <div className="details-header">
                                     {selectedSupplier.photo_url ? (
                                         <img
-                                            src={selectedSupplier.photo_url}
+                                            src={selectedSupplier.photo_url.startsWith('http') ? selectedSupplier.photo_url : `${API_URL}${selectedSupplier.photo_url}`}
                                             alt={selectedSupplier.name}
                                             className="details-photo"
                                         />
@@ -661,7 +661,7 @@ const Suppliers = () => {
                                         )}
                                         {formData.photo_url && (
                                             <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
-                                                <img src={formData.photo_url} alt="Preview" style={{ height: '60px', borderRadius: '8px', border: '1px solid var(--gold-500)' }} />
+                                                <img src={formData.photo_url.startsWith('http') ? formData.photo_url : `${API_URL}${formData.photo_url}`} alt="Preview" style={{ height: '60px', borderRadius: '8px', border: '1px solid var(--gold-500)' }} />
                                             </div>
                                         )}
                                     </div>

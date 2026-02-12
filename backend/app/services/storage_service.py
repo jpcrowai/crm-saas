@@ -11,10 +11,15 @@ SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # Using service key for admin 
 BUCKET_NAME = os.getenv("SUPABASE_BUCKET_NAME", "crm-files")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    print("WARNING: SUPABASE_URL or SUPABASE_SERVICE_KEY not set in .env")
+    print(f"WARNING: Supabase configuration missing. URL: {'SET' if SUPABASE_URL else 'MISSING'}, KEY: {'SET' if SUPABASE_KEY else 'MISSING'}")
     supabase: Optional[Client] = None
 else:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    try:
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        print("DEBUG: Supabase client initialized successfully")
+    except Exception as e:
+        print(f"ERROR: Failed to initialize Supabase client: {e}")
+        supabase = None
 
 
 def upload_file(

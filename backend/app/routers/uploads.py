@@ -5,12 +5,13 @@ import uuid
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 
-# Handle Read-only filesystem on Vercel by using /tmp for temporary uploads
 if os.environ.get("VERCEL"):
-    UPLOAD_DIR = "/tmp/uploads"
+    STATIC_DIR = "/tmp/static"
 else:
     BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    UPLOAD_DIR = os.path.join(BACKEND_DIR, "static", "uploads")
+    STATIC_DIR = os.path.join(BACKEND_DIR, "static")
+
+UPLOAD_DIR = os.path.join(STATIC_DIR, "uploads")
 
 try:
     os.makedirs(UPLOAD_DIR, exist_ok=True)

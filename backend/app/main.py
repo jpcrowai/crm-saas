@@ -7,7 +7,10 @@ from app.database import engine, Base
 import app.models.sql_models as sql_models
 
 # Initialize SQL database tables
-sql_models.Base.metadata.create_all(bind=engine)
+try:
+    sql_models.Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"CRITICAL: Could not connect to database on startup: {e}")
 
 app = FastAPI(title="CRM SaaS Multi-tenant")
 

@@ -381,7 +381,7 @@ async def import_leads_excel(
     current_user: TokenData = Depends(get_current_tenant_user),
     db: Session = Depends(get_db)
 ):
-    import pandas as pd
+    from openpyxl import load_workbook
     from io import BytesIO
     
     if not file.filename.endswith(('.xlsx', '.xls')):
@@ -389,7 +389,11 @@ async def import_leads_excel(
         
     try:
         contents = await file.read()
-        df = pd.read_excel(BytesIO(contents))
+        wb = load_workbook(BytesIO(contents), data_only=True)
+        ws = wb.active
+        
+        # Get headers
+        headers = [str(cell.value).lower().strip() for cell in ws[1] if cell.value is not None]
         
         mapping = {
             "nome": ["nome", "lead", "cliente", "name"],
@@ -402,18 +406,27 @@ async def import_leads_excel(
             "observacoes": ["observacoes", "notas", "obs", "notes"]
         }
         
-        def find_col(possible_names):
-            for col in df.columns:
-                if col.lower().strip() in possible_names: return col
+        def find_col_idx(possible_names):
+            for idx, h in enumerate(headers):
+                if h in possible_names: return idx
             return None
 
-        actual_mapping = {custom: find_col(standards) for custom, standards in mapping.items()}
+        col_mapping = {custom: find_col_idx(standards) for custom, standards in mapping.items()}
         stats = {"created": 0, "updated": 0, "errors": 0}
         
-        for _, row in df.iterrows():
+        # Skip header row
+        for row in ws.iter_rows(min_row=2, values_only=True):
             try:
-                row_data = {key: str(row[col]) if col and pd.notnull(row[col]) else "" for key, col in actual_mapping.items()}
+                row_data = {}
+                for key, idx in col_mapping.items():
+                    if idx is not None:
+                        val = row[idx]
+                        row_data[key] = str(val) if val is not None else ""
+                    else:
+                        row_data[key] = ""
                 
+                if not row_data["nome"]: continue
+
                 # Try match existing
                 lead = db.query(SQLLead).filter(
                     SQLLead.tenant_id == current_user.tenant_id,
@@ -445,7 +458,8 @@ async def import_leads_excel(
                 # history
                 db.add(SQLLeadHistory(lead_id=lead.id, type="note", description="Importado via Excel", user_name=current_user.email))
                 sync_customer_from_lead(db, current_user.tenant_id, lead)
-            except:
+            except Exception as e:
+                print(f"Error importing row: {e}")
                 stats["errors"] += 1
         
         db.commit()

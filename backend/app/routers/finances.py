@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from typing import List, Optional, Dict, Any
 import uuid
-import pandas as pd
+from openpyxl import Workbook
 from io import BytesIO
 from datetime import datetime, date
 from pydantic import BaseModel
@@ -450,24 +450,28 @@ async def export_finances(
         SQLFinanceEntry.tenant_id == current_user.tenant_id
     ).all()
     
-    data = []
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Financeiro"
+    
+    headers = ["Data Vencimento", "Descrição", "Tipo", "Valor", "Status", "Origem", "Método Pagamento"]
+    ws.append(headers)
+    
     for e in entries:
-        data.append({
-            "Data Vencimento": e.due_date.isoformat(),
-            "Descrição": e.description,
-            "Tipo": e.type,
-            "Valor": float(e.amount),
-            "Status": e.status,
-            "Origem": e.origin,
-            "Método Pagamento": e.payment_method
-        })
+        ws.append([
+            e.due_date.isoformat() if e.due_date else "",
+            e.description,
+            e.type,
+            float(e.amount),
+            e.status,
+            e.origin,
+            e.payment_method or ""
+        ])
     
-    df = pd.DataFrame(data)
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Financeiro')
-    
+    wb.save(output)
     output.seek(0)
+    
     filename = f"financeiro_{current_user.tenant_slug}_{date.today().isoformat()}.xlsx"
     return StreamingResponse(
         output,

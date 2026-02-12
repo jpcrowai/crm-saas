@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from typing import List, Optional, Dict, Any
-import pandas as pd
+from openpyxl import Workbook, load_workbook
 from io import BytesIO
 from datetime import datetime
 from pydantic import BaseModel
@@ -30,7 +30,7 @@ class Product(BaseModel):
         from_attributes = True
 
 def clean_price(val):
-    if val is None or pd.isna(val): return 0.0
+    if val is None: return 0.0
     if isinstance(val, (int, float)): return float(val)
     if isinstance(val, str):
         clean = val.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
@@ -186,34 +186,36 @@ async def get_product_template(
         SQLProduct.tenant_id == current_user.tenant_id
     ).all()
     
-    data = []
-    for p in products:
-        data.append({
-            "Código": p.sku or "",
-            "Nome": p.name,
-            "Descrição": p.description or "",
-            "Preço Unitário": float(p.price),
-            "Tipo": "Serviço" if p.type == "service" else "Produto",
-            "Duração (min)": p.duration_minutes or 30,
-            "Categoria": "",
-            "Unidade": "unit",
-            "Status": "Ativo" if p.active else "Inativo"
-        })
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Produtos"
     
-    df = pd.DataFrame(data)
-    if df.empty:
-        df = pd.DataFrame(columns=["Código", "Nome", "Descrição", "Preço Unitário", "Tipo", "Duração (min)", "Categoria", "Unidade", "Status"])
+    headers = ["Código", "Nome", "Descrição", "Preço Unitário", "Tipo", "Duração (min)", "Categoria", "Unidade", "Status"]
+    ws.append(headers)
+    
+    for p in products:
+        ws.append([
+            p.sku or "",
+            p.name,
+            p.description or "",
+            float(p.price),
+            "Serviço" if p.type == "service" else "Produto",
+            p.duration_minutes or 30,
+            "",
+            "unit",
+            "Ativo" if p.active else "Inativo"
+        ])
     
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Produtos')
+    wb.save(output)
     output.seek(0)
     
     filename = f"modelo_produtos_{current_user.tenant_slug}.xlsx"
-    with open(filename, "wb") as f:
-        f.write(output.read())
-        
-    return FileResponse(filename, filename=filename, background=None)
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 @router.post("/products/import")
 async def import_products(
@@ -226,7 +228,11 @@ async def import_products(
         
     try:
         contents = await file.read()
-        df = pd.read_excel(BytesIO(contents))
+        wb = load_workbook(BytesIO(contents), data_only=True)
+        ws = wb.active
+        
+        # Get headers
+        headers = [str(cell.value).lower().strip() for cell in ws[1] if cell.value is not None]
         
         mapping = {
             "sku": ["código", "codigo", "code", "id", "sku"],
@@ -238,30 +244,31 @@ async def import_products(
             "duration": ["duração", "duracao", "duration", "duração (min)"]
         }
         
-        def find_col(possible_names):
-            for col in df.columns:
-                if str(col).lower().strip() in possible_names:
-                    return col
+        def find_col_idx(possible_names):
+            for idx, h in enumerate(headers):
+                if h in possible_names:
+                    return idx
             return None
 
-        actual_mapping = {key: find_col(standards) for key, standards in mapping.items()}
+        col_mapping = {key: find_col_idx(standards) for key, standards in mapping.items()}
         
-        if not actual_mapping["name"] and not actual_mapping["sku"]:
+        if col_mapping["name"] is None and col_mapping["sku"] is None:
             raise HTTPException(status_code=400, detail="Column 'Nome' or 'Código' not found in Excel")
 
         stats = {"created": 0, "updated": 0, "errors": 0}
         
-        for _, row in df.iterrows():
+        # Skip header row
+        for row in ws.iter_rows(min_row=2, values_only=True):
             try:
                 name = ""
-                if actual_mapping["name"]:
-                    name = str(row[actual_mapping["name"]]).strip()
+                if col_mapping["name"] is not None:
+                    val = row[col_mapping["name"]]
+                    name = str(val).strip() if val is not None else ""
                 
                 sku = ""
-                if actual_mapping["sku"]:
-                    val_sku = row[actual_mapping["sku"]]
-                    if pd.notnull(val_sku):
-                        sku = str(val_sku).strip()
+                if col_mapping["sku"] is not None:
+                    val_sku = row[col_mapping["sku"]]
+                    sku = str(val_sku).strip() if val_sku is not None else ""
                     
                 if not name and sku:
                     name = sku
@@ -282,28 +289,34 @@ async def import_products(
                     ).first()
                 
                 price = 0.0
-                if actual_mapping["price"] and pd.notnull(row[actual_mapping["price"]]):
-                    price = clean_price(row[actual_mapping["price"]])
+                if col_mapping["price"] is not None:
+                    val_price = row[col_mapping["price"]]
+                    if val_price is not None:
+                        price = clean_price(val_price)
                 
                 description = ""
-                if actual_mapping["description"] and pd.notnull(row[actual_mapping["description"]]):
-                    description = str(row[actual_mapping["description"]])
+                if col_mapping["description"] is not None:
+                    val_desc = row[col_mapping["description"]]
+                    description = str(val_desc) if val_desc is not None else ""
                 
                 active = True
-                if actual_mapping["status"] and pd.notnull(row[actual_mapping["status"]]):
-                    status_val = str(row[actual_mapping["status"]]).lower()
+                if col_mapping["status"] is not None:
+                    val_stat = row[col_mapping["status"]]
+                    status_val = str(val_stat).lower() if val_stat is not None else ""
                     active = status_val in ["active", "ativo", "ativa", "sim", "yes", "true", "1"]
 
                 p_type = "product"
-                if actual_mapping["type"] and pd.notnull(row[actual_mapping["type"]]):
-                    val_type = str(row[actual_mapping["type"]]).lower()
+                if col_mapping["type"] is not None:
+                    val_type = str(row[col_mapping["type"]]).lower() if row[col_mapping["type"]] is not None else ""
                     if "serv" in val_type:
                         p_type = "service"
 
                 duration = 30
-                if actual_mapping["duration"] and pd.notnull(row[actual_mapping["duration"]]):
+                if col_mapping["duration"] is not None:
                     try:
-                        duration = int(float(row[actual_mapping["duration"]]))
+                        val_dur = row[col_mapping["duration"]]
+                        if val_dur is not None:
+                            duration = int(float(val_dur))
                     except: pass
                 
                 if existing:

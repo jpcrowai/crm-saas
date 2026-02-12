@@ -1,0 +1,12 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.env
+.ipynb_checkpoints/
+node_modules/
+dist/
+static/logos/*
+excel/*
+storage/*

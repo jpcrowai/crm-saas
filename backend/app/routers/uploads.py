@@ -17,6 +17,8 @@ try:
 except Exception as e:
     print(f"Warning: Could not create upload directory {UPLOAD_DIR}: {e}")
 
+from app.services import storage_service
+
 @router.post("/")
 async def upload_file(file: UploadFile = File(...)):
     try:
@@ -27,19 +29,27 @@ async def upload_file(file: UploadFile = File(...)):
         
         # Generate unique filename
         filename = f"{uuid.uuid4()}{ext}"
-        file_path = os.path.join(UPLOAD_DIR, filename)
         
-        # Save file
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # 1. Try Supabase Storage first (Professional way)
+        try:
+            public_url = storage_service.upload_file(
+                file.file,
+                filename,
+                "generic", # Folder in bucket
+                "uploads"  # Subfolder
+            )
+            return {"url": public_url}
+        except Exception as storage_err:
+            print(f"Supabase Storage failed, falling back: {storage_err}")
             
-        # Return URL (Assuming standard mount at /static)
-        # We need to construct the full URL or relative URL. usually frontend handles the domain.
-        # But let's return the full relative path from root. 
-        # Since app.mount("/static", ...) is at root, the url is /static/uploads/filename
-        
-        return {"url": f"/static/uploads/{filename}"}
+            # 2. Fallback to local /tmp (only works while instance is alive)
+            file_path = os.path.join(UPLOAD_DIR, filename)
+            file.file.seek(0) # Reset file pointer after supabase attempt
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            
+            return {"url": f"/static/uploads/{filename}"}
 
     except Exception as e:
-        print(f"Error uploading file: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao fazer upload da imagem")
+        print(f"Critical error uploading file: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao processar imagem")

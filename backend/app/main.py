@@ -24,7 +24,11 @@ app.add_middleware(
 )
 
 # Static files for logos
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static")
+# Static files for logos - Use /tmp on Vercel for write access
+if os.environ.get("VERCEL"):
+    STATIC_DIR = "/tmp/static"
+else:
+    STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static")
 LOGO_DIR = os.path.join(STATIC_DIR, "logos")
 
 try:

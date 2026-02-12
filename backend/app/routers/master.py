@@ -261,7 +261,11 @@ async def create_ambiente(
         except Exception as e:
             print(f"Error uploading logo: {e}")
             # Fallback to local
-            static_dir = os.path.join("static", "logos")
+            if os.environ.get("VERCEL"):
+                static_dir = os.path.join("/tmp/static", "logos")
+            else:
+                static_dir = os.path.join("static", "logos")
+                
             os.makedirs(static_dir, exist_ok=True)
             filepath = os.path.join(static_dir, filename)
             with open(filepath, "wb") as buffer:
@@ -320,7 +324,12 @@ async def create_ambiente(
         except Exception as e:
             print(f"Error uploading signed contract: {e}")
             # Fallback to local
-            storage_dir = os.path.join("storage", slug)
+            if os.environ.get("VERCEL"):
+                storage_dir = os.path.join("/tmp/storage", slug)
+                os.makedirs("/tmp/storage", exist_ok=True)
+            else:
+                storage_dir = os.path.join("storage", slug)
+                
             os.makedirs(storage_dir, exist_ok=True)
             filepath = os.path.join(storage_dir, filename)
             with open(filepath, "wb") as buffer:
@@ -397,12 +406,17 @@ async def update_ambiente(
         except Exception as e:
             print(f"Error uploading logo: {e}")
             # Fallback
-            static_dir = os.path.join("static", "logos")
+            if os.environ.get("VERCEL"):
+                static_dir = os.path.join("/tmp/static", "logos")
+            else:
+                static_dir = os.path.join("static", "logos")
+                
             os.makedirs(static_dir, exist_ok=True)
             filepath = os.path.join(static_dir, filename)
             with open(filepath, "wb") as buffer:
                 shutil.copyfileobj(logo.file, buffer)
             tenant.logo_url = f"/static/logos/{filename}"
+            print(f"DEBUG: Logo updated locally at {tenant.logo_url}")
         
     if contract_file:
         if contract_file.content_type != "application/pdf":
@@ -421,7 +435,12 @@ async def update_ambiente(
         except Exception as e:
             print(f"Error uploading signed contract: {e}")
             # Fallback
-            storage_dir = os.path.join("storage", slug)
+            if os.environ.get("VERCEL"):
+                storage_dir = os.path.join("/tmp/storage", slug)
+                os.makedirs("/tmp/storage", exist_ok=True)
+            else:
+                storage_dir = os.path.join("storage", slug)
+                
             os.makedirs(storage_dir, exist_ok=True)
             filepath = os.path.join(storage_dir, filename)
             with open(filepath, "wb") as buffer:

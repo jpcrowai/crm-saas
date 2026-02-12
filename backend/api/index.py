@@ -1,4 +1,5 @@
 from app.main import app
 
-# This file is required for Vercel serverless deployment
-handler = app
+# Vercel entrypoint
+# The variable MUST be named 'app' for auto-detection
+app = app

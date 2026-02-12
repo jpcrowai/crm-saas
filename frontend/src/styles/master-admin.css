@@ -12,10 +12,10 @@
 /* ENVIRONMENT CARDS */
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2.5rem;
-    margin-top: 1rem;
-    justify-content: center;
+    grid-template-columns: repeat(3, 1fr);
+    /* Force 3 columns */
+    gap: 3rem;
+    margin-top: 1.5rem;
 }
 
 .env-card {
@@ -23,14 +23,14 @@
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-soft);
     padding: 0;
-    /* Changed to handle header strip */
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    min-height: 480px;
+    /* Fixed height for all cards */
+    height: 100%;
     transition: var(--transition);
     position: relative;
     overflow: hidden;
-    /* Clips the header strip to rounded corners */
 }
 
 /* Wrapper to allow badge outside card */
@@ -96,15 +96,22 @@
     font-weight: 700;
     color: var(--navy-900);
     margin-bottom: 0.25rem;
+    /* Prevent name from growing the card */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
 }
 
 .env-stats-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
-    padding: 1rem;
+    padding: 1.25rem;
     background: var(--bg-app);
     border-radius: var(--radius-md);
+    min-height: 140px;
+    /* Standardize height of the stats box */
 }
 
 .env-stat-item label {

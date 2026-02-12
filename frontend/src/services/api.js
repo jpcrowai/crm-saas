@@ -1,8 +1,10 @@
 import axios from 'axios';
 // API Service for CRM SaaS
 
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // Adjust if backend port differs
+  baseURL: API_URL,
 });
 
 api.interceptors.request.use(
@@ -123,8 +125,8 @@ export const deleteLead = (id) => {
   return api.delete(`/tenant/leads/${id}`);
 };
 
-export const getReports = () => {
-  return api.get('/tenant/reports');
+export const getReports = (params = {}) => {
+  return api.get('/tenant/reports', { params });
 };
 
 export const getNiches = () => {
@@ -141,6 +143,10 @@ export const getTeam = () => {
 
 export const createTeamMember = (data) => {
   return api.post('/tenant/users', data);
+};
+
+export const updateTeamMember = (id, data) => {
+  return api.put(`/tenant/users/${id}`, data);
 };
 
 export const deleteTeamMember = (id) => {
@@ -333,5 +339,14 @@ export const updateSupplier = (id, data) => api.put(`/tenant/suppliers/${id}`, d
 export const deleteSupplier = (id) => api.delete(`/tenant/suppliers/${id}`);
 
 export const savePipelineStages = (stages) => api.post('/tenant/pipeline-stages', { stages });
+
+
+export const uploadFile = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/uploads/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};
 
 export default api;

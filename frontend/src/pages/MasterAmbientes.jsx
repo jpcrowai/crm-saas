@@ -1,5 +1,5 @@
- import React, { useEffect, useState } from 'react';
-import { getMasterAmbientes, createAmbiente, selectTenant, updateAmbiente, getNiches, createNiche, deleteAmbiente, getMasterEnvironmentContract } from '../services/api';
+import React, { useEffect, useState } from 'react';
+import { getMasterAmbientes, createAmbiente, selectTenant, updateAmbiente, getNiches, createNiche, deleteAmbiente, getMasterEnvironmentContract, API_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
@@ -362,7 +362,7 @@ const MasterAmbientes = () => {
                       <label>Identidade Visual</label>
                       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                         <div style={{ width: 80, height: 80, borderRadius: '12px', background: 'white', border: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-                          <img src={logoPreview || (editingEnv.logo_url ? `http://localhost:8000${editingEnv.logo_url}` : '')} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                          <img src={logoPreview || (editingEnv.logo_url ? `${API_URL}${editingEnv.logo_url}` : '')} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
                         <label className="btn-secondary" style={{ cursor: 'pointer', padding: '0.5rem 1.1rem', fontSize: '0.8rem', textTransform: 'none' }}>
                           Trocar Imagem
@@ -525,7 +525,7 @@ const MasterAmbientes = () => {
                   <div className="env-card-header">
                     <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
                       <div className="env-logo-wrapper" style={{ background: 'white', position: 'relative' }}>
-                        {env.logo_url ? <img src={`http://localhost:8000${env.logo_url}`} alt="" /> : <Shield size={28} color="var(--primary)" />}
+                        {env.logo_url ? <img src={`${API_URL}${env.logo_url}`} alt="" /> : <Shield size={28} color="var(--primary)" />}
                       </div>
                       <div className="env-info">
                         <h3>{env.nome_empresa}</h3>

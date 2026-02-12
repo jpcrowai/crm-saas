@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { X, XCircle, Check, ChevronRight, ChevronLeft, CreditCard, ShoppingBag, User } from 'lucide-react';
-import { createFinance, getLeads, getCategories, getPaymentMethods } from '../services/api';
+import { createFinance, getLeads, getCategories, getPaymentMethods, getSuppliers, getCustomers } from '../services/api';
 
 const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData }) => {
     const [step, setStep] = useState(1);
     const [leads, setLeads] = useState([]);
+    const [customers, setCustomers] = useState([]);
+    const [suppliers, setSuppliers] = useState([]);
     const defaultData = {
         tipo: 'receita',
         origem: 'avulso',
         lead_id: '',
+        customer_id: '',
+        supplier_id: '',
         valor: '',
         descricao: '',
         data_vencimento: new Date().toISOString().split('T')[0],
@@ -24,10 +28,11 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
     const [internalMethods, setInternalMethods] = useState([]);
 
     useEffect(() => {
-        if (formData.origem === 'venda') {
-            getLeads().then(res => setLeads(res.data));
-        }
-    }, [formData.origem]);
+        // Load potential links
+        getLeads().then(res => setLeads(res.data));
+        getCustomers().then(res => setCustomers(res.data));
+        getSuppliers().then(res => setSuppliers(res.data));
+    }, []);
 
     useEffect(() => {
         if (!categories || categories.length === 0) {
@@ -84,38 +89,96 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                             </button>
                         </div>
 
-                        <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Origem do Lançamento</label>
+                        <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Frequência / Origem</label>
                         <select
                             className="input-premium"
                             style={{ width: '100%', marginBottom: '1rem' }}
                             value={formData.origem}
-                            onChange={(e) => setFormData({ ...formData, origem: e.target.value, lead_id: '' })}
+                            onChange={(e) => setFormData({ ...formData, origem: e.target.value })}
                         >
-                            <option value="avulso">Avulso / Despesa Fixa</option>
-                            <option value="venda">Vinculado a uma Venda/Lead</option>
+                            <option value="avulso">Avulso / Pontual</option>
+                            <option value="assinatura">Recorrente (Assinatura)</option>
                         </select>
 
-                        <div className="form-group">
-                            <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Selecionar Venda/Lead</label>
-                            <select
-                                className="input-premium"
-                                value={formData.lead_id}
-                                onChange={(e) => {
-                                    const lead = leads.find(l => l.id === e.target.value);
-                                    setFormData({
-                                        ...formData,
-                                        lead_id: e.target.value,
-                                        valor: lead?.valor || lead?.value || formData.valor,
-                                        descricao: `Venda: ${lead?.nome || lead?.name || 'Lead'}`
-                                    });
-                                }}
-                            >
-                                <option value="">Selecione um lead...</option>
-                                {leads.map(l => (
-                                    <option key={l.id} value={l.id}>{l.nome || l.name} - R$ {l.valor || l.value}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* VINCULO PARA RECEITA */}
+                        {formData.tipo === 'receita' && (
+                            <div className="form-group">
+                                <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Cliente ou Lead (Opcional)</label>
+                                <select
+                                    className="input-premium"
+                                    value={formData.lead_id || formData.customer_id}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (!val) {
+                                            setFormData({ ...formData, lead_id: '', customer_id: '', supplier_id: '' });
+                                            return;
+                                        }
+
+                                        // Try to find in leads or customers
+                                        const lead = leads.find(l => l.id === val);
+                                        const customer = customers.find(c => c.id === val);
+
+                                        if (lead) {
+                                            setFormData({
+                                                ...formData,
+                                                lead_id: lead.id,
+                                                customer_id: '',
+                                                supplier_id: '',
+                                                valor: !formData.valor ? (lead.valor || lead.value || '') : formData.valor,
+                                                descricao: !formData.descricao ? `Receita: ${lead.nome || lead.name}` : formData.descricao
+                                            });
+                                        } else if (customer) {
+                                            setFormData({
+                                                ...formData,
+                                                lead_id: '',
+                                                customer_id: customer.id,
+                                                supplier_id: '',
+                                                descricao: !formData.descricao ? `Receita: ${customer.name}` : formData.descricao
+                                            });
+                                        }
+                                    }}
+                                >
+                                    <option value="">Sem vínculo (Nenhum)</option>
+                                    <optgroup label="Leads / Oportunidades">
+                                        {leads.map(l => (
+                                            <option key={l.id} value={l.id}>{l.nome || l.name} {l.valor ? `- R$ ${l.valor}` : ''}</option>
+                                        ))}
+                                    </optgroup>
+                                    <optgroup label="Clientes da Base">
+                                        {customers.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </optgroup>
+                                </select>
+                            </div>
+                        )}
+
+                        {/* VINCULO PARA DESPESA */}
+                        {formData.tipo === 'despesa' && (
+                            <div className="form-group">
+                                <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Fornecedor (Opcional)</label>
+                                <select
+                                    className="input-premium"
+                                    value={formData.supplier_id}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        const supplier = suppliers.find(s => s.id === val);
+                                        setFormData({
+                                            ...formData,
+                                            supplier_id: val,
+                                            lead_id: '',
+                                            customer_id: '',
+                                            descricao: supplier && !formData.descricao ? `Pgto: ${supplier.name}` : formData.descricao
+                                        });
+                                    }}
+                                >
+                                    <option value="">Sem vínculo (Nenhum)</option>
+                                    {suppliers.map(s => (
+                                        <option key={s.id} value={s.id}>{s.name} {s.company_name ? `(${s.company_name})` : ''}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
                 );
             case 2:
@@ -129,11 +192,11 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="form-group">
-                                    <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Valor Total (R$)</label>
+                                    <label className="label-premium" style={{ color: 'var(--gold-400)' }}>{formData.origem === 'assinatura' ? 'Valor Mensal (R$)' : 'Valor Total (R$)'}</label>
                                     <input className="input-premium" type="number" step="0.01" value={formData.valor} onChange={e => setFormData({ ...formData, valor: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label className="label-premium" style={{ color: 'var(--gold-400)' }}>Número de Parcelas</label>
+                                    <label className="label-premium" style={{ color: 'var(--gold-400)' }}>{formData.origem === 'assinatura' ? 'Duração (Meses)' : 'Número de Parcelas'}</label>
                                     <input className="input-premium" type="number" min="1" value={formData.parcelas} onChange={e => setFormData({ ...formData, parcelas: e.target.value })} />
                                 </div>
                             </div>
@@ -195,14 +258,19 @@ const FinanceWizard = ({ onClose, onSuccess, categories, methods, initialData })
                                     <p style={{ margin: 0, fontWeight: 700, color: 'white' }}>{formData.tipo.toUpperCase()} - {formData.descricao}</p>
                                 </div>
                                 <div>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Valor Total</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{formData.origem === 'assinatura' ? 'Valor Mensal' : 'Valor Total'}</p>
                                     <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem', color: formData.tipo === 'receita' ? '#10b981' : '#ef4444' }}>
                                         R$ {parseFloat(formData.valor || 0).toLocaleString('pt-BR')}
                                     </p>
                                 </div>
                                 <div>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Parcelamento</p>
-                                    <p style={{ margin: 0, fontWeight: 600, color: 'white' }}>{formData.parcelas}x de R$ {(parseFloat(formData.valor || 0) / parseInt(formData.parcelas || 1)).toLocaleString('pt-BR')}</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{formData.origem === 'assinatura' ? 'Duração' : 'Parcelamento'}</p>
+                                    <p style={{ margin: 0, fontWeight: 600, color: 'white' }}>
+                                        {formData.origem === 'assinatura'
+                                            ? `${formData.parcelas} meses (Total: R$ ${(parseFloat(formData.valor || 0) * parseInt(formData.parcelas || 1)).toLocaleString('pt-BR')})`
+                                            : `${formData.parcelas}x de R$ ${(parseFloat(formData.valor || 0) / parseInt(formData.parcelas || 1)).toLocaleString('pt-BR')}`
+                                        }
+                                    </p>
                                 </div>
                                 <div>
                                     <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Vencimento Inicial</p>

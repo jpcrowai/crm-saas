@@ -59,6 +59,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     name = Column(String, nullable=False)
     role = Column(String, default="user", nullable=False)
+    modules_allowed = Column(JSON, default=list)  # List of module slugs user has access to
     is_master = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

@@ -28,6 +28,7 @@ class FinanceEntry(BaseModel):
     origem: str  # venda / avulso (origin)
     lead_id: Optional[str] = None
     customer_id: Optional[str] = None
+    supplier_id: Optional[str] = None  # Added supplier_id
     service_id: Optional[str] = None
     appointment_id: Optional[str] = None
     categoria: Optional[str] = None  # category_id
@@ -52,6 +53,7 @@ class FinanceCreate(BaseModel):
     origem: str = "avulso"
     lead_id: Optional[str] = None
     customer_id: Optional[str] = None
+    supplier_id: Optional[str] = None  # Added supplier_id
     service_id: Optional[str] = None
     appointment_id: Optional[str] = None
     categoria: Optional[str] = None
@@ -109,6 +111,7 @@ async def get_finances(
             "origem": entry.origin,
             "lead_id": str(entry.lead_id) if entry.lead_id else None,
             "customer_id": str(entry.customer_id) if entry.customer_id else None,
+            "supplier_id": str(entry.supplier_id) if entry.supplier_id else None,
             "service_id": str(entry.service_id) if entry.service_id else None,
             "appointment_id": str(entry.appointment_id) if entry.appointment_id else None,
             "categoria": str(entry.category_id) if entry.category_id else None,
@@ -131,7 +134,7 @@ async def create_finance(
 ):
     results = []
     
-    # Handle multiple installments if parcelas > 1
+    # Handle multiple installments or recurrence
     for i in range(entry.parcelas):
         # Calculate installment date (approximate monthly)
         venc_date = datetime.strptime(entry.data_vencimento, "%Y-%m-%d").date()
@@ -141,14 +144,24 @@ async def create_finance(
             year = venc_date.year + (venc_date.month + i - 1) // 12
             venc_date = venc_date.replace(year=year, month=month)
         
+        # Determine amount and description based on origin
+        if entry.origem == 'assinatura':
+            amount = entry.valor
+            desc = f"{entry.descricao} (Mês {i+1})" if entry.parcelas > 1 else entry.descricao
+        else:
+            amount = round(entry.valor / entry.parcelas, 2)
+            desc = f"{entry.descricao} ({i+1}/{entry.parcelas})" if entry.parcelas > 1 else entry.descricao
+
         new_entry = SQLFinanceEntry(
             tenant_id=current_user.tenant_id,
             lead_id=entry.lead_id if entry.lead_id else None,
+            customer_id=entry.customer_id if entry.customer_id else None,
+            supplier_id=entry.supplier_id if entry.supplier_id else None,
             category_id=entry.categoria if entry.categoria else None,
             type=entry.tipo,
-            description=f"{entry.descricao} ({i+1}/{entry.parcelas})" if entry.parcelas > 1 else entry.descricao,
+            description=desc,
             origin=entry.origem,
-            amount=round(entry.valor / entry.parcelas, 2),
+            amount=amount,
             due_date=venc_date,
             status=entry.status if i == 0 else "pendente",
             payment_method=entry.forma_pagamento,

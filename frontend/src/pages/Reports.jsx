@@ -1,17 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { getReports } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { TrendingUp, Users, DollarSign, Award, Target, FileBarChart, Calendar, ChevronRight } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Award, Target, FileBarChart, Calendar, ChevronRight, XCircle } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
 const COLORS = ['#d4af37', '#0f172a', '#1e293b', '#b8860b', '#334155'];
 
 const Reports = () => {
     const [data, setData] = useState(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
     useEffect(() => {
-        getReports().then(res => setData(res.data)).catch(console.error);
-    }, []);
+        loadReports();
+    }, [dateRange]);
+
+    const loadReports = () => {
+        // Prepare query params if dates are selected
+        const params = {};
+        if (dateRange.start) params.start_date = dateRange.start;
+        if (dateRange.end) params.end_date = dateRange.end;
+
+        getReports(params).then(res => setData(res.data)).catch(console.error);
+    };
 
     if (!data) return <div className="tenant-page-container" style={{ color: 'white' }}>Gerando inteligência de dados...</div>;
 
@@ -27,9 +38,33 @@ const Reports = () => {
                     <h1>Relatórios & Insights</h1>
                     <p>Análise de performance e saúde financeira do negócio</p>
                 </div>
-                <button className="btn-primary">
-                    <Calendar size={18} /> Filtrar Período
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    {showFilters && (
+                        <div className="input-premium filter-input" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', height: '42px', marginRight: '0.5rem' }}>
+                            <input
+                                type="date"
+                                style={{ border: 'none', padding: 0, width: 'auto', fontSize: '0.85rem', outline: 'none', background: 'transparent', color: 'inherit', fontFamily: 'inherit' }}
+                                value={dateRange.start}
+                                onChange={e => setDateRange({ ...dateRange, start: e.target.value })}
+                            />
+                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>até</span>
+                            <input
+                                type="date"
+                                style={{ border: 'none', padding: 0, width: 'auto', fontSize: '0.85rem', outline: 'none', background: 'transparent', color: 'inherit', fontFamily: 'inherit' }}
+                                value={dateRange.end}
+                                onChange={e => setDateRange({ ...dateRange, end: e.target.value })}
+                            />
+                        </div>
+                    )}
+                    <button className={`btn-primary ${showFilters ? 'active' : ''}`} onClick={() => setShowFilters(!showFilters)}>
+                        <Calendar size={18} /> {showFilters ? 'Ocultar Filtros' : 'Filtrar Período'}
+                    </button>
+                    {(dateRange.start || dateRange.end) && (
+                        <button className="btn-secondary" onClick={() => setDateRange({ start: '', end: '' })} title="Limpar Filtros">
+                            <XCircle size={18} color="var(--error)" />
+                        </button>
+                    )}
+                </div>
             </header>
 
             <div className="indicator-grid">

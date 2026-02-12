@@ -494,27 +494,38 @@ async def delete_customer(
 
 @router.get("/reports")
 async def get_reports(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     current_user: TokenData = Depends(get_current_tenant_user),
     db: Session = Depends(get_db)
 ):
     tenant_id = current_user.tenant_id
-    total_leads = db.query(SQLLead).filter(SQLLead.tenant_id == tenant_id).count()
     
-    # Financial aggregate
-    revenue_paid = db.query(func.sum(SQLFinanceEntry.amount)).filter(
+    # 1. Total Leads (Active in period)
+    leads_query = db.query(SQLLead).filter(SQLLead.tenant_id == tenant_id)
+    if start_date:
+        leads_query = leads_query.filter(SQLLead.created_at >= start_date)
+    if end_date:
+        leads_query = leads_query.filter(SQLLead.created_at <= end_date)
+    total_leads = leads_query.count()
+    
+    # 2. Financial Aggregate
+    # Base query for finances
+    base_finances = db.query(SQLFinanceEntry.amount).filter(
         SQLFinanceEntry.tenant_id == tenant_id,
-        SQLFinanceEntry.type == "receita",
         SQLFinanceEntry.status == "pago"
-    ).scalar() or 0.0
+    )
     
-    expenses_paid = db.query(func.sum(SQLFinanceEntry.amount)).filter(
-        SQLFinanceEntry.tenant_id == tenant_id,
-        SQLFinanceEntry.type == "despesa",
-        SQLFinanceEntry.status == "pago"
-    ).scalar() or 0.0
+    if start_date:
+        base_finances = base_finances.filter(SQLFinanceEntry.due_date >= start_date)
+    if end_date:
+        base_finances = base_finances.filter(SQLFinanceEntry.due_date <= end_date)
+        
+    revenue_paid = base_finances.filter(SQLFinanceEntry.type == "receita").with_entities(func.sum(SQLFinanceEntry.amount)).scalar() or 0.0
+    expenses_paid = base_finances.filter(SQLFinanceEntry.type == "despesa").with_entities(func.sum(SQLFinanceEntry.amount)).scalar() or 0.0
     
-    # Simple customer ranking by revenue
-    ranking_raw = db.query(
+    # 3. Customer Ranking
+    ranking_query = db.query(
         SQLCustomer.name,
         func.sum(SQLFinanceEntry.amount).label('total')
     ).join(
@@ -523,7 +534,14 @@ async def get_reports(
         SQLCustomer.tenant_id == tenant_id,
         SQLFinanceEntry.type == "receita",
         SQLFinanceEntry.status == "pago"
-    ).group_by(SQLCustomer.name).order_by(desc('total')).limit(5).all()
+    )
+    
+    if start_date:
+        ranking_query = ranking_query.filter(SQLFinanceEntry.due_date >= start_date)
+    if end_date:
+        ranking_query = ranking_query.filter(SQLFinanceEntry.due_date <= end_date)
+        
+    ranking_raw = ranking_query.group_by(SQLCustomer.name).order_by(desc('total')).limit(5).all()
     
     ranking = [{"customer_name": r.name, "total_revenue": float(r.total)} for r in ranking_raw]
 

@@ -22,11 +22,18 @@ app.add_middleware(
 
 # Static files for logos
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static")
-if not os.path.exists(STATIC_DIR):
-    os.makedirs(STATIC_DIR)
-    os.makedirs(os.path.join(STATIC_DIR, "logos"))
+LOGO_DIR = os.path.join(STATIC_DIR, "logos")
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+try:
+    if not os.path.exists(STATIC_DIR):
+        os.makedirs(STATIC_DIR, exist_ok=True)
+    if not os.path.exists(LOGO_DIR):
+        os.makedirs(LOGO_DIR, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+except Exception as e:
+    print(f"WARNING: Could not initialize static directory: {e}")
+    # In some serverless environments, internal writes might be restricted
+    pass
 
 app.include_router(auth.router)
 app.include_router(master.router)
@@ -49,6 +56,8 @@ from app.routers import professionals
 app.include_router(professionals.router)
 from app.routers import suppliers
 app.include_router(suppliers.router)
+from app.routers import uploads
+app.include_router(uploads.router)
 
 @app.get("/")
 def root():

@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import '../styles/sidebar.css';
 import { useAuth } from '../context/AuthContext';
-import { exitTenant } from '../services/api';
+import { exitTenant, API_URL } from '../services/api';
 import logoFull from '../assets/branding/logo_full.png';
 import logoIcon from '../assets/branding/logo_icon.png';
 
@@ -58,6 +58,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       { label: 'Produtos', icon: <Package size={20} />, path: '/products', module: 'produtos' },
       { label: 'Planos', icon: <Layers size={20} />, path: '/plans', module: 'assinaturas' },
       { label: 'Assinaturas', icon: <FileText size={20} />, path: '/subscriptions', module: 'assinaturas' },
+      { label: 'Equipe', icon: <Shield size={20} />, path: '/team', module: 'equipe' },
       { label: 'Minha Conta', icon: <Settings size={20} />, path: '/profile' }
     ];
 
@@ -69,12 +70,24 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="sidebar-header" style={{ padding: collapsed ? '1.5rem 0.5rem' : '1.5rem 1.25rem' }}>
-        <div className="logo-area" style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', overflow: 'hidden' }}>
+      <div className="sidebar-header" style={{
+        padding: collapsed ? '1rem 0.5rem' : '1.5rem 1.25rem',
+        flexDirection: collapsed ? 'column-reverse' : 'row',
+        height: collapsed ? 'auto' : '70px',
+        gap: collapsed ? '1rem' : '0'
+      }}>
+        <div className="logo-area" style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          gap: '10px',
+          width: '100%',
+          overflow: 'hidden'
+        }}>
           {inTenantContext ? (
             user?.logo_url ? (
               <img
-                src={`http://localhost:8000${user.logo_url}`}
+                src={`${API_URL}${user.logo_url}`}
                 alt="Tenant Logo"
                 style={{ height: '32px', maxWidth: '100%', objectFit: 'contain' }}
               />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSuppliers, getSupplierDebts, createSupplier, updateSupplier, deleteSupplier } from '../services/api';
+import { getSuppliers, getSupplierDebts, createSupplier, updateSupplier, deleteSupplier, uploadFile } from '../services/api';
 import { Plus, User, Mail, Phone, Building, Trash2, Edit, X, Users, TrendingDown, DollarSign, FileText } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 import '../styles/professionals.css';
@@ -311,14 +311,41 @@ const Suppliers = () => {
 
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>URL da Logo</label>
-                                    <input
-                                        type="url"
-                                        className="input-premium"
-                                        value={formData.photo_url}
-                                        onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-                                        placeholder="https://exemplo.com/logo.jpg"
-                                    />
+                                    <label>Logo (Link ou Arquivo)</label>
+                                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+                                        <button type="button" className={`btn-secondary ${!formData.uploadMode ? 'active' : ''}`} style={{ flex: 1, background: !formData.uploadMode ? 'var(--gold-500)' : '', color: !formData.uploadMode ? '#000' : '' }} onClick={() => setFormData({ ...formData, uploadMode: false })}>Link</button>
+                                        <button type="button" className={`btn-secondary ${formData.uploadMode ? 'active' : ''}`} style={{ flex: 1, background: formData.uploadMode ? 'var(--gold-500)' : '', color: formData.uploadMode ? '#000' : '' }} onClick={() => setFormData({ ...formData, uploadMode: true })}>Arquivo</button>
+                                    </div>
+                                    {!formData.uploadMode ? (
+                                        <input
+                                            type="url"
+                                            className="input-premium"
+                                            value={formData.photo_url}
+                                            onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
+                                            placeholder="https://exemplo.com/logo.jpg"
+                                        />
+                                    ) : (
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="input-premium"
+                                            onChange={async (e) => {
+                                                if (e.target.files[0]) {
+                                                    try {
+                                                        const res = await uploadFile(e.target.files[0]);
+                                                        setFormData({ ...formData, photo_url: res.data.url });
+                                                    } catch (err) {
+                                                        alert("Erro ao enviar imagem");
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    )}
+                                    {formData.photo_url && (
+                                        <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                                            <img src={formData.photo_url} alt="Preview" style={{ height: '60px', borderRadius: '8px', border: '1px solid var(--gold-500)' }} />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -594,13 +621,40 @@ const Suppliers = () => {
 
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>URL da Logo</label>
-                                        <input
-                                            type="url"
-                                            className="input-premium"
-                                            value={formData.photo_url}
-                                            onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-                                        />
+                                        <label>Logo (Link ou Arquivo)</label>
+                                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+                                            <button type="button" className={`btn-secondary ${!formData.uploadMode ? 'active' : ''}`} style={{ flex: 1, background: !formData.uploadMode ? 'var(--gold-500)' : '', color: !formData.uploadMode ? '#000' : '' }} onClick={() => setFormData({ ...formData, uploadMode: false })}>Link</button>
+                                            <button type="button" className={`btn-secondary ${formData.uploadMode ? 'active' : ''}`} style={{ flex: 1, background: formData.uploadMode ? 'var(--gold-500)' : '', color: formData.uploadMode ? '#000' : '' }} onClick={() => setFormData({ ...formData, uploadMode: true })}>Arquivo</button>
+                                        </div>
+                                        {!formData.uploadMode ? (
+                                            <input
+                                                type="url"
+                                                className="input-premium"
+                                                value={formData.photo_url}
+                                                onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
+                                            />
+                                        ) : (
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="input-premium"
+                                                onChange={async (e) => {
+                                                    if (e.target.files[0]) {
+                                                        try {
+                                                            const res = await uploadFile(e.target.files[0]);
+                                                            setFormData({ ...formData, photo_url: res.data.url });
+                                                        } catch (err) {
+                                                            alert("Erro ao enviar imagem");
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                        {formData.photo_url && (
+                                            <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                                                <img src={formData.photo_url} alt="Preview" style={{ height: '60px', borderRadius: '8px', border: '1px solid var(--gold-500)' }} />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

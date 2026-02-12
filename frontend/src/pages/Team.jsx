@@ -1,12 +1,39 @@
 import React, { useEffect, useState } from 'react';
-import { getTeam, createTeamMember, deleteTeamMember } from '../services/api';
-import { Plus, User, Shield, Mail, Trash2, XCircle, Users, Settings, Briefcase } from 'lucide-react';
+import { getTeam, createTeamMember, updateTeamMember, deleteTeamMember } from '../services/api';
+import { Plus, User, Shield, Mail, Trash2, XCircle, Users, Settings, Briefcase, Edit, Lock } from 'lucide-react';
 import '../styles/tenant-luxury.css';
+
+const AVAILABLE_MODULES = [
+    { id: 'pipeline', name: 'Pipeline de Vendas', icon: '🎯' },
+    { id: 'customers', name: 'Clientes', icon: '👥' },
+    { id: 'finances', name: 'Financeiro', icon: '💰' },
+    { id: 'products', name: 'Catálogo de Produtos', icon: '📦' },
+    { id: 'calendar', name: 'Agenda & Eventos', icon: '📅' },
+    { id: 'reports', name: 'Relatórios & Insights', icon: '📊' },
+    { id: 'team', name: 'Gestão de Equipe', icon: '👨‍💼' },
+    { id: 'suppliers', name: 'Fornecedores', icon: '🏭' },
+    { id: 'subscriptions', name: 'Assinaturas', icon: '🔄' }
+];
+
+const ROLE_OPTIONS = [
+    { value: 'admin', label: 'Administrador Total', description: 'Acesso completo a todos os módulos' },
+    { value: 'financeiro', label: 'Financeiro', description: 'Acesso a finanças e relatórios' },
+    { value: 'vendedor', label: 'Vendedor', description: 'Acesso a pipeline e clientes' },
+    { value: 'operacional', label: 'Operacional', description: 'Acesso a agenda e produtos' },
+    { value: 'custom', label: 'Personalizado', description: 'Selecione módulos específicos' }
+];
 
 const Team = () => {
     const [team, setTeam] = useState([]);
     const [showForm, setShowForm] = useState(false);
-    const [newMember, setNewMember] = useState({ name: '', email: '', role: 'vendedor', password: '' });
+    const [editingMember, setEditingMember] = useState(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        role: 'vendedor',
+        password: '',
+        modules_allowed: []
+    });
 
     useEffect(() => { loadData(); }, []);
 
@@ -17,24 +44,93 @@ const Team = () => {
         } catch (e) { console.error(e); }
     };
 
-    const handleCreate = async (e) => {
+    const openCreateForm = () => {
+        setEditingMember(null);
+        setFormData({ name: '', email: '', role: 'vendedor', password: '', modules_allowed: [] });
+        setShowForm(true);
+    };
+
+    const openEditForm = (member) => {
+        setEditingMember(member);
+        setFormData({
+            name: member.name,
+            email: member.email,
+            role: member.role,
+            password: '',
+            modules_allowed: member.modules_allowed || []
+        });
+        setShowForm(true);
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await createTeamMember(newMember);
+            // Auto-assign modules based on role if not custom
+            let finalModules = formData.modules_allowed;
+
+            if (formData.role === 'admin') {
+                finalModules = AVAILABLE_MODULES.map(m => m.id);
+            } else if (formData.role === 'financeiro') {
+                finalModules = ['finances', 'reports', 'suppliers'];
+            } else if (formData.role === 'vendedor') {
+                finalModules = ['pipeline', 'customers', 'calendar'];
+            } else if (formData.role === 'operacional') {
+                finalModules = ['calendar', 'products', 'customers'];
+            }
+
+            const payload = { ...formData, modules_allowed: finalModules };
+
+            if (editingMember) {
+                await updateTeamMember(editingMember.id, payload);
+            } else {
+                await createTeamMember(payload);
+            }
+
             setShowForm(false);
-            setNewMember({ name: '', email: '', role: 'vendedor', password: '' });
+            setFormData({ name: '', email: '', role: 'vendedor', password: '', modules_allowed: [] });
             loadData();
-        } catch (e) { alert("Erro ao cadastrar membro"); }
+        } catch (e) {
+            alert(editingMember ? "Erro ao atualizar membro" : "Erro ao cadastrar membro");
+        }
+    };
+
+    const toggleModule = (moduleId) => {
+        const current = formData.modules_allowed || [];
+        if (current.includes(moduleId)) {
+            setFormData({ ...formData, modules_allowed: current.filter(m => m !== moduleId) });
+        } else {
+            setFormData({ ...formData, modules_allowed: [...current, moduleId] });
+        }
+    };
+
+    const getRoleBadge = (role) => {
+        const config = {
+            admin: { color: 'var(--gold-600)', bg: 'var(--gold-50)', border: 'var(--gold-400)', label: 'Admin Total' },
+            financeiro: { color: '#10b981', bg: '#ecfdf5', border: '#10b981', label: 'Financeiro' },
+            vendedor: { color: '#3b82f6', bg: '#eff6ff', border: '#3b82f6', label: 'Vendedor' },
+            operacional: { color: '#8b5cf6', bg: '#f5f3ff', border: '#8b5cf6', label: 'Operacional' },
+            custom: { color: '#64748b', bg: '#f1f5f9', border: '#cbd5e1', label: 'Personalizado' }
+        };
+        const c = config[role] || config.custom;
+        return (
+            <span style={{
+                fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
+                padding: '0.35rem 0.65rem', borderRadius: '4px',
+                background: c.bg, color: c.color, border: `1px solid ${c.border}`
+            }}>
+                {c.label}
+            </span>
+        );
     };
 
     return (
         <div className="tenant-page-container">
             <header className="page-header-row">
                 <div className="page-title-group">
-                    <h1>Sua Equipe</h1>
-                    <p>Gerencie acessos e permissões dos seus colaboradores</p>
+                    <h1>Controle de Acesso</h1>
+                    <p>Gerencie permissões e módulos da sua equipe</p>
                 </div>
-                <button className="btn-primary" onClick={() => setShowForm(true)}>
+                <button className="btn-primary" onClick={openCreateForm}>
                     <Plus size={20} /> Adicionar Colaborador
                 </button>
             </header>
@@ -50,6 +146,7 @@ const Team = () => {
                                 <th>Nome e Perfil</th>
                                 <th>E-mail Corporativo</th>
                                 <th>Nível de Acesso</th>
+                                <th>Módulos Permitidos</th>
                                 <th style={{ textAlign: 'right' }}>Ações</th>
                             </tr>
                         </thead>
@@ -65,19 +162,23 @@ const Team = () => {
                                         </div>
                                     </td>
                                     <td><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>{member.email}</span></td>
+                                    <td>{getRoleBadge(member.role)}</td>
                                     <td>
-                                        <span style={{
-                                            fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
-                                            padding: '0.35rem 0.65rem', borderRadius: '4px',
-                                            background: member.role === 'admin' ? 'var(--gold-50)' : '#f1f5f9',
-                                            color: member.role === 'admin' ? 'var(--gold-600)' : '#64748b',
-                                            border: member.role === 'admin' ? '1px solid var(--gold-400)' : 'none'
-                                        }}>
-                                            {member.role === 'admin' ? 'Administrador' : 'Colaborador'}
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                            {member.role === 'admin'
+                                                ? 'Todos os módulos'
+                                                : `${(member.modules_allowed || []).length} módulo(s)`}
                                         </span>
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
-                                        <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => deleteTeamMember(member.id).then(loadData)}><Trash2 size={16} /></button>
+                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                            <button className="btn-action-luxury" onClick={() => openEditForm(member)} title="Editar Permissões">
+                                                <Edit size={16} color="var(--primary)" />
+                                            </button>
+                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => deleteTeamMember(member.id).then(loadData)} title="Remover Acesso">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -92,39 +193,94 @@ const Team = () => {
                 </div>
             </div>
 
-            {/* CREATE MODAL */}
+            {/* CREATE/EDIT MODAL */}
             {showForm && (
                 <div className="modal-overlay">
-                    <div className="card" style={{ width: '480px', padding: '0', overflow: 'hidden' }}>
+                    <div className="card" style={{ width: '580px', padding: '0', overflow: 'hidden', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
                         <div className="modal-header-luxury">
-                            <h2>Novo Acesso</h2>
+                            <h2>{editingMember ? 'Editar Permissões' : 'Novo Acesso'}</h2>
                             <button onClick={() => setShowForm(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
                         </div>
-                        <form onSubmit={handleCreate} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', flex: 1 }}>
                             <div className="form-group">
                                 <label>Nome do Colaborador</label>
-                                <input className="input-premium" placeholder="Ex: Roberto Mendes" value={newMember.name} onChange={e => setNewMember({ ...newMember, name: e.target.value })} required />
+                                <input className="input-premium" placeholder="Ex: Roberto Mendes" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                             </div>
                             <div className="form-group">
                                 <label>E-mail de Login</label>
-                                <input className="input-premium" type="email" placeholder="roberto@suaempresa.com" value={newMember.email} onChange={e => setNewMember({ ...newMember, email: e.target.value })} required />
+                                <input className="input-premium" type="email" placeholder="roberto@suaempresa.com" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required disabled={!!editingMember} />
+                                {editingMember && <small style={{ color: '#64748b', fontSize: '0.75rem' }}>O e-mail não pode ser alterado</small>}
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div className="form-group">
-                                    <label>Acesso</label>
-                                    <select className="input-premium" value={newMember.role} onChange={e => setNewMember({ ...newMember, role: e.target.value })}>
-                                        <option value="vendedor">Colaborador</option>
-                                        <option value="admin">Administrador</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>Senha Provisória</label>
-                                    <input className="input-premium" type="password" value={newMember.password} onChange={e => setNewMember({ ...newMember, password: e.target.value })} required />
+
+                            <div className="form-group">
+                                <label>Nível de Acesso</label>
+                                <div style={{ display: 'grid', gap: '0.65rem' }}>
+                                    {ROLE_OPTIONS.map(roleOpt => (
+                                        <div
+                                            key={roleOpt.value}
+                                            className={`selection-card ${formData.role === roleOpt.value ? 'selected' : ''}`}
+                                            onClick={() => setFormData({ ...formData, role: roleOpt.value })}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="role"
+                                                checked={formData.role === roleOpt.value}
+                                                onChange={() => setFormData({ ...formData, role: roleOpt.value })}
+                                            />
+                                            <div className="selection-card-content">
+                                                <strong style={{ fontSize: '0.95rem', color: 'var(--navy-950)', fontWeight: 700 }}>{roleOpt.label}</strong>
+                                                <small style={{ fontSize: '0.8rem', color: '#64748b' }}>{roleOpt.description}</small>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                            <footer style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+
+                            {formData.role === 'custom' && (
+                                <div className="form-group">
+                                    <label>Módulos Permitidos</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem', maxHeight: '180px', overflowY: 'auto', padding: '0.25rem' }}>
+                                        {AVAILABLE_MODULES.map(module => (
+                                            <div
+                                                key={module.id}
+                                                className={`selection-card ${(formData.modules_allowed || []).includes(module.id) ? 'selected' : ''}`}
+                                                onClick={() => toggleModule(module.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={(formData.modules_allowed || []).includes(module.id)}
+                                                    onChange={() => toggleModule(module.id)}
+                                                />
+                                                <div className="selection-card-content">
+                                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--navy-900)' }}>{module.icon} {module.name}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="form-group">
+                                <label>
+                                    {editingMember ? 'Nova Senha (deixe em branco para não alterar)' : 'Senha Provisória'}
+                                </label>
+                                <input
+                                    className="input-premium"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                    required={!editingMember}
+                                    placeholder={editingMember ? 'Digite apenas se quiser alterar' : 'Senha inicial'}
+                                />
+                            </div>
+
+                            <footer style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                                 <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowForm(false)}>Cancelar</button>
-                                <button type="submit" className="btn-primary" style={{ flex: 1.5 }}>Liberar Acesso</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 1.5 }}>
+                                    {editingMember ? 'Salvar Alterações' : 'Liberar Acesso'}
+                                </button>
                             </footer>
                         </form>
                     </div>

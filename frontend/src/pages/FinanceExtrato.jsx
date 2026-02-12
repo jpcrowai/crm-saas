@@ -9,7 +9,13 @@ const FinanceExtrato = () => {
     const [entries, setEntries] = useState([]);
     const [filtered, setFiltered] = useState([]);
     const [showWizard, setShowWizard] = useState(false);
-    const [filters, setFilters] = useState({ type: 'all', status: 'all', search: '' });
+    const [filters, setFilters] = useState({
+        type: 'all',
+        status: 'all',
+        search: '',
+        startDate: '',
+        endDate: ''
+    });
 
     useEffect(() => { loadData(); }, []);
 
@@ -43,6 +49,8 @@ const FinanceExtrato = () => {
         if (filters.search) {
             result = result.filter(e => e.descricao?.toLowerCase().includes(filters.search.toLowerCase()) || e.origem?.toLowerCase().includes(filters.search.toLowerCase()));
         }
+        if (filters.startDate) result = result.filter(e => e.data_vencimento >= filters.startDate);
+        if (filters.endDate) result = result.filter(e => e.data_vencimento <= filters.endDate);
         setFiltered(result);
     }, [filters, entries]);
 
@@ -102,7 +110,7 @@ const FinanceExtrato = () => {
                     <div className="indicator-icon-wrapper" style={{ background: 'var(--navy-900)', color: 'white' }}><Wallet size={28} /></div>
                     <div className="indicator-data">
                         <label>Saldo Líquido</label>
-                        <p style={{ color: stats.balance >= 0 ? 'inherit' : 'var(--error)' }}>
+                        <p style={{ color: stats.balance >= 0 ? 'var(--navy-950)' : 'var(--error)' }}>
                             R$ {stats.balance.toLocaleString('pt-BR')}
                         </p>
                     </div>
@@ -113,20 +121,45 @@ const FinanceExtrato = () => {
                 <div className="luxury-filter-bar" style={{ background: '#f8fafc' }}>
                     <div style={{ position: 'relative', flex: 1, maxWidth: '350px' }}>
                         <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold-500)' }} />
-                        <input className="input-premium filter-input" placeholder="O que você procura?..." style={{ paddingLeft: '3rem', width: '100%' }} onChange={e => setFilters({ ...filters, search: e.target.value })} />
+                        <input className="input-premium filter-input" value={filters.search} placeholder="O que você procura?..." style={{ paddingLeft: '3rem', width: '100%' }} onChange={e => setFilters({ ...filters, search: e.target.value })} />
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
-                        <select className="input-premium filter-input" style={{ width: 'auto' }} onChange={e => setFilters({ ...filters, type: e.target.value })}>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div className="input-premium filter-input" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem' }}>
+                            <input
+                                type="date"
+                                style={{ border: 'none', padding: 0, width: 'auto', fontSize: '0.85rem', outline: 'none', background: 'transparent', color: 'inherit', fontFamily: 'inherit' }}
+                                value={filters.startDate}
+                                onChange={e => setFilters({ ...filters, startDate: e.target.value })}
+                            />
+                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>até</span>
+                            <input
+                                type="date"
+                                style={{ border: 'none', padding: 0, width: 'auto', fontSize: '0.85rem', outline: 'none', background: 'transparent', color: 'inherit', fontFamily: 'inherit' }}
+                                value={filters.endDate}
+                                onChange={e => setFilters({ ...filters, endDate: e.target.value })}
+                            />
+                        </div>
+                        <select className="input-premium filter-input" value={filters.type} style={{ width: 'auto' }} onChange={e => setFilters({ ...filters, type: e.target.value })}>
                             <option value="all">Tipos: Todos</option>
                             <option value="receita">Apenas Receitas</option>
                             <option value="despesa">Apenas Despesas</option>
                         </select>
-                        <select className="input-premium filter-input" style={{ width: 'auto' }} onChange={e => setFilters({ ...filters, status: e.target.value })}>
+                        <select className="input-premium filter-input" value={filters.status} style={{ width: 'auto' }} onChange={e => setFilters({ ...filters, status: e.target.value })}>
                             <option value="all">Status: Todos</option>
                             <option value="pago">Conciliado (Pago)</option>
                             <option value="pendente">Aguardando</option>
                             <option value="atrasado">Em Atraso</option>
                         </select>
+                        {(filters.search || filters.type !== 'all' || filters.status !== 'all' || filters.startDate || filters.endDate) && (
+                            <button
+                                onClick={() => setFilters({ type: 'all', status: 'all', search: '', startDate: '', endDate: '' })}
+                                className="btn-secondary"
+                                style={{ padding: '0.5rem', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                title="Limpar Filtros"
+                            >
+                                <XCircle size={18} color="var(--error)" />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -167,7 +200,7 @@ const FinanceExtrato = () => {
                                     <td>{getStatusBadge(entry.status)}</td>
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            {entry.status === 'pendente' && (
+                                            {(entry.status === 'pendente' || entry.status === 'atrasado') && (
                                                 <button className="btn-action-luxury" title="Marcar como Pago" onClick={() => updateFinanceEntryStatus(entry.id, 'pago').then(loadData)}><CheckCircle2 size={16} color="var(--success)" /></button>
                                             )}
                                             <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => deleteFinanceEntry(entry.id).then(loadData)}><Trash2 size={16} /></button>

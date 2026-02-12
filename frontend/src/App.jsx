@@ -42,6 +42,7 @@ function App() {
     <Routes>
       {/* Rotas públicas */}
       <Route path="/login" element={<Login />} />
+      <Route path="/login-master" element={<Login defaultMaster={true} />} />
 
       {/* Rotas privadas */}
       <Route element={<MainLayout />}>

@@ -5,11 +5,11 @@ import { loginMaster, loginTenant } from '../../services/api';
 import { Mail, Lock, Building, ArrowRight, ShieldCheck, User } from 'lucide-react';
 import './Login.css';
 
-const Login = () => {
+const Login = ({ defaultMaster = false }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [tenantSlug, setTenantSlug] = useState('');
-  const [isMaster, setIsMaster] = useState(false);
+  const [isMaster, setIsMaster] = useState(defaultMaster);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 

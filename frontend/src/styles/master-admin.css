@@ -12,10 +12,24 @@
 /* ENVIRONMENT CARDS */
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    /* Force 3 columns */
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    /* Responsive columns */
     gap: 3rem;
     margin-top: 1.5rem;
+}
+
+@media (min-width: 1400px) {
+    .card-grid {
+        grid-template-columns: repeat(3, 1fr);
+        /* Force 3 columns on large screens as requested */
+    }
+}
+
+@media (max-width: 768px) {
+    .card-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
 }
 
 .env-card {

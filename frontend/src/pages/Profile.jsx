@@ -73,7 +73,7 @@ const Profile = () => {
                 </button>
             </header>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '3rem', alignItems: 'start' }}>
+            <div className="grid-profile">
                 {/* LEFT: AVATAR CARD */}
                 <div className="data-card-luxury" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
                     <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 2rem' }}>
@@ -102,39 +102,36 @@ const Profile = () => {
                     <div className="data-card-header">
                         <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--navy-900)' }}>Informações da Conta</h3>
                     </div>
-                    <div style={{ padding: '2.5rem' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
-                            <div className="form-group">
-                                <label>Nome de Exibição</label>
-                                <input className="input-premium" value={profileData.name} onChange={e => setProfileData({ ...profileData, name: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Endereço de E-mail</label>
-                                <input className="input-premium" value={profileData.email} disabled style={{ background: '#f8fafc', opacity: 0.7 }} />
-                            </div>
-                            <div className="form-group">
-                                <label>Organização / Tenant</label>
-                                <input className="input-premium" value={profileData.empresa} disabled style={{ background: '#f8fafc', opacity: 0.7 }} />
-                            </div>
-                            <div className="form-group">
-                                <label>Nicho de atuação</label>
-                                <input className="input-premium" value={profileData.nicho} disabled style={{ background: '#f8fafc', opacity: 0.7 }} />
-                            </div>
+                    <div className="grid-fields" style={{ padding: '2.5rem' }}>
+                        <div className="form-group">
+                            <label>Nome de Exibição</label>
+                            <input className="input-premium" value={profileData.name} onChange={e => setProfileData({ ...profileData, name: e.target.value })} />
                         </div>
-
-                        <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: '2.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <div>
-                                    <h4 style={{ fontWeight: 800, color: 'var(--navy-900)' }}>Segurança</h4>
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Mantenha sua conta protegida com uma senha forte.</p>
-                                </div>
-                                <button className="btn-secondary" onClick={() => setShowPasswordModal(true)}>
-                                    <Key size={14} /> Redefinir Senha
-                                </button>
-                            </div>
+                        <div className="form-group">
+                            <label>Endereço de E-mail</label>
+                            <input className="input-premium" value={profileData.email} disabled style={{ background: '#f8fafc', opacity: 0.7 }} />
                         </div>
+                        <div className="form-group">
+                            <label>Organização / Tenant</label>
+                            <input className="input-premium" value={profileData.empresa} disabled style={{ background: '#f8fafc', opacity: 0.7 }} />
+                        </div>
+                        <div className="form-group">
+                            <label>Nicho de atuação</label>
+                            <input className="input-premium" value={profileData.nicho} disabled style={{ background: '#f8fafc', opacity: 0.7 }} />
+                        </div>
+                    </div>
 
-                        <footer style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                    <div style={{ borderTop: '1px solid var(--border-soft)', padding: '0 2.5rem 2.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <div>
+                                <h4 style={{ fontWeight: 800, color: 'var(--navy-900)' }}>Segurança</h4>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Mantenha sua conta protegida com uma senha forte.</p>
+                            </div>
+                            <button className="btn-secondary" onClick={() => setShowPasswordModal(true)}>
+                                <Key size={14} /> Redefinir Senha
+                            </button>
+                        </div>
+                        <footer style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
                             <button className="btn-primary" onClick={() => toast.success('Perfil salvo com sucesso!')}>
                                 <Save size={18} /> Salvar Alterações
                             </button>

@@ -11,9 +11,20 @@ import logoIcon from '../assets/branding/logo_icon.png';
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const [servicesOpen, setServicesOpen] = React.useState(false);
+  const [financesOpen, setFinancesOpen] = React.useState(false);
+  const [clientsOpen, setClientsOpen] = React.useState(false);
+  const [accessOpen, setAccessOpen] = React.useState(false);
+  const [isTablet, setIsTablet] = React.useState(window.innerWidth <= 1024);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { user, login, logout } = useAuth();
+
+  React.useEffect(() => {
+    const handleResize = () => setIsTablet(window.innerWidth <= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const toggleSidebar = () => setCollapsed(!collapsed);
 
@@ -49,11 +60,19 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     ]
     : [
       { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/', module: 'dashboard' },
-      { label: 'Pipeline', icon: <Briefcase size={20} />, path: '/pipeline', module: 'leads_pipeline' },
+      {
+        label: 'Vendas/Leads',
+        icon: <Briefcase size={20} />,
+        isGroup: true,
+        subItems: [
+          { label: 'Pipeline', icon: <Briefcase size={18} />, path: '/pipeline', module: 'leads_pipeline' },
+          { label: 'Clientes', icon: <Users size={18} />, path: '/customers', module: 'clientes' },
+        ]
+      },
       { label: 'Agenda', icon: <CalendarIcon size={20} />, path: '/calendar', module: 'agenda' },
       {
         label: 'Serviços',
-        icon: <Layers size={20} />,
+        icon: <Package size={20} />,
         isGroup: true,
         subItems: [
           { label: 'Profissionais', icon: <Briefcase size={18} />, path: '/professionals', module: 'equipe' },
@@ -63,17 +82,39 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           { label: 'Assinaturas', icon: <FileText size={18} />, path: '/subscriptions', module: 'assinaturas' },
         ]
       },
-      { label: 'Clientes', icon: <Users size={20} />, path: '/customers', module: 'clientes' },
-      { label: 'Financeiro', icon: <DollarSign size={20} />, path: '/finances', module: 'financeiro' },
-      { label: 'Relatórios', icon: <Activity size={20} />, path: '/reports', module: 'dashboard' },
-      { label: 'Equipe', icon: <Shield size={20} />, path: '/team', module: 'equipe' },
-      { label: 'Minha Conta', icon: <Settings size={20} />, path: '/profile' }
+      {
+        label: 'Financeiro',
+        icon: <DollarSign size={20} />,
+        isGroup: true,
+        subItems: [
+          { label: 'Lançamentos', icon: <DollarSign size={18} />, path: '/finances', module: 'financeiro' },
+          { label: 'Relatórios', icon: <Activity size={18} />, path: '/reports', module: 'dashboard' },
+        ]
+      },
+      {
+        label: 'Acessos',
+        icon: <Shield size={20} />,
+        isGroup: true,
+        subItems: [
+          { label: 'Equipe', icon: <Shield size={18} />, path: '/team', module: 'equipe' },
+          { label: 'Minha Conta', icon: <Settings size={18} />, path: '/profile' },
+        ]
+      }
     ];
 
-  const menuItems = allMenuItems.filter(item => {
+  // Flatten if NOT tablet (user wants grouped ONLY for tablet down)
+  const finalMenuItems = [];
+  allMenuItems.forEach(item => {
+    if (!isTablet && item.isGroup) {
+      item.subItems.forEach(sub => finalMenuItems.push(sub));
+    } else {
+      finalMenuItems.push(item);
+    }
+  });
+
+  const menuItems = finalMenuItems.filter(item => {
     if (isMaster) return true;
     if (item.isGroup) {
-      // Show group if any subitem is enabled
       return item.subItems.some(sub => (user?.modulos_habilitados || []).includes(sub.module));
     }
     if (!item.module) return true;
@@ -142,11 +183,19 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             const isAnySubActive = item.subItems.some(sub => location.pathname === sub.path);
             const visibleSubItems = item.subItems.filter(sub => (user?.modulos_habilitados || []).includes(sub.module));
 
+            // Map group toggle state
+            let isOpen = false;
+            let setOpen = () => { };
+            if (item.label === 'Serviços') { isOpen = servicesOpen; setOpen = setServicesOpen; }
+            else if (item.label === 'Financeiro') { isOpen = financesOpen; setOpen = setFinancesOpen; }
+            else if (item.label === 'Vendas/Leads') { isOpen = clientsOpen; setOpen = setClientsOpen; }
+            else if (item.label === 'Acessos') { isOpen = accessOpen; setOpen = setAccessOpen; }
+
             return (
-              <div key={item.label} className={`nav-group ${servicesOpen || isAnySubActive ? 'open' : ''}`}>
+              <div key={item.label} className={`nav-group ${isOpen || isAnySubActive ? 'open' : ''}`}>
                 <button
                   className={`nav-item group-toggle ${isAnySubActive ? 'active' : ''}`}
-                  onClick={() => setServicesOpen(!servicesOpen)}
+                  onClick={() => setOpen(!isOpen)}
                 >
                   <span className="icon">{item.icon}</span>
                   {!collapsed && (
@@ -156,7 +205,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                     </>
                   )}
                 </button>
-                {(servicesOpen || isAnySubActive) && !collapsed && (
+                {(isOpen || isAnySubActive) && !collapsed && (
                   <div className="sub-menu">
                     {visibleSubItems.map(sub => (
                       <Link

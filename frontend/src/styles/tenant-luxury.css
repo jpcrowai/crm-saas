@@ -9,6 +9,51 @@
     animation: fadeIn 0.4s ease-out;
 }
 
+/* RESPONSIVE ADDITIONS */
+@media (max-width: 768px) {
+    .tenant-page-container {
+        padding: 1.5rem 1rem;
+    }
+
+    .page-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .modal-body-grid {
+        grid-template-columns: 1fr !important;
+        padding: 1.5rem !important;
+    }
+}
+
+.grid-profile {
+    display: grid;
+    grid-template-columns: 1.1fr 2fr;
+    gap: 3rem;
+    align-items: start;
+}
+
+.grid-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+@media (max-width: 1024px) {
+    .grid-profile {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .grid-fields {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

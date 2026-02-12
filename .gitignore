@@ -40,4 +40,5 @@ check_niches.py
 *.json
 !package.json
 !package-lock.json
+!vercel.json
 !composer.json

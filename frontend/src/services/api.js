@@ -261,13 +261,6 @@ export const deletePaymentMethod = (id) => {
   return api.delete(`/tenant/payment-methods/${id}`);
 };
 
-export const getCashFlowReport = () => {
-  return api.get('/tenant/reports/cashflow');
-};
-
-export const getCustomerRanking = () => {
-  return api.get('/tenant/reports/ranking-customers');
-};
 
 export const importFinances = (file) => {
   const formData = new FormData();

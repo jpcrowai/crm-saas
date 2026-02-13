@@ -39,8 +39,8 @@ const SupplierView = ({ dateRange }) => {
                 <div className="data-card-header">
                     <h3>Concentração de Compras (Top Fornecedores)</h3>
                 </div>
-                <div style={{ height: '300px', width: '100%' }}>
-                    <ResponsiveContainer>
+                <div style={{ padding: '2rem', height: '350px', minHeight: '350px' }}>
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                         <BarChart data={data.slice(0, 10)} layout="vertical">
                             <XAxis type="number" hide />
                             <YAxis type="category" dataKey="supplier_name" width={100} tick={{ fontSize: 12 }} />

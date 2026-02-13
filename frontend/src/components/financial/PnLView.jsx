@@ -43,8 +43,8 @@ const PnLView = ({ dateRange }) => {
                 <div className="data-card-header">
                     <h3>Detalhamento de Despesas</h3>
                 </div>
-                <div style={{ height: '350px', width: '100%' }}>
-                    <ResponsiveContainer>
+                <div style={{ padding: '2rem', height: '350px', minHeight: '350px' }}>
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                         <BarChart data={data.expense_breakdown} layout="vertical" margin={{ left: 20 }}>
                             <XAxis type="number" hide />
                             <YAxis type="category" dataKey="category" width={120} tick={{ fontSize: 12 }} />

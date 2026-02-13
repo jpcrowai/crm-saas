@@ -47,13 +47,16 @@ const CashFlowView = ({ dateRange }) => {
                 <div className="data-card-header">
                     <h3>Evolução Diária</h3>
                 </div>
-                <div style={{ height: '350px', width: '100%' }}>
-                    <ResponsiveContainer>
+                <div style={{ padding: '2rem', height: '350px', minHeight: '350px' }}>
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                         <AreaChart data={data}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="date" tickFormatter={curr => new Date(curr).getDate()} style={{ fontSize: '0.8rem' }} />
                             <YAxis hide />
-                            <Tooltip labelFormatter={curr => new Date(curr).toLocaleDateString('pt-BR')} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                            <Tooltip
+                                labelFormatter={curr => new Date(curr).toLocaleDateString('pt-BR')}
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                            />
                             <Area type="monotone" dataKey="income" stackId="1" stroke="var(--success)" fill="var(--success)" fillOpacity={0.1} name="Receita" />
                             <Area type="monotone" dataKey="expense" stackId="2" stroke="var(--error)" fill="var(--error)" fillOpacity={0.1} name="Despesa" />
                         </AreaChart>

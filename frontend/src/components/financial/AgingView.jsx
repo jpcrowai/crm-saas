@@ -45,8 +45,8 @@ const AgingView = () => {
                 <div className="data-card-header">
                     <h3>Aging List (Inadimplência por Faixa de Atraso)</h3>
                 </div>
-                <div style={{ height: '350px', width: '100%' }}>
-                    <ResponsiveContainer>
+                <div style={{ padding: '2rem', height: '350px', minHeight: '350px' }}>
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                         <BarChart data={chartData}>
                             <XAxis dataKey="name" stroke="#64748b" style={{ fontSize: '0.8rem' }} />
                             <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />

@@ -71,7 +71,7 @@ class LeadBase(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
-    status: str = "new"  # new, contacted, converted, lost
+    funil_stage: str = "new"  # new, contacted, converted, lost
     value: float = 0.0
 
 class LeadCreate(LeadBase):

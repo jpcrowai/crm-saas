@@ -70,7 +70,7 @@ const Pipeline = () => {
         setLeads(leads.map(l => l.id === id ? { ...l, status: newStatus, status_lead: newStatus } : l));
 
         try {
-            await updateLead(id, { status: newStatus, status_lead: newStatus });
+            await updateLead(id, { funil_stage: newStatus, status: newStatus, status_lead: newStatus });
             const isConverted = newStatus === 'converted';
             const isWin = isConverted ||
                 newStatus.toLowerCase().includes('pago') ||
@@ -118,8 +118,8 @@ const Pipeline = () => {
             <div style={{ flex: 1, display: 'flex', gap: '1.5rem', overflowX: 'auto', paddingBottom: '2rem' }}>
                 {columns.map(col => {
                     const colLeads = leads.filter(l => {
-                        const leadStatus = (l.status_lead || l.status || '').toLowerCase().replace(/\s+/g, '_');
-                        return leadStatus === col.id || (l.status_lead || l.status) === col.label;
+                        const leadStatus = (l.funil_stage || l.status_lead || l.status || '').toLowerCase().replace(/\s+/g, '_');
+                        return leadStatus === col.id || (l.funil_stage || l.status_lead || l.status) === col.label;
                     });
                     const totalValue = colLeads.reduce((sum, l) => sum + getValue(l), 0);
 

@@ -146,7 +146,7 @@ async def create_lead(
         name=lead_in.get("nome") or lead_in.get("name") or "Lead sem nome",
         email=lead_in.get("email"),
         phone=lead_in.get("telefone") or lead_in.get("phone"),
-        status=lead_in.get("status") or "new",
+        funil_stage=lead_in.get("funil_stage") or lead_in.get("status") or "new",
         value=lead_in.get("valor") or lead_in.get("value") or 0.0,
         origin=lead_in.get("origem") or lead_in.get("origin"),
         observations=lead_in.get("observacoes") or lead_in.get("observations"),
@@ -183,7 +183,7 @@ async def update_lead(
     if not lead:
          raise HTTPException(status_code=404, detail="Lead not found")
          
-    old_status = lead.status
+    old_status = lead.funil_stage
     
     # Update fields
     if "nome" in lead_update: lead.name = lead_update["nome"]
@@ -191,7 +191,8 @@ async def update_lead(
     if "email" in lead_update: lead.email = lead_update["email"]
     if "telefone" in lead_update: lead.phone = lead_update["telefone"]
     if "phone" in lead_update: lead.phone = lead_update["phone"]
-    if "status" in lead_update: lead.status = lead_update["status"]
+    if "funil_stage" in lead_update: lead.funil_stage = lead_update["funil_stage"]
+    if "status" in lead_update: lead.funil_stage = lead_update["status"]
     if "valor" in lead_update: lead.value = lead_update["valor"]
     if "value" in lead_update: lead.value = lead_update["value"]
     if "origem" in lead_update: lead.origin = lead_update["origem"]
@@ -201,11 +202,11 @@ async def update_lead(
     if "responsavel" in lead_update: lead.responsible_user = lead_update["responsavel"]
     
     # Log stage change
-    if lead.status != old_status:
+    if lead.funil_stage != old_status:
         history = SQLLeadHistory(
             lead_id=lead.id,
             type="stage_change",
-            description=f"Mudança de etapa: {old_status} -> {lead.status}",
+            description=f"Mudança de etapa: {old_status} -> {lead.funil_stage}",
             user_name=current_user.email
         )
         db.add(history)
@@ -228,16 +229,16 @@ async def get_stats(
     total_leads = db.query(SQLLead).filter(SQLLead.tenant_id == tenant_id).count()
     active_leads = db.query(SQLLead).filter(
         SQLLead.tenant_id == tenant_id, 
-        SQLLead.status.in_(["new", "contacted", "Novo", "Em Contato"])
+        SQLLead.funil_stage.in_(["new", "contacted", "Novo", "Em Contato"])
     ).count()
     converted_leads = db.query(SQLLead).filter(
         SQLLead.tenant_id == tenant_id, 
-        SQLLead.status.in_(["converted", "Convertido"])
+        SQLLead.funil_stage.in_(["converted", "Convertido"])
     ).count()
     
     revenue = db.query(func.sum(SQLLead.value)).filter(
         SQLLead.tenant_id == tenant_id, 
-        SQLLead.status.in_(["converted", "Convertido"])
+        SQLLead.funil_stage.in_(["converted", "Convertido"])
     ).scalar() or 0.0
     
     conversion_rate = (converted_leads / total_leads * 100) if total_leads > 0 else 0.0

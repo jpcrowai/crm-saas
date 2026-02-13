@@ -124,8 +124,8 @@ const LeadDetailsModal = ({ lead, onClose, onUpdate, pipelineStages = [] }) => {
                                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '0.4rem' }}>Status / Etapa</label>
                                     <select
                                         style={{ width: '100%' }}
-                                        value={editedLead.status || editedLead.status_lead}
-                                        onChange={e => setEditedLead({ ...editedLead, status: e.target.value, status_lead: e.target.value })}
+                                        value={editedLead.funil_stage || editedLead.status || editedLead.status_lead}
+                                        onChange={e => setEditedLead({ ...editedLead, funil_stage: e.target.value, status: e.target.value, status_lead: e.target.value })}
                                     >
                                         {pipelineStages.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
@@ -270,7 +270,7 @@ const LeadDetailsModal = ({ lead, onClose, onUpdate, pipelineStages = [] }) => {
                         onClick={async () => {
                             if (window.confirm("Deseja converter este Lead em Cliente?")) {
                                 try {
-                                    await updateLead(lead.id, { status: 'converted', status_lead: 'converted' });
+                                    await updateLead(lead.id, { funil_stage: 'converted', status: 'converted', status_lead: 'converted' });
                                     alert("Lead convertido em Cliente com sucesso!");
                                     onUpdate();
                                 } catch (e) {

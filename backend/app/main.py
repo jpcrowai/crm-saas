@@ -6,13 +6,40 @@ import os
 from app.database import engine, Base
 import app.models.sql_models as sql_models
 
-# Initialize SQL database tables
-try:
-    sql_models.Base.metadata.create_all(bind=engine)
-except Exception as e:
-    print(f"CRITICAL: Could not connect to database on startup: {e}")
+# Database initialization moved to startup event for better resilience on serverless
+def init_db():
+    try:
+        sql_models.Base.metadata.create_all(bind=engine)
+        print("✅ Database tables verified/created")
+    except Exception as e:
+        print(f"CRITICAL: Could not connect to database: {e}")
 
 app = FastAPI(title="CRM SaaS Multi-tenant")
+
+# Diagnostic Middleware to catch 500s and return them with CORS headers
+@app.middleware("http")
+async def db_session_middleware(request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as exc:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"RUNTIME ERROR: {error_details}")
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal Server Error", "error": str(exc)},
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+                "Access-Control-Allow-Headers": "*",
+            }
+        )
+
+@app.on_event("startup")
+async def startup_event():
+    init_db()
 
 # CORS
 app.add_middleware(

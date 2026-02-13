@@ -129,6 +129,26 @@ export const getReports = (params = {}) => {
   return api.get('/tenant/reports', { params });
 };
 
+export const getFinancialCustomerReport = (params = {}) => {
+  return api.get('/tenant/financial-reports/customers', { params });
+};
+
+export const getFinancialSupplierReport = (params = {}) => {
+  return api.get('/tenant/financial-reports/suppliers', { params });
+};
+
+export const getFinancialCashFlowReport = (params = {}) => {
+  return api.get('/tenant/financial-reports/cash-flow', { params });
+};
+
+export const getFinancialPnLReport = (params = {}) => {
+  return api.get('/tenant/financial-reports/pnl', { params });
+};
+
+export const getFinancialAgingReport = () => {
+  return api.get('/tenant/financial-reports/aging');
+};
+
 export const getNiches = () => {
   return api.get('/niches/');
 };

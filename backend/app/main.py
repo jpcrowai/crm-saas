@@ -65,6 +65,8 @@ from app.routers import suppliers
 app.include_router(suppliers.router)
 from app.routers import uploads
 app.include_router(uploads.router)
+from app.routers import financial_reports
+app.include_router(financial_reports.router)
 
 @app.get("/")
 def root():

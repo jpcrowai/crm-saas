@@ -29,7 +29,11 @@ async def db_session_middleware(request, call_next):
         from fastapi.responses import JSONResponse
         return JSONResponse(
             status_code=500,
-            content={"detail": "Internal Server Error", "error": str(exc)},
+            content={
+                "detail": "Internal Server Error", 
+                "error": str(exc),
+                "traceback": error_details
+            },
             headers={
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "*",

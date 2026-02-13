@@ -293,7 +293,7 @@ async def get_revenue_chart(
         func.sum(SQLLead.value).label('total')
     ).filter(
         SQLLead.tenant_id == current_user.tenant_id,
-        SQLLead.status.in_(["converted", "Convertido"]),
+        SQLLead.funil_stage.in_(["converted", "Convertido"]),
         SQLLead.created_at >= six_months_ago
     ).group_by('month').order_by('month').all()
     
@@ -438,7 +438,7 @@ async def import_leads_excel(
                     lead.phone = row_data["telefone"]
                     lead.email = row_data["email"]
                     lead.origin = row_data["origem"]
-                    lead.status = row_data["status"] or lead.status
+                    lead.funil_stage = row_data["status"] or lead.funil_stage
                     stats["updated"] += 1
                 else:
                     lead = SQLLead(
@@ -447,7 +447,7 @@ async def import_leads_excel(
                         phone=row_data["telefone"],
                         email=row_data["email"],
                         origin=row_data["origem"],
-                        status=row_data["status"] or "new",
+                        funil_stage=row_data["status"] or "new",
                         value=float(row_data["valor"]) if row_data["valor"] else 0.0,
                         observations=row_data["observacoes"],
                         responsible_user=row_data["responsavel"]

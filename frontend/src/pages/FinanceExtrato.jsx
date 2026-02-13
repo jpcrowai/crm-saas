@@ -3,7 +3,9 @@ import { getFinanceEntries, deleteFinanceEntry, updateFinanceEntryStatus, export
 import { Search, Filter, Download, Plus, ArrowUpCircle, ArrowDownCircle, MoreVertical, Trash2, CheckCircle2, AlertCircle, Clock, XCircle, DollarSign, Wallet, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import FinanceWizard from '../components/FinanceWizard';
+import KpiCarousel from '../components/KpiCarousel';
 import '../styles/tenant-luxury.css';
+import '../components/KpiCarousel.css';
 
 const FinanceExtrato = () => {
     const [entries, setEntries] = useState([]);
@@ -69,6 +71,32 @@ const FinanceExtrato = () => {
         return <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.35rem 0.65rem', borderRadius: '6px', background: s.bg, color: s.color }}>{s.label}</span>;
     };
 
+    const kpis = [
+        <div className="indicator-card-luxury" key="entradas" style={{ borderTopColor: 'var(--success)' }}>
+            <div className="indicator-icon-wrapper" style={{ background: '#ecfdf5', color: 'var(--success)' }}><ArrowUpCircle size={28} /></div>
+            <div className="indicator-data">
+                <label>Entradas</label>
+                <p>R$ {stats.income.toLocaleString('pt-BR')}</p>
+            </div>
+        </div>,
+        <div className="indicator-card-luxury" key="saidas" style={{ borderTopColor: 'var(--error)' }}>
+            <div className="indicator-icon-wrapper" style={{ background: '#fef2f2', color: 'var(--error)' }}><ArrowDownCircle size={28} /></div>
+            <div className="indicator-data">
+                <label>Saídas</label>
+                <p>R$ {stats.expense.toLocaleString('pt-BR')}</p>
+            </div>
+        </div>,
+        <div className="indicator-card-luxury" key="saldo" style={{ borderTopColor: 'var(--navy-900)' }}>
+            <div className="indicator-icon-wrapper" style={{ background: 'var(--navy-900)', color: 'white' }}><Wallet size={28} /></div>
+            <div className="indicator-data">
+                <label>Saldo Líquido</label>
+                <p style={{ color: stats.balance >= 0 ? 'var(--navy-950)' : 'var(--error)' }}>
+                    R$ {stats.balance.toLocaleString('pt-BR')}
+                </p>
+            </div>
+        </div>
+    ];
+
     return (
         <div className="tenant-page-container">
             <header className="page-header-row">
@@ -76,46 +104,22 @@ const FinanceExtrato = () => {
                     <h1>Extrato Financeiro</h1>
                     <p>Gestão de fluxo de caixa e conciliação bancária</p>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
+                <div className="page-header-actions">
                     <Link to="/finances/settings">
-                        <button className="btn-secondary" style={{ padding: '0.75rem 1rem' }}>
+                        <button className="btn-secondary" style={{ width: '100%', height: '100%', minHeight: '42px' }}>
                             <Settings size={20} />
                         </button>
                     </Link>
                     <button className="btn-primary" onClick={handleExport}>
-                        <Download size={18} /> Exportar Excel
+                        <Download size={18} /> Exportar
                     </button>
                     <button className="btn-primary" onClick={() => setShowWizard(true)}>
-                        <Plus size={20} /> Novo Lançamento
+                        <Plus size={20} /> Novo
                     </button>
                 </div>
             </header>
 
-            <div className="indicator-grid">
-                <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
-                    <div className="indicator-icon-wrapper" style={{ background: '#ecfdf5', color: 'var(--success)' }}><ArrowUpCircle size={28} /></div>
-                    <div className="indicator-data">
-                        <label>Entradas (Filtrado)</label>
-                        <p>R$ {stats.income.toLocaleString('pt-BR')}</p>
-                    </div>
-                </div>
-                <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--error)' }}>
-                    <div className="indicator-icon-wrapper" style={{ background: '#fef2f2', color: 'var(--error)' }}><ArrowDownCircle size={28} /></div>
-                    <div className="indicator-data">
-                        <label>Saídas (Filtrado)</label>
-                        <p>R$ {stats.expense.toLocaleString('pt-BR')}</p>
-                    </div>
-                </div>
-                <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--navy-900)' }}>
-                    <div className="indicator-icon-wrapper" style={{ background: 'var(--navy-900)', color: 'white' }}><Wallet size={28} /></div>
-                    <div className="indicator-data">
-                        <label>Saldo Líquido</label>
-                        <p style={{ color: stats.balance >= 0 ? 'var(--navy-950)' : 'var(--error)' }}>
-                            R$ {stats.balance.toLocaleString('pt-BR')}
-                        </p>
-                    </div>
-                </div>
-            </div>
+            <KpiCarousel items={kpis} />
 
             <div className="data-card-luxury">
                 <div className="luxury-filter-bar" style={{ background: '#f8fafc' }}>

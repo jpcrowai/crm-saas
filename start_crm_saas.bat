@@ -14,7 +14,7 @@ echo Instalando dependencias...
 pip install -r requirements.txt
 
 echo Iniciando backend...
-start cmd /k "uvicorn app.main:app --reload --port 8000"
+start "Backend CRM" cmd /k "call venv\Scripts\activate.bat && uvicorn app.main:app --reload --port 8000"
 
 REM ==== FRONTEND (React/Vite) ====
 cd ../frontend
@@ -25,7 +25,7 @@ IF NOT EXIST "node_modules" (
 )
 
 echo Iniciando frontend...
-start cmd /k "npm run dev"
+start "Frontend CRM" cmd /k "set VITE_API_URL=http://localhost:8000 && npm run dev"
 
 cd ..
 echo Backend e frontend iniciados.

@@ -46,9 +46,11 @@ const Customers = () => {
                     <h1>Base de Clientes</h1>
                     <p>Gerencie seus parceiros e histórico de relacionamento</p>
                 </div>
-                <button className="btn-primary" onClick={() => setShowForm(true)}>
-                    <Plus size={20} /> Novo Cliente
-                </button>
+                <div className="page-header-actions">
+                    <button className="btn-primary" onClick={() => setShowForm(true)}>
+                        <Plus size={20} /> Novo Cliente
+                    </button>
+                </div>
             </header>
 
             <div className="data-card-luxury">

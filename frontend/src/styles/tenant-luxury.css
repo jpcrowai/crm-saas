@@ -7,6 +7,10 @@
     padding: 3rem 2.5rem;
     min-height: 100vh;
     animation: fadeIn 0.4s ease-out;
+    overflow-x: hidden;
+    /* Prevent horizontal scroll */
+    width: 100%;
+    position: relative;
 }
 
 /* RESPONSIVE ADDITIONS */
@@ -17,9 +21,17 @@
 
     .page-header-row {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 1.5rem;
+        align-items: stretch;
+        gap: 1.25rem;
         margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+    }
+
+    .page-header-actions {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.75rem;
+        width: 100%;
     }
 
     .modal-body-grid {
@@ -92,24 +104,51 @@
     letter-spacing: 0.2px;
 }
 
-/* LUXURY INDICATOR CARDS (Dashboard) */
+/* LUXURY INDICATOR CARDS (Dashboard / Summary) */
 .indicator-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
+    /* Force 3 columns by default as requested */
     gap: 2rem;
     margin-bottom: 3.5rem;
 }
 
+@media (max-width: 1024px) {
+    .indicator-grid {
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .indicator-grid {
+        grid-template-columns: 1fr;
+        /* Stack on mobile if carousel NOT used */
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+}
+
 .indicator-card-luxury {
     background: var(--white);
-    padding: 1.75rem;
+    padding: 1.5rem;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     border-top: 4px solid var(--border-soft);
     transition: var(--transition);
     display: flex;
-    align-items: center;
-    gap: 1.5rem;
+    flex-direction: column;
+    /* Stack vertically for more space in row on mobile */
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .indicator-card-luxury {
+        padding: 0.75rem;
+        gap: 0.5rem;
+        border-radius: var(--radius-md);
+        border-top-width: 3px;
+    }
 }
 
 .indicator-card-luxury:hover {
@@ -118,30 +157,61 @@
 }
 
 .indicator-icon-wrapper {
-    width: 60px;
-    height: 60px;
-    border-radius: 16px;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
 
+@media (max-width: 768px) {
+    .indicator-icon-wrapper {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+    }
+
+    .indicator-icon-wrapper svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+}
+
 .indicator-data label {
     display: block;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     color: var(--text-muted);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .indicator-data label {
+        font-size: 0.55rem;
+        letter-spacing: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
 }
 
 .indicator-data p {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 800;
     color: var(--navy-950);
     line-height: 1;
+}
+
+@media (max-width: 768px) {
+    .indicator-data p {
+        font-size: 0.85rem;
+        letter-spacing: -0.5px;
+    }
 }
 
 /* CENTRALIZED DATA CARDS (Lists/Tables) */

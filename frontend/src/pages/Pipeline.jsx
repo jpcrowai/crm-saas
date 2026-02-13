@@ -108,9 +108,9 @@ const Pipeline = () => {
                     <h1>Pipeline de Vendas</h1>
                     <p>Gestão visual do funil estratégico • {pipelineStages.length} estágios ativos</p>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
+                <div className="page-header-actions">
                     <button className="btn-primary" onClick={() => setShowPipelineConfig(true)}>
-                        <Layers size={18} /> Configurar Funil
+                        <Layers size={18} /> Configurar
                     </button>
                 </div>
             </header>

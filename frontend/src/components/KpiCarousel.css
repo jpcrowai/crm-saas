@@ -1,0 +1,111 @@
+.kpi-carousel-outer {
+    position: relative;
+    width: 100%;
+    margin-bottom: 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.kpi-carousel-track-container {
+    position: relative;
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.kpi-carousel-item {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* Ensure the card inside the carousel takes full width but follows constraints */
+.kpi-carousel-item>div {
+    width: 100%;
+    margin: 0 !important;
+}
+
+.kpi-carousel-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.carousel-nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.carousel-nav-btn {
+    background: var(--navy-900);
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.carousel-nav-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    background: var(--gold-500);
+}
+
+.carousel-dots {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-dot.active {
+    background: var(--gold-500);
+    width: 24px;
+    border-radius: 4px;
+}
+
+.carousel-progress-track {
+    width: 120px;
+    height: 3px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.carousel-progress-fill {
+    height: 100%;
+    background: var(--gold-500);
+}
+
+@media (max-width: 768px) {
+    .kpi-carousel-outer {
+        padding: 0.5rem;
+        background: transparent;
+    }
+
+    .kpi-carousel-track-container {
+        min-height: 120px;
+    }
+}

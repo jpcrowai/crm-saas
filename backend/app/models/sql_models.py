@@ -109,7 +109,7 @@ class Supplier(Base):
 
 
 class Lead(Base):
-    __tablename__ = "lead_crm"
+    __tablename__ = "leads_crm"
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
@@ -152,7 +152,7 @@ class Customer(Base):
     subscriptions = relationship("Subscription", back_populates="customer")
     appointments = relationship("Appointment", back_populates="customer")
     
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.lead_crm.id", ondelete="SET NULL"), nullable=True)
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads_crm.id", ondelete="SET NULL"), nullable=True)
 
 
 class Product(Base):
@@ -239,7 +239,7 @@ class FinanceEntry(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.lead_crm.id", ondelete="SET NULL"), nullable=True)
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads_crm.id", ondelete="SET NULL"), nullable=True)
     customer_id = Column(UUID(as_uuid=True), ForeignKey("public.customers.id", ondelete="SET NULL"), nullable=True)
     service_id = Column(UUID(as_uuid=True), ForeignKey("public.products.id", ondelete="SET NULL"), nullable=True)
     category_id = Column(UUID(as_uuid=True), ForeignKey("public.finance_categories.id", ondelete="SET NULL"), nullable=True)
@@ -348,7 +348,7 @@ class Appointment(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     customer_id = Column(UUID(as_uuid=True), ForeignKey("public.customers.id", ondelete="SET NULL"), nullable=True)
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.lead_crm.id", ondelete="SET NULL"), nullable=True)
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads_crm.id", ondelete="SET NULL"), nullable=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="SET NULL"), nullable=True)
     
     # New Service Fields
@@ -411,7 +411,7 @@ class LeadHistory(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.lead_crm.id", ondelete="CASCADE"), nullable=False)
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads_crm.id", ondelete="CASCADE"), nullable=False)
     type = Column(String) # call, whatsapp, meeting, note, stage_change
     description = Column(Text)
     user_name = Column(String)
@@ -425,7 +425,7 @@ class LeadTask(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.lead_crm.id", ondelete="CASCADE"), nullable=False)
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads_crm.id", ondelete="CASCADE"), nullable=False)
     title = Column(String, nullable=False)
     due_date = Column(DateTime(timezone=True))
     responsible_user = Column(String)

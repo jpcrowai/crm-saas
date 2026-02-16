@@ -7,6 +7,8 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
+export const fetcher = url => api.get(url).then(res => res.data);
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -83,6 +85,10 @@ export const importLeads = (formData) => {
 
 export const getTenantStats = () => {
   return api.get('/tenant/stats');
+};
+
+export const getDashboardSummary = () => {
+  return api.get('/tenant/dashboard-summary');
 };
 
 export const getLeads = () => {

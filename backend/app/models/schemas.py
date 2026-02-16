@@ -138,6 +138,11 @@ class DashboardStats(BaseModel):
     total_revenue: float
     recent_leads: List[Lead]
 
+class DashboardSummary(BaseModel):
+    stats: DashboardStats
+    total_expenses: float
+    customer_ranking: List[Dict[str, Any]]
+
 class TenantAdminStats(BaseModel):
     nome: str
     slug: str

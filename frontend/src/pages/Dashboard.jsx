@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { getTenantStats, createLead, getTenantAdminStats, getReports } from '../services/api';
+import React, { useState } from 'react';
+import useSWR, { mutate } from 'swr';
+import { getTenantStats, createLead, fetcher, getReports } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, DollarSign, TrendingUp, Users, Plus, Activity, CreditCard, Shield, Upload, ArrowRight, XCircle, Target, Briefcase } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
@@ -10,22 +11,16 @@ import '../components/KpiCarousel.css';
 import '../components/TabbedDashboard.css';
 
 const MasterAdminView = () => {
-  const [stats, setStats] = useState(null);
-  const { user } = useAuth();
+  const { data: stats, error } = useSWR('/tenant/admin-stats', fetcher);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await getTenantAdminStats();
-        setStats(res.data);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    load();
-  }, []);
-
-  if (!stats) return <div className="tenant-page-container" style={{ color: 'white' }}>Carregando dados do cliente...</div>;
+  if (!stats) return (
+    <div className="tenant-page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+      <div className="loading-container">
+        <Activity className="animate-pulse" size={48} color="var(--gold-400)" />
+        <p style={{ marginTop: '1rem', fontWeight: 600 }}>Acessando ambiente...</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="tenant-page-container">
@@ -77,28 +72,22 @@ const MasterAdminView = () => {
 };
 
 const ClientDashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [reportData, setReportData] = useState(null);
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', value: 0 });
   const { user } = useAuth();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const { data: summary, isValidating } = useSWR('/tenant/dashboard-summary', fetcher, {
+    revalidateOnFocus: true,
+    dedupingInterval: 5000
+  });
 
-  const loadData = async () => {
-    try {
-      const [statsRes, reportsRes] = await Promise.all([
-        getTenantStats(),
-        getReports()
-      ]);
-      setStats(statsRes.data);
-      setReportData(reportsRes.data);
-    } catch (error) {
-      console.error("Error loading dashboard data", error);
-    }
-  };
+  const stats = summary?.stats;
+  const reportData = summary ? {
+    total_leads: summary.stats.total_leads,
+    total_revenue: summary.stats.total_revenue,
+    total_expenses: summary.total_expenses,
+    customer_ranking: summary.customer_ranking
+  } : null;
 
   const handleAddLead = async (e) => {
     e.preventDefault();
@@ -106,7 +95,8 @@ const ClientDashboard = () => {
       await createLead(newLead);
       setShowLeadForm(false);
       setNewLead({ name: '', email: '', phone: '', value: 0 });
-      loadData();
+      // Clear cache and re-fetch to reflect new lead immediately
+      mutate('/tenant/dashboard-summary');
     } catch (error) {
       alert('Erro ao criar lead');
     }
@@ -117,17 +107,8 @@ const ClientDashboard = () => {
     { name: 'Qui', leads: 2 }, { name: 'Sex', leads: 6 }, { name: 'Sab', leads: 5 }, { name: 'Dom', leads: 4 },
   ];
 
-  if (!stats || !reportData) return (
-    <div className="tenant-page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-      <div className="loading-container">
-        <Activity className="animate-pulse" size={48} color="var(--gold-400)" />
-        <p style={{ marginTop: '1rem', fontWeight: 600 }}>Sincronizando ecossistema...</p>
-      </div>
-    </div>
-  );
-
   // KPI CARDS DEFINITIONS
-  const generalKpis = [
+  const generalKpis = stats ? [
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--navy-900)' }}>
       <div className="indicator-icon-wrapper" style={{ background: 'var(--navy-950)', color: 'white' }}><Users size={28} /></div>
       <div className="indicator-data">
@@ -149,9 +130,13 @@ const ClientDashboard = () => {
         <p>{stats.conversion_rate}%</p>
       </div>
     </div>
+  ] : [
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>
   ];
 
-  const financeKpis = [
+  const financeKpis = reportData ? [
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--primary)' }}>
       <div className="indicator-icon-wrapper" style={{ background: 'var(--gold-50)', color: 'var(--gold-600)' }}><Target size={28} /></div>
       <div className="indicator-data">
@@ -173,9 +158,13 @@ const ClientDashboard = () => {
         <p>R$ {reportData.total_expenses.toLocaleString('pt-BR')}</p>
       </div>
     </div>
+  ] : [
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>
   ];
 
-  const consultoriaKpis = [
+  const consultoriaKpis = reportData ? [
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--gold-500)' }}>
       <div className="indicator-icon-wrapper" style={{ background: 'var(--gold-50)', color: 'var(--gold-600)' }}><Briefcase size={28} /></div>
       <div className="indicator-data">
@@ -190,12 +179,15 @@ const ClientDashboard = () => {
         <p>88%</p>
       </div>
     </div>
+  ] : [
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>
   ];
 
-  const cashFlowData = [
+  const cashFlowData = reportData ? [
     { name: 'Receita', value: reportData.total_revenue, fill: 'var(--success)' },
     { name: 'Despesas', value: reportData.total_expenses, fill: 'var(--error)' }
-  ];
+  ] : [];
 
   const dashboardTabs = [
     {
@@ -227,7 +219,7 @@ const ClientDashboard = () => {
                 <h3>Últimas Movimentações</h3>
               </div>
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {stats.recent_leads.slice(0, 5).map((lead) => (
+                {stats ? stats.recent_leads.slice(0, 5).map((lead) => (
                   <div key={lead.id} className="list-row-hover" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '10px' }}>
                     <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--navy-900)', color: 'white', fontSize: '0.75rem' }}>
                       {lead.name.charAt(0)}
@@ -236,11 +228,13 @@ const ClientDashboard = () => {
                       <p style={{ fontSize: '0.85rem', fontWeight: 700 }}>{lead.name}</p>
                       <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{lead.email}</p>
                     </div>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.25rem 0.5rem', borderRadius: '4px', background: lead.status === 'converted' ? '#dcfce7' : '#f1f5f9', color: lead.status === 'converted' ? '#166534' : '#64748b' }}>
-                      {lead.status}
+                    <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.25rem 0.5rem', borderRadius: '4px', background: lead.funil_stage === 'converted' ? '#dcfce7' : '#f1f5f9', color: lead.funil_stage === 'converted' ? '#166534' : '#64748b' }}>
+                      {lead.funil_stage}
                     </span>
                   </div>
-                ))}
+                )) : (
+                  [1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton" style={{ height: '50px', borderRadius: '10px' }}></div>)
+                )}
               </div>
             </div>
           </div>
@@ -274,7 +268,7 @@ const ClientDashboard = () => {
                 <h3>Ranking VIP</h3>
               </div>
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {reportData.customer_ranking?.slice(0, 5).map((c, idx) => (
+                {reportData ? reportData.customer_ranking?.slice(0, 5).map((c, idx) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: idx === 0 ? 'var(--gold-50)' : '#f8fafc', borderRadius: '10px', border: idx === 0 ? '1px solid var(--gold-400)' : 'none' }}>
                     <div style={{ width: 28, height: 28, borderRadius: '50%', background: idx === 0 ? 'var(--grad-gold)' : 'var(--navy-900)', color: idx === 0 ? 'var(--navy-950)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
                       {idx + 1}
@@ -284,7 +278,9 @@ const ClientDashboard = () => {
                     </div>
                     <p style={{ fontSize: '0.9rem', fontWeight: 800 }}>R$ {c.total_revenue.toLocaleString('pt-BR')}</p>
                   </div>
-                ))}
+                )) : (
+                  [1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton" style={{ height: '50px', borderRadius: '10px' }}></div>)
+                )}
               </div>
             </div>
           </div>
@@ -310,7 +306,14 @@ const ClientDashboard = () => {
     <div className="tenant-page-container">
       <header className="page-header-row">
         <div className="page-title-group">
-          <h1>{user?.nome_empresa || `Dashboard`}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <h1>{user?.nome_empresa || `Dashboard`}</h1>
+            {isValidating && (
+              <span className="badge-syncing" title="Sincronizando com o servidor...">
+                <Activity size={12} className="animate-pulse" /> Sincronizando
+              </span>
+            )}
+          </div>
           <p>Ecossistema de Inteligência {user?.nicho_nome ? `para ${user.nicho_nome}` : ''}</p>
         </div>
         <div className="page-header-actions">

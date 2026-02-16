@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from app.database import get_db
 from app.deps import get_current_tenant_user, get_current_master
-from app.models.schemas import Lead, LeadCreate, DashboardStats, TokenData, LeadHistory, LeadTask, Customer, CustomerCreate, TenantAdminStats
+from app.models.schemas import Lead, LeadCreate, DashboardStats, DashboardSummary, TokenData, LeadHistory, LeadTask, Customer, CustomerCreate, TenantAdminStats
 from app.models.sql_models import (
     Lead as SQLLead, 
     LeadHistory as SQLLeadHistory, 
@@ -253,6 +253,68 @@ async def get_stats(
         total_revenue=float(revenue),
         recent_leads=recent_leads
     )
+
+@router.get("/dashboard-summary", response_model=DashboardSummary)
+async def get_dashboard_summary(
+    current_user: TokenData = Depends(get_current_tenant_user),
+    db: Session = Depends(get_db)
+):
+    tenant_id = current_user.tenant_id
+    
+    # 1. Stats
+    total_leads = db.query(SQLLead).filter(SQLLead.tenant_id == tenant_id).count()
+    active_leads = db.query(SQLLead).filter(
+        SQLLead.tenant_id == tenant_id, 
+        SQLLead.funil_stage.in_(["new", "contacted", "Novo", "Em Contato"])
+    ).count()
+    converted_leads = db.query(SQLLead).filter(
+        SQLLead.tenant_id == tenant_id, 
+        SQLLead.funil_stage.in_(["converted", "Convertido"])
+    ).count()
+    
+    revenue = db.query(func.sum(SQLLead.value)).filter(
+        SQLLead.tenant_id == tenant_id, 
+        SQLLead.funil_stage.in_(["converted", "Convertido"])
+    ).scalar() or 0.0
+    
+    conversion_rate = (converted_leads / total_leads * 100) if total_leads > 0 else 0.0
+    recent_leads = db.query(SQLLead).filter(SQLLead.tenant_id == tenant_id).order_by(desc(SQLLead.created_at)).limit(5).all()
+    
+    stats = DashboardStats(
+        total_leads=total_leads,
+        active_leads=active_leads,
+        converted_leads=converted_leads,
+        conversion_rate=round(conversion_rate, 2),
+        total_revenue=float(revenue),
+        recent_leads=recent_leads
+    )
+
+    # 2. Expenses 
+    expenses_paid = db.query(func.sum(SQLFinanceEntry.amount)).filter(
+        SQLFinanceEntry.tenant_id == tenant_id,
+        SQLFinanceEntry.status == "pago",
+        SQLFinanceEntry.type == "despesa"
+    ).scalar() or 0.0
+
+    # 3. Ranking
+    ranking_raw = db.query(
+        SQLCustomer.name,
+        func.sum(SQLFinanceEntry.amount).label('total')
+    ).join(
+        SQLFinanceEntry, SQLFinanceEntry.customer_id == SQLCustomer.id
+    ).filter(
+        SQLCustomer.tenant_id == tenant_id,
+        SQLFinanceEntry.type == "receita",
+        SQLFinanceEntry.status == "pago"
+    ).group_by(SQLCustomer.name).order_by(desc('total')).limit(5).all()
+    
+    ranking = [{"customer_name": r.name, "total_revenue": float(r.total)} for r in ranking_raw]
+
+    return {
+        "stats": stats,
+        "total_expenses": float(expenses_paid),
+        "customer_ranking": ranking
+    }
 
 @router.get("/admin-stats", response_model=TenantAdminStats)
 async def get_admin_stats(

@@ -14,15 +14,17 @@ if not DATABASE_URL:
     print("WARNING: DATABASE_URL not set in .env")
     DATABASE_URL = "postgresql://user:password@localhost/dbname"
 
-if DATABASE_URL:
-    try:
-        from urllib.parse import urlparse
-        p = urlparse(DATABASE_URL)
-        print(f"DEBUG: Connecting to {p.hostname}:{p.port} as {p.username}")
-    except:
-        pass
+# Optimized for Supabase/Vercel
+connect_args = {}
+if "supabase.com" in DATABASE_URL:
+    connect_args["sslmode"] = "require"
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL, 
+    connect_args=connect_args,
+    pool_pre_ping=True,
+    pool_recycle=3600
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

@@ -98,7 +98,7 @@ const MainLayout = () => {
       </main>
 
       {/* MOBILE BOTTOM NAVIGATION */}
-      {(user?.role_global !== 'master' || user?.tenant_slug) && (
+      {(user?.role_global !== 'master' || user?.tenant_slug) && (window.innerWidth <= 768) && (
         <>
           {/* FLOATING SUB-MENU (ACTION SHEET) */}
           {activeGroup && (
@@ -218,7 +218,7 @@ const MainLayout = () => {
       )}
 
       {/* For Master on Mobile, simple Nav */}
-      {user?.role_global === 'master' && !user?.tenant_slug && (
+      {user?.role_global === 'master' && !user?.tenant_slug && (window.innerWidth <= 768) && (
         <nav className="mobile-nav">
           <div className="mobile-nav-content">
             <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>

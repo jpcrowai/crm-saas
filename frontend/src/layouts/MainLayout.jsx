@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import { useAuth } from '../context/AuthContext'
-import { AlertTriangle, LayoutDashboard, Briefcase, Calendar as CalendarIcon, DollarSign, Settings, Activity } from 'lucide-react'
+import { AlertTriangle, LayoutDashboard, Briefcase, Calendar as CalendarIcon, DollarSign, Settings, Activity, Package, Building, Layers, FileText, Users } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { Link, useLocation } from 'react-router-dom'
 
@@ -137,7 +137,8 @@ const MainLayout = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gold-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>
                     {activeGroup === 'leads' ? 'Vendas & CRM' :
-                      activeGroup === 'finance' ? 'Gestão Financeira' : 'Configurações'}
+                      activeGroup === 'finance' ? 'Gestão Financeira' :
+                        activeGroup === 'services' ? 'Serviços & Catálogo' : 'Configurações'}
                   </span>
                 </div>
 
@@ -148,6 +149,26 @@ const MainLayout = () => {
                     </Link>
                     <Link to="/customers" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
                       <Briefcase size={18} /> <span>Base de Clientes</span>
+                    </Link>
+                  </>
+                )}
+
+                {activeGroup === 'services' && (
+                  <>
+                    <Link to="/professionals" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <Users size={18} /> <span>Profissionais (Equipe)</span>
+                    </Link>
+                    <Link to="/suppliers" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <Building size={18} /> <span>Fornecedores</span>
+                    </Link>
+                    <Link to="/products" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <Package size={18} /> <span>Catálogo de Produtos</span>
+                    </Link>
+                    <Link to="/plans" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <Layers size={18} /> <span>Gestão de Planos</span>
+                    </Link>
+                    <Link to="/subscriptions" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <FileText size={18} /> <span>Assinaturas Ativas</span>
                     </Link>
                   </>
                 )}
@@ -196,6 +217,14 @@ const MainLayout = () => {
                 <CalendarIcon size={20} />
                 <span>AGENDA</span>
               </Link>
+
+              <button
+                className={`mobile-nav-item ${activeGroup === 'services' ? 'active' : ''}`}
+                onClick={() => setActiveGroup(activeGroup === 'services' ? null : 'services')}
+              >
+                <Package size={20} />
+                <span>SERVIÇOS</span>
+              </button>
 
               <button
                 className={`mobile-nav-item ${activeGroup === 'finance' ? 'active' : ''}`}

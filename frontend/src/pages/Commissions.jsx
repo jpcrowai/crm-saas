@@ -14,7 +14,6 @@ import {
     Clock
 } from 'lucide-react';
 import '../styles/tenant-luxury.css';
-import '../styles/finances.css'; // Reuse some layout styles
 
 const Commissions = () => {
     const [summary, setSummary] = useState({

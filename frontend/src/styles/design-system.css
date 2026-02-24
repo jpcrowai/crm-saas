@@ -81,7 +81,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--navy-700);
+  background: var(--gold-600);
   border-radius: 5px;
   border: 2px solid var(--navy-950);
 }

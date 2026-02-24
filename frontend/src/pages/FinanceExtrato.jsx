@@ -86,7 +86,7 @@ const FinanceExtrato = () => {
                 <p>R$ {stats.expense.toLocaleString('pt-BR')}</p>
             </div>
         </div>,
-        <div className="indicator-card-luxury" key="saldo" style={{ borderTopColor: 'var(--navy-900)' }}>
+        <div className="indicator-card-luxury" key="saldo" style={{ borderTopColor: 'var(--gold-500)' }}>
             <div className="indicator-icon-wrapper" style={{ background: 'var(--navy-900)', color: 'white' }}><Wallet size={28} /></div>
             <div className="indicator-data">
                 <label>Saldo Líquido</label>

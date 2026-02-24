@@ -80,10 +80,18 @@ class Professional(Base):
     photo_url = Column(Text)
     bio = Column(Text)
     active = Column(Boolean, default=True)
+    
+    # Commission Settings
+    commission_percentage = Column(Numeric(5, 2), default=0.00) # e.g. 50.00
+    commission_type = Column(String, default="gross") # gross, net, specific
+    commission_start_date = Column(Date, server_default=func.current_date())
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     tenant = relationship("Tenant", back_populates="professionals")
+    commissions = relationship("Commission", back_populates="professional", cascade="all, delete")
+    performance_metrics = relationship("ProfessionalPerformance", back_populates="professional", cascade="all, delete")
 
 
 class Supplier(Base):
@@ -433,3 +441,47 @@ class LeadTask(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     lead = relationship("Lead", back_populates="tasks")
+
+
+class Commission(Base):
+    __tablename__ = "commissions"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
+    professional_id = Column(UUID(as_uuid=True), ForeignKey("public.professionals.id", ondelete="CASCADE"), nullable=False)
+    appointment_id = Column(UUID(as_uuid=True), ForeignKey("public.appointments.id", ondelete="CASCADE"), nullable=False, unique=True)
+    service_id = Column(UUID(as_uuid=True), ForeignKey("public.products.id", ondelete="SET NULL"), nullable=True)
+    
+    service_value = Column(Numeric(12, 2), nullable=False)
+    commission_percentage = Column(Numeric(5, 2), nullable=False)
+    commission_value = Column(Numeric(12, 2), nullable=False)
+    
+    status = Column(String, default="pending") # pending, paid
+    payment_date = Column(DateTime(timezone=True))
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    tenant = relationship("Tenant")
+    professional = relationship("Professional", back_populates="commissions")
+    appointment = relationship("Appointment")
+    service = relationship("Product")
+
+
+class ProfessionalPerformance(Base):
+    __tablename__ = "professional_performance"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
+    professional_id = Column(UUID(as_uuid=True), ForeignKey("public.professionals.id", ondelete="CASCADE"), nullable=False)
+    
+    period = Column(String, nullable=False) # YYYY-MM or YYYY-WW or YYYY-MM-DD
+    total_services = Column(Integer, default=0)
+    total_customers = Column(Integer, default=0)
+    total_revenue = Column(Numeric(12, 2), default=0.00)
+    total_commission = Column(Numeric(12, 2), default=0.00)
+    
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    professional = relationship("Professional", back_populates="performance_metrics")

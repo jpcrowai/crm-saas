@@ -193,6 +193,11 @@ class ProfessionalBase(BaseModel):
     photo_url: Optional[str] = None
     bio: Optional[str] = None
     active: bool = True
+    
+    # Commission Settings
+    commission_percentage: float = 0.0
+    commission_type: str = "gross" # gross, net, specific
+    commission_start_date: Optional[str] = None # YYYY-MM-DD
 
 class ProfessionalCreate(ProfessionalBase):
     pass
@@ -205,6 +210,9 @@ class ProfessionalUpdate(BaseModel):
     photo_url: Optional[str] = None
     bio: Optional[str] = None
     active: Optional[bool] = None
+    commission_percentage: Optional[float] = None
+    commission_type: Optional[str] = None
+    commission_start_date: Optional[str] = None
 
 class Professional(ProfessionalBase):
     id: uuid.UUID
@@ -302,5 +310,36 @@ class Appointment(AppointmentBase):
     customer_name: Optional[str] = None
     professional_name: Optional[str] = None
     
+    class Config:
+        from_attributes = True
+
+class CommissionBase(BaseModel):
+    professional_id: uuid.UUID
+    appointment_id: uuid.UUID
+    service_id: Optional[uuid.UUID] = None
+    service_value: float
+    commission_percentage: float
+    commission_value: float
+    status: str = "pending"
+
+class Commission(CommissionBase):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    payment_date: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ProfessionalPerformance(BaseModel):
+    professional_id: uuid.UUID
+    professional_name: Optional[str] = None
+    period: str
+    total_services: int
+    total_customers: int
+    total_revenue: float
+    total_commission: float
+    avg_ticket: float = 0.0
+
     class Config:
         from_attributes = True

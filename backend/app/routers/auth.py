@@ -69,21 +69,38 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user_token
     nicho_nome = None
     cor_principal = None
     payment_status = None
-    modulos_habilitados = [] # Feature flags can be stored in JSON/columns
+    modulos_habilitados = []
     
+    # 1. Base User Object (to get individual modules_allowed)
+    user_obj = db.query(User).filter(User.email == current_user.email).first()
+    
+    # 2. Tenant Context Logic
     if current_user.tenant_slug:
         env = db.query(Tenant).filter(Tenant.slug == current_user.tenant_slug).first()
         if env:
-            nome_empresa = env.name # or business_name
+            nome_empresa = env.name
             logo_url = env.logo_url
             cor_principal = env.primary_color
             payment_status = env.payment_status
-            modulos_habilitados = env.modulos_habilitados or []
+            
+            # Tenant-wide enabled modules
+            tenant_modules = env.modulos_habilitados or []
+            
+            # Intersection Logic
+            if current_user.role_global == "master" or current_user.role_local == "admin":
+                # Admins and Masters see everything the tenant has
+                modulos_habilitados = tenant_modules
+            else:
+                # Regular users see intersection of Tenant modules AND their own allowed list
+                user_modules = user_obj.modules_allowed if user_obj and user_obj.modules_allowed else []
+                modulos_habilitados = [mod for mod in tenant_modules if mod in user_modules]
+
             if env.niche:
                 nicho_nome = env.niche.name
             
     return {
         "email": current_user.email,
+        "name": user_obj.name if user_obj else None,
         "role_global": current_user.role_global,
         "tenant_slug": current_user.tenant_slug,
         "role_local": current_user.role_local,

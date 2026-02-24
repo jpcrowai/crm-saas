@@ -4,15 +4,14 @@ import { Plus, User, Shield, Mail, Trash2, XCircle, Users, Settings, Briefcase, 
 import '../styles/tenant-luxury.css';
 
 const AVAILABLE_MODULES = [
-    { id: 'pipeline', name: 'Pipeline de Vendas', icon: '🎯' },
-    { id: 'customers', name: 'Clientes', icon: '👥' },
-    { id: 'finances', name: 'Financeiro', icon: '💰' },
-    { id: 'products', name: 'Catálogo de Produtos', icon: '📦' },
-    { id: 'calendar', name: 'Agenda & Eventos', icon: '📅' },
-    { id: 'reports', name: 'Relatórios & Insights', icon: '📊' },
-    { id: 'team', name: 'Gestão de Equipe', icon: '👨‍💼' },
-    { id: 'suppliers', name: 'Fornecedores', icon: '🏭' },
-    { id: 'subscriptions', name: 'Assinaturas', icon: '🔄' }
+    { id: 'leads_pipeline', name: 'Pipeline de Vendas', icon: '🎯' },
+    { id: 'clientes', name: 'Clientes', icon: '👥' },
+    { id: 'financeiro', name: 'Financeiro', icon: '💰' },
+    { id: 'produtos', name: 'Catálogo de Produtos', icon: '📦' },
+    { id: 'agenda', name: 'Agenda & Eventos', icon: '📅' },
+    { id: 'dashboard', name: 'Relatórios & Insights', icon: '📊' },
+    { id: 'equipe', name: 'Gestão de Equipe & Fornecedores', icon: '👨‍💼' },
+    { id: 'assinaturas', name: 'Assinaturas & Planos', icon: '🔄' }
 ];
 
 const ROLE_OPTIONS = [
@@ -71,11 +70,11 @@ const Team = () => {
             if (formData.role === 'admin') {
                 finalModules = AVAILABLE_MODULES.map(m => m.id);
             } else if (formData.role === 'financeiro') {
-                finalModules = ['finances', 'reports', 'suppliers'];
+                finalModules = ['financeiro', 'dashboard', 'clientes'];
             } else if (formData.role === 'vendedor') {
-                finalModules = ['pipeline', 'customers', 'calendar'];
+                finalModules = ['leads_pipeline', 'clientes', 'agenda'];
             } else if (formData.role === 'operacional') {
-                finalModules = ['calendar', 'products', 'customers'];
+                finalModules = ['agenda', 'produtos', 'clientes'];
             }
 
             const payload = { ...formData, modules_allowed: finalModules };

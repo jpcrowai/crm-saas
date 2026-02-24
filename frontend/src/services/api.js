@@ -193,6 +193,14 @@ export const updateAppointment = (id, data) => {
   return api.put(`/tenant/appointments/${id}`, data);
 };
 
+export const completeAppointment = (id) => {
+  return api.post(`/tenant/appointments/${id}/complete`);
+};
+
+export const deleteAppointment = (id) => {
+  return api.delete(`/tenant/appointments/${id}`);
+};
+
 export const getRevenueChart = () => {
   return api.get('/tenant/revenue-chart');
 };
@@ -348,6 +356,10 @@ export const getProfessional = (id) => api.get(`/tenant/professionals/${id}`);
 export const createProfessional = (data) => api.post('/tenant/professionals/', data);
 export const updateProfessional = (id, data) => api.put(`/tenant/professionals/${id}`, data);
 export const deleteProfessional = (id) => api.delete(`/tenant/professionals/${id}`);
+
+// Commissions
+export const getCommissionDashboard = (period) => api.get(`/tenant/commissions/dashboard${period ? `?period=${period}` : ''}`);
+export const getProfessionalStats = (id) => api.get(`/tenant/commissions/professional/${id}`);
 
 // Supplier Module
 export const getSuppliers = () => api.get('/tenant/suppliers/');

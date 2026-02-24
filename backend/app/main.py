@@ -98,6 +98,8 @@ from app.routers import uploads
 app.include_router(uploads.router)
 from app.routers import financial_reports
 app.include_router(financial_reports.router)
+from app.routers import commissions
+app.include_router(commissions.router)
 
 @app.get("/")
 def root():

@@ -18,6 +18,7 @@ from app.models.sql_models import (
     Customer as SQLCustomer
 )
 from app.services.excel_service import read_sheet, write_sheet # Keep for legacy configs if needed
+from app.services.commission_service import calculate_commission
 
 # Google API imports (Commented out to reduce deployment size)
 # from google_auth_oauthlib.flow import Flow
@@ -399,6 +400,41 @@ async def update_appointment(
     appt.billing_status = "covered_by_plan" if appt_in.plan_id else "open"
     appt.customer_id = appt_in.customer_id or appt.customer_id
     appt.professional_id = appt_in.professional_id or appt.professional_id
+    
+    db.commit()
+    db.refresh(appt)
+    return appt
+
+@router.post("/{appt_id}/complete", response_model=AppointmentSchema)
+async def complete_appointment(
+    appt_id: str,
+    current_user: TokenData = Depends(get_current_tenant_user),
+    db: Session = Depends(get_db)
+):
+    appt = db.query(SQLAppointment).filter(
+        SQLAppointment.id == appt_id,
+        SQLAppointment.tenant_id == current_user.tenant_id
+    ).first()
+    
+    if not appt:
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado")
+
+    if appt.status == "completed":
+        return appt
+
+    appt.status = "completed"
+    
+    # Calculate Commission
+    if appt.professional_id:
+        calculate_commission(db, str(appt.id), str(current_user.tenant_id))
+    
+    # Update Finance Entry if exists
+    finance_entry = db.query(SQLFinanceEntry).filter(
+        SQLFinanceEntry.appointment_id == appt.id
+    ).first()
+    
+    if finance_entry:
+        finance_entry.status = "pago" # When completed, assume payment if linked
     
     db.commit()
     db.refresh(appt)

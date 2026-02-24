@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { getAppointments, createAppointment, getCustomers, getServices, getCustomerPlans } from '../services/api';
+import { getAppointments, createAppointment, getCustomers, getServices, getCustomerPlans, completeAppointment } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Video, MapPin, Clock, User, XCircle, Calendar as CalendarIcon, CheckCircle2 } from 'lucide-react';
+import { Plus, Video, MapPin, Clock, User, XCircle, Calendar as CalendarIcon, CheckCircle2, CheckCircle } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
 const AppointmentsCalendar = () => {
@@ -196,6 +196,16 @@ const AppointmentsCalendar = () => {
         }
     };
 
+    const handleComplete = async (id) => {
+        try {
+            await completeAppointment(id);
+            loadData();
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao finalizar agendamento");
+        }
+    };
+
     const dayAppointments = appointments
         .filter(a => {
             const apptDate = a.start_time || a.appointment_date;
@@ -317,7 +327,7 @@ const AppointmentsCalendar = () => {
                                                 color: isPast ? '#64748b' : 'var(--navy-900)',
                                                 textDecoration: isPast ? 'line-through' : 'none'
                                             }}>
-                                                {appt.title}
+                                                {appt.title} {appt.status === 'completed' && <CheckCircle size={16} color="var(--success)" style={{ display: 'inline', marginLeft: '8px' }} />}
                                             </h4>
                                             <span style={{
                                                 fontSize: '0.7rem',
@@ -329,6 +339,15 @@ const AppointmentsCalendar = () => {
                                             }}>
                                                 {new Date(appt.start_time || appt.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
+                                            {appt.status !== 'completed' && (
+                                                <button
+                                                    className="btn-primary"
+                                                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.7rem', background: 'var(--success)', border: 'none' }}
+                                                    onClick={() => handleComplete(appt.id)}
+                                                >
+                                                    Finalizar
+                                                </button>
+                                            )}
                                         </div>
                                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{appt.description || "Sem descrição"}</p>
 

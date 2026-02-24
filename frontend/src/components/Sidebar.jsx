@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon, DollarSign, Activity, Settings, Package, Layers, FileText, Shield, Building, ChevronDown
+  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon, DollarSign, Activity, Settings, Package, Layers, FileText, Shield, Building, ChevronDown, Percent
 } from 'lucide-react';
 import '../styles/sidebar.css';
 import { useAuth } from '../context/AuthContext';
@@ -76,6 +76,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         isGroup: true,
         subItems: [
           { label: 'Profissionais', icon: <Briefcase size={18} />, path: '/professionals', module: 'equipe' },
+          { label: 'Comissões', icon: <Percent size={18} />, path: '/commissions', module: 'equipe' },
           { label: 'Fornecedores', icon: <Building size={18} />, path: '/suppliers', module: 'equipe' },
           { label: 'Produtos', icon: <Package size={18} />, path: '/products', module: 'produtos' },
           { label: 'Planos', icon: <Layers size={18} />, path: '/plans', module: 'assinaturas' },

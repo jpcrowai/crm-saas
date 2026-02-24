@@ -19,6 +19,7 @@ import Plans from './pages/Plans'
 import Subscriptions from './pages/Subscriptions'
 import GoogleCallback from './pages/GoogleCallback'
 import Professionals from './pages/Professionals'
+import Commissions from './pages/Commissions'
 import Suppliers from './pages/Suppliers'
 import PrivateRoute from './routes/PrivateRoute'
 import ModuleRoute from './routes/ModuleRoute'
@@ -81,6 +82,13 @@ function App() {
           <PrivateRoute>
             <ModuleRoute module="equipe">
               <Professionals />
+            </ModuleRoute>
+          </PrivateRoute>
+        } />
+        <Route path="/commissions" element={
+          <PrivateRoute>
+            <ModuleRoute module="equipe">
+              <Commissions />
             </ModuleRoute>
           </PrivateRoute>
         } />

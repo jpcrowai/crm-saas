@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCommissionDashboard, getProfessionals } from '../services/api';
+import { getCommissionDashboard } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import {
     Percent,
@@ -8,10 +8,11 @@ import {
     DollarSign,
     Calendar,
     ChevronRight,
-    Search,
-    Filter,
     Award,
-    Clock
+    Clock,
+    User,
+    ArrowUpRight,
+    Activity
 } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
@@ -35,8 +36,8 @@ const Commissions = () => {
         try {
             setLoading(true);
             const response = await getCommissionDashboard(period);
-            setSummary(response.data.summary);
-            setRanking(response.data.ranking);
+            setSummary(response.data.summary || summary);
+            setRanking(response.data.ranking || []);
         } catch (error) {
             console.error('Erro ao carregar comissões:', error);
             toast.error('Erro ao carregar dashboard de comissões');
@@ -56,15 +57,16 @@ const Commissions = () => {
         <div className="tenant-page-container">
             <header className="page-header-row">
                 <div className="page-title-group">
-                    <h1>Gestão de Comissões</h1>
-                    <p>Métricas de performance e repasses para sua equipe</p>
+                    <h1>Métricas de Comissões</h1>
+                    <p>Performance do time e fechamento de repasses</p>
                 </div>
-                <div className="header-actions">
-                    <div className="input-with-icon" style={{ width: '200px' }}>
-                        <Calendar size={18} />
+                <div className="page-header-actions">
+                    <div style={{ position: 'relative', width: '220px' }}>
+                        <Calendar size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold-500)', zIndex: 10 }} />
                         <input
                             type="month"
                             className="input-premium"
+                            style={{ paddingLeft: '3rem' }}
                             value={period}
                             onChange={(e) => setPeriod(e.target.value)}
                         />
@@ -73,151 +75,137 @@ const Commissions = () => {
             </header>
 
             {loading ? (
-                <div className="loading-state">Carregando métricas...</div>
+                <div style={{ padding: '10rem 0', textAlign: 'center' }}>
+                    <div className="skeleton-circle" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ fontWeight: 700, opacity: 0.5 }}>Calculando resultados...</p>
+                </div>
             ) : (
                 <>
-                    {/* SUMMARY CARDS */}
-                    <div className="finances-summary-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: '2rem' }}>
-                        <div className="finance-card revenue-card">
-                            <div className="card-icon"><TrendingUp size={24} /></div>
-                            <div className="card-info">
-                                <label>Faturamento Total</label>
-                                <h3>{formatCurrency(summary.total_revenue)}</h3>
+                    {/* INDICATOR GRID (Report Style) */}
+                    <div className="indicator-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', marginBottom: '3rem' }}>
+                        <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
+                            <div className="indicator-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>
+                                <TrendingUp size={24} />
+                            </div>
+                            <div className="indicator-data">
+                                <label>Faturamento Bruto</label>
+                                <p>{formatCurrency(summary.total_revenue)}</p>
                             </div>
                         </div>
-                        <div className="finance-card expense-card">
-                            <div className="card-icon"><Percent size={24} /></div>
-                            <div className="card-info">
-                                <label>Comissões Totais</label>
-                                <h3>{formatCurrency(summary.total_commission)}</h3>
+
+                        <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--gold-500)' }}>
+                            <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--gold-500)' }}>
+                                <Percent size={24} />
+                            </div>
+                            <div className="indicator-data">
+                                <label>Total em Comissões</label>
+                                <p>{formatCurrency(summary.total_commission)}</p>
                             </div>
                         </div>
-                        <div className="finance-card balance-card">
-                            <div className="card-icon"><Users size={24} /></div>
-                            <div className="card-info">
-                                <label>Serviços Realizados</label>
-                                <h3>{summary.total_services}</h3>
+
+                        <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--navy-900)' }}>
+                            <div className="indicator-icon-wrapper" style={{ background: 'rgba(30, 41, 59, 0.1)', color: 'var(--navy-900)' }}>
+                                <Users size={24} />
+                            </div>
+                            <div className="indicator-data">
+                                <label>Serviços Concluídos</label>
+                                <p>{summary.total_services}</p>
                             </div>
                         </div>
-                        <div className="finance-card" style={{ borderColor: 'var(--gold-400)' }}>
-                            <div className="card-icon" style={{ color: 'var(--gold-500)' }}><Award size={24} /></div>
-                            <div className="card-info">
-                                <label>Média por Repasse</label>
-                                <h3>{formatCurrency(summary.avg_commission)}</h3>
+
+                        <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--gold-400)' }}>
+                            <div className="indicator-icon-wrapper" style={{ background: 'var(--gold-50)', color: 'var(--gold-600)' }}>
+                                <Award size={24} />
+                            </div>
+                            <div className="indicator-data">
+                                <label>Ticket Médio Repasse</label>
+                                <p>{formatCurrency(summary.avg_commission)}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="dashboard-content-grid" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
-                        {/* RANKING TABLE */}
-                        <div className="content-card">
-                            <div className="card-header-simple">
-                                <h3>Ranking de Performance</h3>
-                                <Award size={20} color="var(--gold-500)" />
-                            </div>
-                            <div className="table-container">
-                                <table className="leads-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Profissional</th>
-                                            <th>Serviços</th>
-                                            <th>Total Comissão</th>
-                                            <th>Ação</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {ranking.map((row, idx) => (
-                                            <tr key={row.professional_id}>
-                                                <td>
-                                                    <div className="flex-center" style={{ gap: '0.5rem' }}>
-                                                        <span className="rank-badge">{idx + 1}º</span>
-                                                        <strong>{row.professional_name}</strong>
-                                                    </div>
-                                                </td>
-                                                <td>{row.services_count}</td>
-                                                <td className="amount-positive">{formatCurrency(row.total_commission)}</td>
-                                                <td>
-                                                    <button className="btn-icon-simple">
-                                                        <ChevronRight size={18} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {ranking.length === 0 && (
-                                            <tr>
-                                                <td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>
-                                                    Nenhum dado de comissão para este período.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Activity size={20} color="var(--gold-500)" />
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--white)' }}>Resumo por Profissional</h2>
+                    </div>
 
-                        {/* INFO CARD */}
-                        <div className="content-card" style={{ background: 'linear-gradient(135deg, rgba(14, 25, 45, 0.9), rgba(1, 11, 28, 0.9))' }}>
-                            <div className="card-header-simple">
-                                <h3>Informações Importantes</h3>
-                            </div>
-                            <div className="info-box-luxury">
-                                <div className="info-item">
-                                    <Clock size={18} />
-                                    <p>As comissões são calculadas automaticamente ao <strong>finalizar</strong> um agendamento.</p>
+                    {/* PROFESSIONAL CARDS GRID */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
+                        {ranking.map((row) => (
+                            <div key={row.professional_id} className="data-card-luxury list-row-hover" style={{ padding: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', background: 'var(--navy-800)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div className="indicator-icon-wrapper" style={{ width: 48, height: 48, background: 'var(--grad-gold)', color: 'var(--navy-950)' }}>
+                                            <User size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)', margin: 0 }}>{row.professional_name}</h3>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--gold-400)', fontWeight: 600 }}>Especialista</span>
+                                        </div>
+                                    </div>
+                                    <button className="btn-action-luxury" style={{ background: 'rgba(255,255,255,0.05)', border: 'none' }}>
+                                        <ArrowUpRight size={18} color="var(--gold-400)" />
+                                    </button>
                                 </div>
-                                <div className="info-item">
-                                    <Filter size={18} />
-                                    <p>Os valores mostrados refletem o percentual configurado no cadastro de cada profissional.</p>
-                                </div>
-                                <div className="info-item">
-                                    <DollarSign size={18} />
-                                    <p>Você pode acompanhar o Ticket Médio de cada profissional clicando no ícone de detalhes.</p>
-                                </div>
-                            </div>
 
-                            <div style={{ marginTop: '2rem' }}>
-                                <button className="btn-primary w-full" onClick={() => window.location.href = '/professionals'}>
-                                    Gerenciar Equipe
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px' }}>
+                                        <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Serviços</label>
+                                        <p style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white)', margin: 0 }}>{row.services_count}</p>
+                                    </div>
+                                    <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.1)' }}>
+                                        <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--gold-400)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>A Receber</label>
+                                        <p style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--gold-500)', margin: 0 }}>{formatCurrency(row.total_commission)}</p>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
+                                        <Clock size={14} />
+                                        <span>Atualizado agora</span>
+                                    </div>
+                                    <button style={{ color: 'var(--gold-400)', fontSize: '0.85rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>
+                                        Ver Detalhes
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {ranking.length === 0 && (
+                            <div style={{ gridColumn: '1 / -1', padding: '5rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '2px dashed rgba(255,255,255,0.05)' }}>
+                                <Users size={48} style={{ opacity: 0.1, margin: '0 auto 1.5rem' }} />
+                                <p style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Nenhum dado de comissão encontrado para este período.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* INFO FOOTER */}
+                    <div className="data-card-luxury" style={{ background: 'var(--grad-navy)', padding: '2rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '300px' }}>
+                                <h4 style={{ color: 'var(--gold-400)', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Clock size={18} /> Regras de Cálculo
+                                </h4>
+                                <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <li style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', display: 'flex', gap: '0.5rem' }}>
+                                        <div style={{ width: '4px', height: '4px', background: 'var(--gold-500)', borderRadius: '50%', marginTop: '6px' }}></div>
+                                        As comissões são processadas automaticamente ao finalizar agendamentos.
+                                    </li>
+                                    <li style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', display: 'flex', gap: '0.5rem' }}>
+                                        <div style={{ width: '4px', height: '4px', background: 'var(--gold-500)', borderRadius: '50%', marginTop: '6px' }}></div>
+                                        O percentual é baseado no valor bruto do serviço, conforme definido no perfil.
+                                    </li>
+                                </ul>
+                            </div>
+                            <div style={{ flex: 1, minWidth: '300px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                <button className="btn-secondary" onClick={() => window.location.href = '/professionals'}>
+                                    Ajustar Percentuais da Equipe
                                 </button>
                             </div>
                         </div>
                     </div>
                 </>
             )}
-
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                .rank-badge {
-                    background: var(--gold-500);
-                    color: #000;
-                    width: 24px;
-                    height: 24px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 0.7rem;
-                    font-weight: bold;
-                }
-                .info-box-luxury {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1.5rem;
-                }
-                .info-item {
-                    display: flex;
-                    gap: 1rem;
-                    align-items: flex-start;
-                    color: rgba(255,255,255,0.7);
-                    font-size: 0.9rem;
-                    line-height: 1.4;
-                }
-                .info-item svg {
-                    color: var(--gold-500);
-                    flex-shrink: 0;
-                }
-                .w-full { width: 100%; }
-            `}} />
         </div>
     );
 };

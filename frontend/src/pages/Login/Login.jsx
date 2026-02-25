@@ -16,29 +16,37 @@ const Login = () => {
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+
+    // Basic validation before starting
+    const currentSlug = (tenantSlug || '').trim().toLowerCase();
+    if (!currentSlug) {
+      setError('Por favor, informe o identificador da empresa (ou "master").');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
       let response;
-      const slug = tenantSlug.trim().toLowerCase();
-
-      if (slug === 'master') {
-        // Specialized Master login
+      if (currentSlug === 'master') {
         response = await loginMaster(email, password);
       } else {
-        // Regular Tenant login
-        if (!slug) throw new Error("Informe o identificador da empresa");
-        response = await loginTenant(email, password, slug);
+        response = await loginTenant(email, password, currentSlug);
       }
 
-      login(response.data.access_token);
-      navigate('/');
+      if (response && response.data && response.data.access_token) {
+        login(response.data.access_token);
+        navigate('/');
+      } else {
+        throw new Error('Resposta do servidor inválida');
+      }
     } catch (err) {
-      console.error(err);
-      const msg = err.response?.data?.detail || 'Falha no login. Verifique suas credenciais.';
-      setError(msg);
+      console.error('Login attempt failed:', err);
+      const apiError = err.response?.data?.detail;
+      const message = apiError || err.message || 'Falha no acesso. Verifique suas credenciais.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -53,6 +61,7 @@ const Login = () => {
           </div>
           <h1>Acesso ao Ecossistema</h1>
           <p>Entre com suas credenciais corporativas.</p>
+          <small style={{ opacity: 0.3, fontSize: '0.65rem' }}>v2.2</small>
         </div>
 
         {error && (
@@ -61,7 +70,7 @@ const Login = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="auth-form" noValidate={false}>
           <div className="form-group-luxury">
             <label>Identificador da Empresa (Slug)</label>
             <div className="input-with-icon">
@@ -72,7 +81,7 @@ const Login = () => {
                 value={tenantSlug}
                 onChange={e => setTenantSlug(e.target.value)}
                 required
-                autoComplete="off"
+                autoComplete="organization"
               />
             </div>
           </div>
@@ -87,6 +96,7 @@ const Login = () => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
+                autoComplete="email"
               />
             </div>
           </div>
@@ -101,11 +111,17 @@ const Login = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
               />
             </div>
           </div>
 
-          <button type="submit" className="btn-primary btn-auth-submit" disabled={loading}>
+          <button
+            type="submit"
+            className="btn-primary btn-auth-submit"
+            disabled={loading}
+            style={{ cursor: loading ? 'not-allowed' : 'pointer' }}
+          >
             {loading ? 'Validando...' : (
               <>
                 Acessar Sistema <ArrowRight size={18} />
@@ -123,3 +139,4 @@ const Login = () => {
 };
 
 export default Login;
+

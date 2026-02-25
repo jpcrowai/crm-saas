@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getSubscriptions, getPlans, getCustomers, createSubscription, updateSubscriptionStatus, uploadSubscriptionContract } from '../services/api';
+import { getSubscriptions, getPlans, getCustomers, createSubscription, updateSubscriptionStatus, uploadSubscriptionContract, API_URL } from '../services/api';
 import { Plus, Search, CreditCard, User, Package, Calendar, MoreVertical, XCircle, CheckCircle2, AlertCircle, FileText, Settings, Upload } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
@@ -46,18 +46,13 @@ const Subscriptions = () => {
 
     const handleDownloadContract = async (id) => {
         try {
-            const { downloadContract } = await import('../services/api');
-            const response = await downloadContract(id);
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `contrato_${id}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            // Standard approach: open in new tab for direct Supabase URL or use our API stream
+            const token = localStorage.getItem('token');
+            const downloadUrl = `${API_URL}/tenant/subscriptions/${id}/contract?token=${token}`;
+            window.open(downloadUrl, '_blank');
         } catch (error) {
-            console.error(error);
-            alert("Erro ao baixar contrato. Tente regenerá-lo.");
+            console.error("Erro ao baixar contrato:", error);
+            alert("Erro ao acessar contrato. Verifique se ele foi gerado corretamente.");
         }
     };
 

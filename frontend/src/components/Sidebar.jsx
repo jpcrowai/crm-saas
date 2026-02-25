@@ -188,10 +188,10 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             // Map group toggle state
             let isOpen = false;
             let setOpen = () => { };
-            if (item.label === 'Serviços') { isOpen = servicesOpen; setOpen = setServicesOpen; }
-            else if (item.label === 'Financeiro') { isOpen = financesOpen; setOpen = setFinancesOpen; }
-            else if (item.label === 'Vendas/Leads') { isOpen = clientsOpen; setOpen = setClientsOpen; }
-            else if (item.label === 'Acessos') { isOpen = accessOpen; setOpen = setAccessOpen; }
+            if (item.label === 'Gestão de Serviços') { isOpen = servicesOpen; setOpen = setServicesOpen; }
+            else if (item.label === 'Gestão Financeira') { isOpen = financesOpen; setOpen = setFinancesOpen; }
+            else if (item.label === 'Vendas/CRM') { isOpen = clientsOpen; setOpen = setClientsOpen; }
+            else if (item.label === 'Configurações') { isOpen = accessOpen; setOpen = setAccessOpen; }
 
             return (
               <div key={item.label} className={`nav-group ${isOpen || isAnySubActive ? 'open' : ''}`}>

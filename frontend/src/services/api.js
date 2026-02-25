@@ -1,7 +1,15 @@
 import axios from 'axios';
-// API Service for CRM SaaS
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// API Service for CRM SaaS
+const getBaseURL = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && envUrl !== 'undefined') {
+    return envUrl.trim().replace(/\/$/, "");
+  }
+  return 'http://localhost:8000';
+};
+
+export const API_URL = getBaseURL();
 
 const api = axios.create({
   baseURL: API_URL,

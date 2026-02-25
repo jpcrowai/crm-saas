@@ -270,17 +270,18 @@
 
 .table-luxury td {
     padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: 0.95rem;
-    color: #334155;
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .table-luxury tr:nth-child(even) td {
-    background-color: #fcfdfe;
+    background-color: rgba(255, 255, 255, 0.02);
 }
 
 .table-luxury tr:hover td {
-    background-color: #f8fafc;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--white);
 }
 
 /* ACTION BUTTONS IN TABLES */
@@ -307,9 +308,10 @@
 
 /* CUSTOM HOVER FOR LIST ROWS */
 .list-row-hover:hover {
-    background: #f1f5f9 !important;
-    transform: translateX(4px);
-    box-shadow: var(--shadow-sm);
+    background: rgba(255, 255, 255, 0.05) !important;
+    transform: translateY(-2px);
+    border-color: var(--gold-500) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 /* SEAMLESS MODAL INTEGRATION */

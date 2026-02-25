@@ -18,7 +18,7 @@ async def get_services(
     products = db.query(SQLProduct).filter(
         SQLProduct.tenant_id == current_user.tenant_id,
         SQLProduct.active == True,
-        SQLProduct.sku.ilike("S%")
+        SQLProduct.type == "service"
     ).all()
     
     # Map Product -> ServiceSchema

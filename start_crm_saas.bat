@@ -25,7 +25,7 @@ IF NOT EXIST "node_modules" (
 )
 
 echo Iniciando frontend...
-start "Frontend CRM" cmd /k "set VITE_API_URL=http://localhost:8000 && npm run dev"
+start "Frontend CRM" cmd /k "set VITE_API_URL=http://localhost:8000&& npm run dev"
 
 cd ..
 echo Backend e frontend iniciados.

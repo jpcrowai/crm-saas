@@ -3,19 +3,22 @@ import { getMasterAmbientes, createAmbiente, selectTenant, updateAmbiente, getNi
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, Briefcase, Settings, CheckCircle, XCircle, DollarSign, Activity, Layers, Trash2, Shield, Save } from 'lucide-react';
+import { Plus, ArrowRight, Briefcase, Settings, CheckCircle, XCircle, DollarSign, Activity, Layers, Trash2, Shield, Save, Target, Users, Calendar, Percent, Package, Truck, Sparkles, Zap } from 'lucide-react';
 import '../styles/master-admin.css';
 
 const AVAILABLE_MODULES = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'leads_pipeline', label: 'Leads / Pipeline' },
-  { id: 'agenda', label: 'Agenda' },
-  { id: 'clientes', label: 'Clientes' },
-  { id: 'equipe', label: 'Equipe' },
-  { id: 'financeiro', label: 'Financeiro' },
-  { id: 'produtos', label: 'Produtos' },
-  { id: 'assinaturas', label: 'Assinaturas' },
-  { id: 'ai_agent', label: 'Agente de IA (Módulo Adicional)' }
+  { id: 'dashboard', label: 'Dashboard', icon: <Activity size={14} /> },
+  { id: 'leads_pipeline', label: 'Leads / Pipeline', icon: <Target size={14} /> },
+  { id: 'agenda', label: 'Agenda', icon: <Calendar size={14} /> },
+  { id: 'clientes', label: 'Clientes', icon: <Users size={14} /> },
+  { id: 'equipe', label: 'Profissionais', icon: <Briefcase size={14} /> },
+  { id: 'servicos', label: 'Serviços', icon: <Sparkles size={14} /> },
+  { id: 'financeiro', label: 'Financeiro', icon: <DollarSign size={14} /> },
+  { id: 'comissoes', label: 'Comissões', icon: <Percent size={14} /> },
+  { id: 'produtos', label: 'Produtos', icon: <Package size={14} /> },
+  { id: 'fornecedores', label: 'Fornecedores', icon: <Truck size={14} /> },
+  { id: 'assinaturas', label: 'Assinaturas', icon: <Shield size={14} /> },
+  { id: 'ai_agent', label: 'IA Copilot', icon: <Zap size={14} /> }
 ];
 
 const MasterAmbientes = () => {
@@ -270,16 +273,15 @@ const MasterAmbientes = () => {
                 <div>
                   <h4 className="form-section-title">Módulos Habilitados</h4>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Controle granular de acesso do tenant.</p>
-                  <div className="modules-selector-grid">
+                  <div className="modules-selector-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
                     {AVAILABLE_MODULES.map(m => (
-                      <label key={m.id} className={`selection-card ${newEnv.modulos_habilitados.includes(m.id) ? 'selected' : ''}`}>
-                        <input type="checkbox" checked={newEnv.modulos_habilitados.includes(m.id)} onChange={e => {
+                      <label key={m.id} className={`selection-card ${newEnv.modulos_habilitados.includes(m.id) ? 'selected' : ''}`} style={{ padding: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-soft)', background: newEnv.modulos_habilitados.includes(m.id) ? 'var(--gold-50)' : 'white' }}>
+                        <input type="checkbox" hidden checked={newEnv.modulos_habilitados.includes(m.id)} onChange={e => {
                           const mods = e.target.checked ? [...newEnv.modulos_habilitados, m.id] : newEnv.modulos_habilitados.filter(x => x !== m.id);
                           setNewEnv({ ...newEnv, modulos_habilitados: mods });
                         }} />
-                        <div className="selection-card-content">
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{m.label}</span>
-                        </div>
+                        <span style={{ color: newEnv.modulos_habilitados.includes(m.id) ? 'var(--gold-600)' : 'var(--text-muted)' }}>{m.icon}</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: newEnv.modulos_habilitados.includes(m.id) ? 'var(--navy-900)' : 'var(--text-muted)' }}>{m.label}</span>
                       </label>
                     ))}
                   </div>
@@ -381,16 +383,15 @@ const MasterAmbientes = () => {
 
                 <div>
                   <h4 className="form-section-title">Permissões de Acesso</h4>
-                  <div className="modules-selector-grid">
+                  <div className="modules-selector-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
                     {AVAILABLE_MODULES.map(m => (
-                      <label key={m.id} className={`selection-card ${editingEnv.modulos_habilitados.includes(m.id) ? 'selected' : ''}`}>
-                        <input type="checkbox" checked={editingEnv.modulos_habilitados.includes(m.id)} onChange={e => {
+                      <label key={m.id} className={`selection-card ${editingEnv.modulos_habilitados.includes(m.id) ? 'selected' : ''}`} style={{ padding: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '8px', border: editingEnv.modulos_habilitados.includes(m.id) ? '1px solid var(--gold-500)' : '1px solid var(--border-soft)', background: editingEnv.modulos_habilitados.includes(m.id) ? 'var(--gold-50)' : 'white' }}>
+                        <input type="checkbox" hidden checked={editingEnv.modulos_habilitados.includes(m.id)} onChange={e => {
                           const mods = e.target.checked ? [...editingEnv.modulos_habilitados, m.id] : editingEnv.modulos_habilitados.filter(x => x !== m.id);
                           setEditingEnv({ ...editingEnv, modulos_habilitados: mods });
                         }} />
-                        <div className="selection-card-content">
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{m.label}</span>
-                        </div>
+                        <span style={{ color: editingEnv.modulos_habilitados.includes(m.id) ? 'var(--gold-600)' : 'var(--text-muted)' }}>{m.icon}</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: editingEnv.modulos_habilitados.includes(m.id) ? 'var(--navy-900)' : 'var(--text-muted)' }}>{m.label}</span>
                       </label>
                     ))}
                   </div>
@@ -563,17 +564,17 @@ const MasterAmbientes = () => {
                     </div>
                   </div>
 
-                  <div className="env-badges">
-                    {env.modulos_habilitados.slice(0, 3).map(m => (
-                      <span key={m} className="module-badge">
-                        {AVAILABLE_MODULES.find(x => x.id === m)?.label}
-                      </span>
-                    ))}
-                    {env.modulos_habilitados.length > 3 && (
-                      <span className="module-badge" style={{ background: 'var(--navy-900)', color: 'white', borderColor: 'var(--navy-900)' }}>
-                        +{env.modulos_habilitados.length - 3}
-                      </span>
-                    )}
+                  <div className="env-badges" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+                    {env.modulos_habilitados.map(mId => {
+                      const mod = AVAILABLE_MODULES.find(x => x.id === mId);
+                      if (!mod) return null;
+                      return (
+                        <span key={mId} className="module-badge" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.25rem 0.6rem', fontSize: '0.65rem' }}>
+                          {mod.icon}
+                          {mod.label}
+                        </span>
+                      );
+                    })}
                   </div>
 
                   <footer style={{ marginTop: 'auto', display: 'flex', gap: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-soft)' }}>

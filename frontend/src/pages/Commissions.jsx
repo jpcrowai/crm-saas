@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCommissionDashboard } from '../services/api';
+import { getCommissionDashboard, getProfessionalStats } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import {
     Percent,
@@ -12,7 +12,10 @@ import {
     Clock,
     User,
     ArrowUpRight,
-    Activity
+    Activity,
+    X,
+    FileText,
+    CheckCircle2
 } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
@@ -26,6 +29,10 @@ const Commissions = () => {
     const [ranking, setRanking] = useState([]);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState(new Date().toISOString().split('T')[0].substring(0, 7)); // YYYY-MM
+    const [showModal, setShowModal] = useState(false);
+    const [selectedPerf, setSelectedPerf] = useState(null);
+    const [detailsLoading, setDetailsLoading] = useState(false);
+    const [professionalDetails, setProfessionalDetails] = useState(null);
     const toast = useToast();
 
     useEffect(() => {
@@ -40,9 +47,24 @@ const Commissions = () => {
             setRanking(response.data.ranking || []);
         } catch (error) {
             console.error('Erro ao carregar comissões:', error);
-            toast.error('Erro ao carregar dashboard de comissões');
+            // Dont show error toast if it's just empty data
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleViewDetails = async (prof) => {
+        setSelectedPerf(prof);
+        setShowModal(true);
+        setDetailsLoading(true);
+        try {
+            const response = await getProfessionalStats(prof.professional_id);
+            setProfessionalDetails(response.data);
+        } catch (error) {
+            console.error('Erro ao carregar detalhes:', error);
+            toast.error('Erro ao carregar detalhes do profissional');
+        } finally {
+            setDetailsLoading(false);
         }
     };
 
@@ -132,7 +154,17 @@ const Commissions = () => {
                     {/* PROFESSIONAL CARDS GRID */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
                         {ranking.map((row) => (
-                            <div key={row.professional_id} className="data-card-luxury list-row-hover" style={{ padding: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', background: 'var(--navy-800)' }}>
+                            <div
+                                key={row.professional_id}
+                                className="data-card-luxury list-row-hover"
+                                style={{
+                                    padding: '1.5rem',
+                                    border: '1px solid rgba(255,255,255,0.05)',
+                                    background: 'var(--navy-800)',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => handleViewDetails(row)}
+                            >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <div className="indicator-icon-wrapper" style={{ width: 48, height: 48, background: 'var(--grad-gold)', color: 'var(--navy-950)' }}>
@@ -164,7 +196,13 @@ const Commissions = () => {
                                         <Clock size={14} />
                                         <span>Atualizado agora</span>
                                     </div>
-                                    <button style={{ color: 'var(--gold-400)', fontSize: '0.85rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>
+                                    <button
+                                        style={{ color: 'var(--gold-400)', fontSize: '0.85rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleViewDetails(row);
+                                        }}
+                                    >
                                         Ver Detalhes
                                     </button>
                                 </div>
@@ -205,6 +243,97 @@ const Commissions = () => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {showModal && (
+                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="modal-card modal-card-large" onClick={e => e.stopPropagation()} style={{ background: 'var(--navy-950)', border: '1px solid var(--gold-500)', boxShadow: '0 0 50px rgba(212, 175, 55, 0.15)' }}>
+                        <div className="modal-header-luxury" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Detalhes de Produção</h2>
+                                <p style={{ color: 'var(--white)', opacity: 0.7, fontSize: '0.9rem', marginTop: '0.25rem' }}>Profissional: <span style={{ color: 'var(--gold-400)', fontWeight: 800 }}>{selectedPerf?.professional_name}</span></p>
+                            </div>
+                            <button className="btn-close-modal" onClick={() => setShowModal(false)}>
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: '2rem', overflowY: 'auto', maxHeight: '70vh' }}>
+                            {detailsLoading ? (
+                                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                                    <div className="skeleton-text" style={{ width: '200px', margin: '0 auto' }}></div>
+                                    <p>Carregando extrato detalhado...</p>
+                                </div>
+                            ) : professionalDetails ? (
+                                <>
+                                    <div className="indicator-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Mão de Obra</label>
+                                            <p style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--white)' }}>{formatCurrency(professionalDetails.metrics.total_revenue)}</p>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Ticket Médio</label>
+                                            <p style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--white)' }}>{formatCurrency(professionalDetails.metrics.avg_ticket)}</p>
+                                        </div>
+                                        <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--gold-500)' }}>
+                                            <label style={{ fontSize: '0.65rem', color: 'var(--gold-400)' }}>Sua Comissão ({professionalDetails.professional.commission_percentage}%)</label>
+                                            <p style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--gold-500)' }}>{formatCurrency(professionalDetails.metrics.total_commission)}</p>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Total Agendamentos</label>
+                                            <p style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--white)' }}>{professionalDetails.metrics.total_services}</p>
+                                        </div>
+                                    </div>
+
+                                    <h4 style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 800, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <FileText size={16} color="var(--gold-500)" /> Lançamentos Recentes
+                                    </h4>
+
+                                    <div className="table-responsive" style={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                                        <table className="table-luxury" style={{ width: '100%', fontSize: '0.9rem' }}>
+                                            <thead>
+                                                <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                                    <th style={{ padding: '1rem', color: 'var(--gold-400)' }}>Data</th>
+                                                    <th style={{ padding: '1rem', color: 'var(--gold-400)' }}>Valor Serviço</th>
+                                                    <th style={{ padding: '1rem', color: 'var(--gold-400)' }}>Comissão</th>
+                                                    <th style={{ padding: '1rem', color: 'var(--gold-400)' }}>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {professionalDetails.recent_commissions.map(c => (
+                                                    <tr key={c.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        <td style={{ padding: '1rem', color: 'rgba(255,255,255,0.7)' }}>{new Date(c.date).toLocaleDateString('pt-BR')}</td>
+                                                        <td style={{ padding: '1rem', color: 'var(--white)', fontWeight: 600 }}>{formatCurrency(c.service_value)}</td>
+                                                        <td style={{ padding: '1rem', color: 'var(--gold-400)', fontWeight: 700 }}>{formatCurrency(c.commission_value)}</td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <span style={{
+                                                                background: c.status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                                                                color: c.status === 'paid' ? '#10b981' : 'rgba(255,255,255,0.5)',
+                                                                padding: '0.3rem 0.6rem',
+                                                                borderRadius: '20px',
+                                                                fontSize: '0.7rem',
+                                                                fontWeight: 800,
+                                                                textTransform: 'uppercase'
+                                                            }}>
+                                                                {c.status === 'paid' ? 'Pago' : 'Pendente'}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
+                            ) : (
+                                <p>Nenhum dado detalhado disponível.</p>
+                            )}
+                        </div>
+
+                        <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button className="btn-secondary" onClick={() => setShowModal(false)}>Fechar Detalhes</button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

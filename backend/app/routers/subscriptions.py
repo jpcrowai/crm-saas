@@ -117,17 +117,41 @@ def generate_contract_pdf(db: Session, tenant_id: uuid.UUID, sub_data: Dict[str,
         public_url = storage_service.upload_file(
             pdf_content, filename, tenant.slug, "contratos"
         )
+        print(f"DEBUG: Contrato gerado e enviado para {public_url}")
         return public_url
-    except:
+    except Exception as e:
+        print(f"ERROR: Falha ao gerar/enviar contrato: {e}")
         return ""
+
+# --- Helpers ---
+
+def map_plan_to_schema(plan: SQLPlan) -> Dict[str, Any]:
+    return {
+        "id": str(plan.id),
+        "nome": plan.name,
+        "descricao": plan.description,
+        "periodicidade": plan.periodicity,
+        "valor_base": float(plan.base_price),
+        "ativo": plan.active,
+        "created_at": plan.created_at,
+        "itens": [
+            {
+                "product_id": str(item.product_id),
+                "nome": item.product.name if item.product else "Item",
+                "quantidade": float(item.quantity),
+                "frequency": item.frequency,
+                "preco_unitario": float(item.product.price) if item.product else 0,
+                "total": float(item.product.price * item.quantity) if item.product else 0
+            } for item in plan.items
+        ]
+    }
 
 # --- Endpoints ---
 
 @router.get("/plans", response_model=List[PlanSchema])
 async def get_plans(current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
     plans = db.query(SQLPlan).filter(SQLPlan.tenant_id == current_user.tenant_id).all()
-    # Manual mapping for items if needed or use relationship
-    return plans
+    return [map_plan_to_schema(p) for p in plans]
 
 @router.post("/plans", response_model=PlanSchema)
 async def create_plan(plan_in: PlanSchema, current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
@@ -152,7 +176,7 @@ async def create_plan(plan_in: PlanSchema, current_user: TokenData = Depends(get
     
     db.commit()
     db.refresh(new_plan)
-    return new_plan
+    return map_plan_to_schema(new_plan)
 
 @router.get("/subscriptions", response_model=List[SubscriptionSchema])
 async def get_subscriptions(current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
@@ -233,14 +257,22 @@ async def sign_subscription(sub_id: str, current_user: TokenData = Depends(get_c
     return {"status": "Ativa"}
 
 @router.get("/subscriptions/{sub_id}/contract")
-async def get_contract_file(sub_id: str, current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
+async def get_contract_file(
+    sub_id: str, 
+    token: Optional[str] = None,
+    current_user: TokenData = Depends(get_current_tenant_user), 
+    db: Session = Depends(get_db)
+):
+    # current_user is already handled by get_current_tenant_user which supports token in query
     sub = db.query(SQLSubscription).filter(SQLSubscription.id == sub_id, SQLSubscription.tenant_id == current_user.tenant_id).first()
     if not sub or not sub.contract_url:
         raise HTTPException(status_code=404, detail="Contrato não encontrado")
     
     if sub.contract_url.startswith("http"):
-        # If it's a URL (Supabase), we might want to redirect
         from fastapi.responses import RedirectResponse
         return RedirectResponse(sub.contract_url)
     
+    if not os.path.exists(sub.contract_url):
+        raise HTTPException(status_code=404, detail="Arquivo físico do contrato não encontrado")
+        
     return FileResponse(sub.contract_url)

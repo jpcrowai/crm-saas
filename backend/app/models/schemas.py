@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 
 class Token(BaseModel):
     access_token: str
@@ -197,7 +197,7 @@ class ProfessionalBase(BaseModel):
     # Commission Settings
     commission_percentage: float = 0.0
     commission_type: str = "gross" # gross, net, specific
-    commission_start_date: Optional[str] = None # YYYY-MM-DD
+    commission_start_date: Optional[date | str] = None # YYYY-MM-DD
 
 class ProfessionalCreate(ProfessionalBase):
     pass
@@ -212,7 +212,7 @@ class ProfessionalUpdate(BaseModel):
     active: Optional[bool] = None
     commission_percentage: Optional[float] = None
     commission_type: Optional[str] = None
-    commission_start_date: Optional[str] = None
+    commission_start_date: Optional[date | str] = None
 
 class Professional(ProfessionalBase):
     id: uuid.UUID

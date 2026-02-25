@@ -21,7 +21,7 @@ const MainLayout = () => {
       style={{
         display: 'flex',
         height: '100vh',
-        width: '100vw',
+        width: '100%',
         background: 'var(--navy-900)',
       }}
     >

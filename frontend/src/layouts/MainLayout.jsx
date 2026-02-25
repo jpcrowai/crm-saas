@@ -18,11 +18,12 @@ const MainLayout = () => {
 
   return (
     <div
+      className="app-layout"
       style={{
         display: 'flex',
-        height: '100vh',
+        minHeight: '100vh',
         width: '100%',
-        background: 'var(--navy-900)',
+        background: 'var(--navy-950)',
       }}
     >
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
@@ -45,14 +46,15 @@ const MainLayout = () => {
       />
 
       <main
+        className="main-content"
         style={{
           flex: 1,
-          minHeight: '100%',
+          minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
           background: 'var(--navy-950)',
           color: 'var(--white)',
-          overflowY: 'auto',
+          position: 'relative'
         }}
       >
         {/* Payment Warning Banner */}

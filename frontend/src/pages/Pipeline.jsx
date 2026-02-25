@@ -102,7 +102,7 @@ const Pipeline = () => {
     if (loading) return <div className="tenant-page-container" style={{ color: 'white' }}>Sincronizando fluxo comercial...</div>;
 
     return (
-        <div className="tenant-page-container" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="tenant-page-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <header className="page-header-row">
                 <div className="page-title-group">
                     <h1>Pipeline de Vendas</h1>

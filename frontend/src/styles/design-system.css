@@ -59,15 +59,16 @@ html,
 body,
 #root {
   height: 100%;
+  background-color: var(--navy-950);
 }
 
 body {
-  background-color: var(--navy-950);
   color: var(--text-on-dark);
   font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
 /* CUSTOM SCROLLBARS - Premium Dark Style */

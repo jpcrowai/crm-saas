@@ -4,8 +4,8 @@
 
 /* Conteúdo principal (área branca do app) */
 .app-content {
-  background: var(--navy-900);
-  min-height: 100%;
+  background: var(--navy-950);
+  min-height: 100vh;
 }
 
 /* Modals & Overlays */

@@ -239,6 +239,9 @@ async def create_ambiente(
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_master)
 ):
+    if slug.lower() == "master":
+        raise HTTPException(status_code=400, detail="O slug 'master' é reservado e não pode ser utilizado por clientes.")
+
     if db.query(Tenant).filter(Tenant.slug == slug).first():
         raise HTTPException(status_code=400, detail=f"O slug '{slug}' já está em uso por outro ambiente.")
 

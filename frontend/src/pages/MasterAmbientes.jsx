@@ -588,7 +588,7 @@ const MasterAmbientes = () => {
                         if (errorMsg.includes('credentials') || errorMsg.includes('Unauthorized') || error.response?.status === 401) {
                           toast.error('Sua sessão expirou. Faça login novamente.');
                           logout();
-                          navigate('/login-master');
+                          navigate('/login');
                         } else {
                           toast.error('Erro ao acessar ambiente: ' + errorMsg);
                         }

@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { loginMaster, loginTenant } from '../../services/api';
-import { Mail, Lock, Building, ArrowRight, ShieldCheck, User } from 'lucide-react';
+import { Mail, Lock, Building, ArrowRight, ShieldCheck } from 'lucide-react';
 import './Login.css';
 
-const Login = ({ defaultMaster = false }) => {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [tenantSlug, setTenantSlug] = useState('');
-  const [isMaster, setIsMaster] = useState(defaultMaster);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,18 +22,23 @@ const Login = ({ defaultMaster = false }) => {
 
     try {
       let response;
-      if (isMaster) {
+      const slug = tenantSlug.trim().toLowerCase();
+
+      if (slug === 'master') {
+        // Specialized Master login
         response = await loginMaster(email, password);
       } else {
-        if (!tenantSlug) throw new Error("Informe o slug da empresa");
-        response = await loginTenant(email, password, tenantSlug);
+        // Regular Tenant login
+        if (!slug) throw new Error("Informe o identificador da empresa");
+        response = await loginTenant(email, password, slug);
       }
 
       login(response.data.access_token);
       navigate('/');
     } catch (err) {
       console.error(err);
-      setError('Falha no login. Verifique suas credenciais.');
+      const msg = err.response?.data?.detail || 'Falha no login. Verifique suas credenciais.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -45,10 +49,10 @@ const Login = ({ defaultMaster = false }) => {
       <div className="auth-card-luxury">
         <div className="auth-header">
           <div className="auth-logo-icon">
-            {isMaster ? <ShieldCheck size={32} /> : <Building size={32} />}
+            <ShieldCheck size={32} />
           </div>
-          <h1>{isMaster ? 'Painel Master' : 'Acesso ao CRM'}</h1>
-          <p>{isMaster ? 'Gestão administrativa global' : 'Bem-vindo de volta! Entre em sua conta.'}</p>
+          <h1>Acesso ao Ecossistema</h1>
+          <p>Entre com suas credenciais corporativas.</p>
         </div>
 
         {error && (
@@ -57,47 +61,29 @@ const Login = ({ defaultMaster = false }) => {
           </div>
         )}
 
-        <div className="auth-type-toggle">
-          <button
-            type="button"
-            className={!isMaster ? 'active' : ''}
-            onClick={() => setIsMaster(false)}
-          >
-            <User size={16} /> Cliente
-          </button>
-          <button
-            type="button"
-            className={isMaster ? 'active' : ''}
-            onClick={() => setIsMaster(true)}
-          >
-            <ShieldCheck size={16} /> Master
-          </button>
-        </div>
-
         <form onSubmit={handleSubmit} className="auth-form">
-          {!isMaster && (
-            <div className="form-group-luxury">
-              <label>Identificador da Empresa</label>
-              <div className="input-with-icon">
-                <Building size={18} className="icon" />
-                <input
-                  type="text"
-                  placeholder="ex: barbearia"
-                  value={tenantSlug}
-                  onChange={e => setTenantSlug(e.target.value)}
-                  required={!isMaster}
-                />
-              </div>
+          <div className="form-group-luxury">
+            <label>Identificador da Empresa (Slug)</label>
+            <div className="input-with-icon">
+              <Building size={18} className="icon" />
+              <input
+                type="text"
+                placeholder="ex: barbearia ou master"
+                value={tenantSlug}
+                onChange={e => setTenantSlug(e.target.value)}
+                required
+                autoComplete="off"
+              />
             </div>
-          )}
+          </div>
 
           <div className="form-group-luxury">
-            <label>E-mail Corporativo</label>
+            <label>E-mail</label>
             <div className="input-with-icon">
               <Mail size={18} className="icon" />
               <input
                 type="email"
-                placeholder="exemplo@email.com"
+                placeholder="seu@email.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
@@ -122,14 +108,14 @@ const Login = ({ defaultMaster = false }) => {
           <button type="submit" className="btn-primary btn-auth-submit" disabled={loading}>
             {loading ? 'Validando...' : (
               <>
-                Entrar no Sistema <ArrowRight size={18} />
+                Acessar Sistema <ArrowRight size={18} />
               </>
             )}
           </button>
         </form>
 
         <div className="auth-footer">
-          <p>Esqueceu sua senha? Entre em contato com o suporte.</p>
+          <p>Dificuldades no acesso? Contate o administrador do seu ambiente.</p>
         </div>
       </div>
     </div>

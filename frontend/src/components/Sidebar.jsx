@@ -48,72 +48,73 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const isMaster = user?.role_global === 'master';
   const inTenantContext = user?.tenant_slug;
 
-  const allMenuItems = isMaster
-    ? [
-      {
-        label: 'Ambientes',
+  // Define the base menu items based on context
+  let allMenuItems = [];
+
+  if (isMaster && !inTenantContext) {
+    // 1. MASTER GLOBAL VIEW (Not inside a specific company)
+    allMenuItems = [
+      { label: 'Painel Master', icon: <Shield size={20} />, path: '/' },
+      { label: 'Gerir Nichos', icon: <Layers size={20} />, path: '/niches' },
+      { label: 'Minha Conta', icon: <Settings size={20} />, path: '/profile' }
+    ];
+  } else {
+    // 2. TENANT VIEW (Either a Client User OR a Master inside a Client Environment)
+    allMenuItems = [
+      ...(isMaster ? [{
+        label: 'Voltar ao Master',
         icon: <Briefcase size={20} />,
         path: '/',
-        onClick: inTenantContext ? handleReturnToMaster : undefined
-      },
-      { label: 'Minha Conta', icon: <Briefcase size={20} />, path: '/profile' }
-    ]
-    : [
+        onClick: handleReturnToMaster,
+        highlight: true
+      }] : []),
       { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/', module: 'dashboard' },
       {
-        label: 'Vendas/Leads',
+        label: 'Vendas/CRM',
         icon: <Briefcase size={20} />,
         isGroup: true,
         subItems: [
-          { label: 'Pipeline', icon: <Briefcase size={18} />, path: '/pipeline', module: 'leads_pipeline' },
-          { label: 'Clientes', icon: <Users size={18} />, path: '/customers', module: 'clientes' },
+          { label: 'Pipeline / Funil', icon: <Briefcase size={18} />, path: '/pipeline', module: 'leads_pipeline' },
+          { label: 'Base de Clientes', icon: <Users size={18} />, path: '/customers', module: 'clientes' },
         ]
       },
-      { label: 'Agenda', icon: <CalendarIcon size={20} />, path: '/calendar', module: 'agenda' },
+      { label: 'Agenda & Compromissos', icon: <CalendarIcon size={20} />, path: '/calendar', module: 'agenda' },
       {
-        label: 'Serviços',
+        label: 'Gestão de Serviços',
         icon: <Package size={20} />,
         isGroup: true,
         subItems: [
-          { label: 'Profissionais', icon: <Briefcase size={18} />, path: '/professionals', module: 'equipe' },
+          { label: 'Profissionais (Equipe)', icon: <Users size={18} />, path: '/professionals', module: 'equipe' },
           { label: 'Comissões', icon: <Percent size={18} />, path: '/commissions', module: 'equipe' },
           { label: 'Fornecedores', icon: <Building size={18} />, path: '/suppliers', module: 'equipe' },
-          { label: 'Produtos', icon: <Package size={18} />, path: '/products', module: 'produtos' },
-          { label: 'Planos', icon: <Layers size={18} />, path: '/plans', module: 'assinaturas' },
-          { label: 'Assinaturas', icon: <FileText size={18} />, path: '/subscriptions', module: 'assinaturas' },
+          { label: 'Catálogo de Produtos', icon: <Package size={18} />, path: '/products', module: 'produtos' },
+          { label: 'Gestão de Planos', icon: <Layers size={18} />, path: '/plans', module: 'assinaturas' },
+          { label: 'Assinaturas Ativas', icon: <FileText size={18} />, path: '/subscriptions', module: 'assinaturas' },
         ]
       },
       {
-        label: 'Financeiro',
+        label: 'Gestão Financeira',
         icon: <DollarSign size={20} />,
         isGroup: true,
         subItems: [
-          { label: 'Lançamentos', icon: <DollarSign size={18} />, path: '/finances', module: 'financeiro' },
-          { label: 'Relatórios', icon: <Activity size={18} />, path: '/reports', module: 'dashboard' },
+          { label: 'Lançamentos (Caixa)', icon: <DollarSign size={18} />, path: '/finances', module: 'financeiro' },
+          { label: 'Relatórios de Performance', icon: <Activity size={18} />, path: '/reports', module: 'dashboard' },
         ]
       },
       {
-        label: 'Acessos',
-        icon: <Shield size={20} />,
+        label: 'Configurações',
+        icon: <Settings size={20} />,
         isGroup: true,
         subItems: [
-          { label: 'Equipe', icon: <Shield size={18} />, path: '/team', module: 'equipe' },
-          { label: 'Minha Conta', icon: <Settings size={18} />, path: '/profile' },
+          { label: 'Equipe & Acessos', icon: <Shield size={18} />, path: '/team', module: 'equipe' },
+          { label: 'Minha Conta (Perfil)', icon: <Settings size={18} />, path: '/profile' },
         ]
       }
     ];
+  }
 
-  // Flatten if NOT tablet (user wants grouped ONLY for tablet down)
-  const finalMenuItems = [];
-  allMenuItems.forEach(item => {
-    if (!isTablet && item.isGroup) {
-      item.subItems.forEach(sub => finalMenuItems.push(sub));
-    } else {
-      finalMenuItems.push(item);
-    }
-  });
-
-  const menuItems = finalMenuItems.filter(item => {
+  // Always keep groups for a cleaner "concatenated" look (requested by user)
+  const menuItems = allMenuItems.filter(item => {
     if (isMaster) return true;
     if (item.isGroup) {
       return item.subItems.some(sub => (user?.modulos_habilitados || []).includes(sub.module));
@@ -231,10 +232,14 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
               key={item.label}
               to={item.path}
               onClick={item.onClick}
-              className={`nav-item ${isActive ? 'active' : ''}`}
+              className={`nav-item ${isActive ? 'active' : ''} ${item.highlight ? 'highlight-master' : ''}`}
             >
-              <span className="icon">{item.icon}</span>
-              {!collapsed && <span className="label">{item.label}</span>}
+              <span className="icon" style={{ color: item.highlight ? 'var(--gold-500)' : 'inherit' }}>{item.icon}</span>
+              {!collapsed && (
+                <span className="label" style={{ color: item.highlight ? 'var(--gold-400)' : 'inherit', fontWeight: item.highlight ? 800 : 'inherit' }}>
+                  {item.label}
+                </span>
+              )}
             </Link>
           );
         })}

@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, Numeric, Date, JSON
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, Numeric, Date, JSON, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -28,6 +28,10 @@ class Tenant(Base):
     contract_status = Column(String, default="pending_generation")
     active = Column(Boolean, default=True)
     modulos_habilitados = Column(JSON, default=list)
+    plan_price = Column(Float, default=0.0)
+    billing_cycle = Column(String, default="mensal")
+    has_trial = Column(Boolean, default=False)
+    payment_due_date = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -299,6 +303,7 @@ class Subscription(Base):
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     customer_id = Column(UUID(as_uuid=True), ForeignKey("public.customers.id", ondelete="RESTRICT"), nullable=False)
     plan_id = Column(UUID(as_uuid=True), ForeignKey("public.plans.id", ondelete="SET NULL"), nullable=True)
+    professional_id = Column(UUID(as_uuid=True), ForeignKey("public.professionals.id", ondelete="SET NULL"), nullable=True)
     
     status = Column(String, default="pending")
     start_date = Column(Date, nullable=False, server_default=func.current_date())
@@ -313,6 +318,7 @@ class Subscription(Base):
     tenant = relationship("Tenant", back_populates="subscriptions")
     customer = relationship("Customer", back_populates="subscriptions")
     plan = relationship("Plan", back_populates="subscriptions")
+    professional = relationship("Professional")
 
 
 class Integration(Base):
@@ -450,7 +456,8 @@ class Commission(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
     professional_id = Column(UUID(as_uuid=True), ForeignKey("public.professionals.id", ondelete="CASCADE"), nullable=False)
-    appointment_id = Column(UUID(as_uuid=True), ForeignKey("public.appointments.id", ondelete="CASCADE"), nullable=False, unique=True)
+    appointment_id = Column(UUID(as_uuid=True), ForeignKey("public.appointments.id", ondelete="CASCADE"), nullable=True)
+    subscription_id = Column(UUID(as_uuid=True), ForeignKey("public.subscriptions.id", ondelete="SET NULL"), nullable=True)
     service_id = Column(UUID(as_uuid=True), ForeignKey("public.products.id", ondelete="SET NULL"), nullable=True)
     
     service_value = Column(Numeric(12, 2), nullable=False)
@@ -465,6 +472,7 @@ class Commission(Base):
     tenant = relationship("Tenant")
     professional = relationship("Professional", back_populates="commissions")
     appointment = relationship("Appointment")
+    subscription = relationship("Subscription")
     service = relationship("Product")
 
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import { useAuth } from '../context/AuthContext'
@@ -8,13 +8,43 @@ import { Link, useLocation } from 'react-router-dom'
 
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false)
-  const [activeGroup, setActiveGroup] = useState(null) // Controls the 'floating' sub-menu
+  const [activeGroup, setActiveGroup] = useState(null)
+  const [activeNavItem, setActiveNavItem] = useState(null)
   const { user } = useAuth()
   const location = useLocation()
 
+  // Sync active nav item with current route
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/') setActiveNavItem('dash');
+    else if (path === '/calendar') setActiveNavItem('agenda');
+    else if (['/pipeline', '/customers'].includes(path)) setActiveNavItem('leads');
+    else if (['/professionals', '/commissions', '/suppliers'].includes(path)) setActiveNavItem('equipe');
+    else if (['/products', '/plans', '/subscriptions'].includes(path)) setActiveNavItem('produtos');
+    else if (['/finances', '/reports'].includes(path)) setActiveNavItem('finance');
+    else if (['/team', '/profile'].includes(path)) setActiveNavItem('conta');
+    else setActiveNavItem(null);
+    setActiveGroup(null);
+  }, [location.pathname]);
+
+  const handleGroupNav = (groupId) => {
+    if (activeNavItem === groupId && activeGroup === groupId) {
+      setActiveGroup(null);
+      setActiveNavItem(null);
+    } else {
+      setActiveNavItem(groupId);
+      setActiveGroup(groupId);
+    }
+  };
+
+  const handleLinkNav = (navId) => {
+    setActiveNavItem(navId);
+    setActiveGroup(null);
+  };
+
   // Check if payment is overdue (for tenant users only)
   const isOverdue = user?.payment_status === 'overdue'
-  const daysUntilShutdown = 7 // Configurable: days until environment is disabled
+  const daysUntilShutdown = 7
 
   return (
     <div
@@ -49,9 +79,6 @@ const MainLayout = () => {
         className="main-content"
         style={{
           flex: 1,
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
           background: 'var(--navy-950)',
           color: 'var(--white)',
           position: 'relative'
@@ -138,9 +165,10 @@ const MainLayout = () => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gold-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    {activeGroup === 'leads' ? 'Vendas & CRM' :
-                      activeGroup === 'finance' ? 'Gestão Financeira' :
-                        activeGroup === 'services' ? 'Serviços & Catálogo' : 'Configurações'}
+                    {activeGroup === 'leads' ? 'Vendas / CRM' :
+                      activeGroup === 'equipe' ? 'Equipe & Operações' :
+                        activeGroup === 'produtos' ? 'Produtos & Assinaturas' :
+                          activeGroup === 'finance' ? 'Gestão Financeira' : 'Configurações'}
                   </span>
                 </div>
 
@@ -155,14 +183,22 @@ const MainLayout = () => {
                   </>
                 )}
 
-                {activeGroup === 'services' && (
+                {activeGroup === 'equipe' && (
                   <>
                     <Link to="/professionals" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
-                      <Users size={18} /> <span>Profissionais (Equipe)</span>
+                      <Users size={18} /> <span>Profissionais</span>
+                    </Link>
+                    <Link to="/commissions" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
+                      <DollarSign size={18} /> <span>Comissões</span>
                     </Link>
                     <Link to="/suppliers" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
                       <Building size={18} /> <span>Fornecedores</span>
                     </Link>
+                  </>
+                )}
+
+                {activeGroup === 'produtos' && (
+                  <>
                     <Link to="/products" className="action-sheet-item" onClick={() => setActiveGroup(null)}>
                       <Package size={18} /> <span>Catálogo de Produtos</span>
                     </Link>
@@ -202,47 +238,66 @@ const MainLayout = () => {
 
           <nav className="mobile-nav">
             <div className="mobile-nav-content">
-              <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setActiveGroup(null)}>
-                <LayoutDashboard size={20} />
-                <span>DASH</span>
+
+              {/* Dashboard */}
+              <Link
+                to="/"
+                className={`mobile-nav-item ${activeNavItem === 'dash' ? 'active' : ''}`}
+                onClick={() => handleLinkNav('dash')}
+              >
+                <LayoutDashboard size={24} />
               </Link>
 
+              {/* Vendas */}
               <button
-                className={`mobile-nav-item ${activeGroup === 'leads' ? 'active' : ''}`}
-                onClick={() => setActiveGroup(activeGroup === 'leads' ? null : 'leads')}
+                className={`mobile-nav-item ${activeNavItem === 'leads' ? 'active' : ''}`}
+                onClick={() => handleGroupNav('leads')}
               >
-                <Briefcase size={20} />
-                <span>VENDAS</span>
+                <Briefcase size={24} />
               </button>
 
-              <Link to="/calendar" className={`mobile-nav-item ${location.pathname === '/calendar' ? 'active' : ''}`} onClick={() => setActiveGroup(null)}>
-                <CalendarIcon size={20} />
-                <span>AGENDA</span>
+              {/* Agenda */}
+              <Link
+                to="/calendar"
+                className={`mobile-nav-item ${activeNavItem === 'agenda' ? 'active' : ''}`}
+                onClick={() => handleLinkNav('agenda')}
+              >
+                <CalendarIcon size={24} />
               </Link>
 
+              {/* Equipe */}
               <button
-                className={`mobile-nav-item ${activeGroup === 'services' ? 'active' : ''}`}
-                onClick={() => setActiveGroup(activeGroup === 'services' ? null : 'services')}
+                className={`mobile-nav-item ${activeNavItem === 'equipe' ? 'active' : ''}`}
+                onClick={() => handleGroupNav('equipe')}
               >
-                <Package size={20} />
-                <span>SERVIÇOS</span>
+                <Users size={24} />
               </button>
 
+              {/* Produtos */}
               <button
-                className={`mobile-nav-item ${activeGroup === 'finance' ? 'active' : ''}`}
-                onClick={() => setActiveGroup(activeGroup === 'finance' ? null : 'finance')}
+                className={`mobile-nav-item ${activeNavItem === 'produtos' ? 'active' : ''}`}
+                onClick={() => handleGroupNav('produtos')}
               >
-                <DollarSign size={20} />
-                <span>FINANC</span>
+                <Package size={24} />
               </button>
 
+              {/* Financeiro */}
               <button
-                className={`mobile-nav-item ${activeGroup === 'account' ? 'active' : ''}`}
-                onClick={() => setActiveGroup(activeGroup === 'account' ? null : 'account')}
+                className={`mobile-nav-item ${activeNavItem === 'finance' ? 'active' : ''}`}
+                onClick={() => handleGroupNav('finance')}
               >
-                <Settings size={20} />
-                <span>CONTA</span>
+                <DollarSign size={24} />
               </button>
+
+              {/* Conta - Direct Link */}
+              <Link
+                to="/profile"
+                className={`mobile-nav-item ${activeNavItem === 'conta' ? 'active' : ''}`}
+                onClick={() => handleLinkNav('conta')}
+              >
+                <Settings size={24} />
+              </Link>
+
             </div>
           </nav>
         </>
@@ -252,13 +307,13 @@ const MainLayout = () => {
       {user?.role_global === 'master' && !user?.tenant_slug && (window.innerWidth <= 768) && (
         <nav className="mobile-nav">
           <div className="mobile-nav-content">
-            <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
-              <Briefcase size={20} />
-              <span>AMBIENTES</span>
+            <Link to="/" className={`mobile-nav-item ${activeNavItem === 'dash' ? 'active' : ''}`} onClick={() => handleLinkNav('dash')}>
+              <span className="nav-icon"><Briefcase size={20} /></span>
+              <span className="nav-label">AMBIENTES</span>
             </Link>
-            <Link to="/profile" className={`mobile-nav-item ${location.pathname === '/profile' ? 'active' : ''}`}>
-              <Settings size={20} />
-              <span>MEU PERFIL</span>
+            <Link to="/profile" className={`mobile-nav-item ${activeNavItem === 'conta' ? 'active' : ''}`} onClick={() => handleLinkNav('conta')}>
+              <span className="nav-icon"><Settings size={20} /></span>
+              <span className="nav-label">PERFIL</span>
             </Link>
           </div>
         </nav>

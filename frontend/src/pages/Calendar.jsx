@@ -269,12 +269,12 @@ const AppointmentsCalendar = () => {
                 </div>
             </header>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', height: 'calc(100vh - 160px)' }}>
-                <div className="data-card-luxury" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div className="data-card-luxury" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="data-card-header" style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--navy-900)' }}>Visão Geral do Mês</h3>
                     </div>
-                    <div style={{ padding: '2rem', flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ padding: '1.5rem' }}>
                         <Calendar
                             onChange={handleDayClick}
                             value={date}
@@ -293,7 +293,7 @@ const AppointmentsCalendar = () => {
 
             {showDayModal && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target.className === 'modal-overlay') setShowDayModal(false) }}>
-                    <div className="card" style={{ width: '600px', padding: '0', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <div className="card modal-content-luxury" style={{ maxWidth: '600px', width: '100%', padding: '0', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         <div className="modal-header-luxury">
                             <h2>{date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</h2>
                             <button onClick={() => setShowDayModal(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
@@ -383,7 +383,7 @@ const AppointmentsCalendar = () => {
 
             {showModal && (
                 <div className="modal-overlay">
-                    <div className="card" style={{ width: '650px', padding: '0', overflow: 'hidden' }}>
+                    <div className="card modal-content-luxury" style={{ maxWidth: '650px', width: '100%', padding: '0', overflow: 'hidden' }}>
                         <div className="modal-header-luxury">
                             <h2>Agendar Compromisso</h2>
                             <button onClick={() => setShowModal(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
@@ -465,7 +465,7 @@ const AppointmentsCalendar = () => {
 
             {showGoogleConfig && (
                 <div className="modal-overlay">
-                    <div className="card" style={{ width: '500px', padding: '0', overflow: 'hidden' }}>
+                    <div className="card modal-content-luxury" style={{ maxWidth: '500px', width: '100%', padding: '0', overflow: 'hidden' }}>
                         <div className="modal-header-luxury">
                             <h2>Configurar Google Agenda</h2>
                             <button onClick={() => setShowGoogleConfig(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
@@ -502,33 +502,37 @@ const AppointmentsCalendar = () => {
             <style>{`
                 .luxury-calendar-override {
                     width: 100% !important;
-                    height: 100% !important;
                     border: none !important;
                     font-family: 'Outfit', sans-serif !important;
-                    display: flex;
-                    flex-direction: column;
                 }
                 .react-calendar__viewContainer {
-                    flex: 1;
+                    width: 100%;
                 }
                 .react-calendar__month-view {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
+                    width: 100%;
                 }
                 .react-calendar__month-view__days {
-                    flex: 1 !important;
-                    height: 100% !important;
+                    width: 100% !important;
+                }
+                .react-calendar__month-view__weekdays {
+                    text-align: center;
+                    font-size: 0.75rem;
+                    font-weight: 800;
+                    color: var(--navy-500);
+                    text-transform: uppercase;
+                    padding-bottom: 0.5rem;
                 }
                 .react-calendar__tile {
                     height: auto !important;
-                    min-height: 80px !important;
+                    min-height: 90px !important;
+                    padding: 10px 6px !important;
                     display: flex;
                     flex-direction: column;
-                    justify-content: flex-start;
                     align-items: center;
-                    padding-top: 10px !important;
-                    font-size: 1.1rem !important;
+                    justify-content: flex-start;
+                    font-size: 1.05rem !important;
+                    border-radius: 10px;
+                    transition: all 0.15s ease;
                 }
                 .react-calendar__tile--active {
                     background: var(--navy-900) !important;
@@ -552,9 +556,33 @@ const AppointmentsCalendar = () => {
                 }
                 .has-appointment::after {
                     content: '•';
-                    font-size: 1.5rem;
+                    font-size: 1.4rem;
                     color: var(--gold-500);
-                    margin-top: -5px;
+                    margin-top: -4px;
+                    line-height: 1;
+                }
+                .react-calendar__navigation {
+                    margin-bottom: 1rem;
+                }
+                .react-calendar__navigation button {
+                    font-size: 1rem;
+                    font-weight: 700;
+                    color: var(--navy-900);
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 0.5rem;
+                    border-radius: 8px;
+                    transition: background 0.15s;
+                }
+                .react-calendar__navigation button:hover {
+                    background: var(--gold-50);
+                }
+                .react-calendar__navigation__label {
+                    font-size: 1.1rem !important;
+                    font-weight: 800 !important;
+                    color: var(--navy-900) !important;
+                    text-transform: capitalize;
                 }
             `}</style>
         </div>

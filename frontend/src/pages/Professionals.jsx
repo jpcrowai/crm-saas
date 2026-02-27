@@ -1,89 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { getProfessionals, createProfessional, updateProfessional, deleteProfessional, uploadFile, API_URL } from '../services/api';
-import { useToast } from '../context/ToastContext';
+import { useDataCache } from '../hooks/useDataCache';
+import { useOptimistic } from '../hooks/useOptimistic';
+import { showToast } from '../components/Toast';
 import { Plus, User, Mail, Phone, Briefcase, Trash2, Edit, X, Users, Percent, Calendar, TrendingUp } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 import '../styles/professionals.css';
 
 const Professionals = () => {
-    const [professionals, setProfessionals] = useState([]);
+    const { data: professionals, loading, mutate } = useDataCache('professionals', getProfessionals);
+    const optimistic = useOptimistic(mutate);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedProfessional, setSelectedProfessional] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const toast = useToast();
 
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        specialty: '',
-        photo_url: '',
-        bio: '',
-        active: true,
-        commission_percentage: 0,
-        commission_type: 'gross',
-        commission_start_date: new Date().toISOString().split('T')[0],
-        uploadMode: false
+        name: '', email: '', phone: '', specialty: '', photo_url: '', bio: '',
+        active: true, commission_percentage: 0, commission_type: 'gross',
+        commission_start_date: new Date().toISOString().split('T')[0], uploadMode: false
     });
-
-    useEffect(() => {
-        loadProfessionals();
-    }, []);
-
-    const loadProfessionals = async () => {
-        try {
-            setLoading(true);
-            const response = await getProfessionals();
-            setProfessionals(response.data.filter(p => p.active));
-        } catch (error) {
-            console.error('Erro ao carregar profissionais:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
-        try {
-            await createProfessional(formData);
-            setShowCreateModal(false);
-            resetForm();
-            loadProfessionals();
-            toast.success('Profissional cadastrado com sucesso!');
-        } catch (error) {
-            toast.error('Erro ao cadastrar profissional');
-            console.error(error);
-        }
+        const tempId = `temp_${Date.now()}`;
+        const tempProf = { ...formData, id: tempId, active: true, _pending: true };
+        setShowCreateModal(false);
+        resetForm();
+
+        await optimistic(
+            prev => [...(prev || []).filter(p => p.active), tempProf],
+            async () => {
+                const res = await createProfessional(formData);
+                mutate(prev => prev.map(p => p.id === tempId ? { ...res.data, _pending: false } : p));
+                showToast('Profissional cadastrado com sucesso!', 'success');
+            },
+            { errorMessage: 'Erro ao cadastrar profissional. Ação revertida.' }
+        );
     };
 
     const handleUpdateSubmit = async (e) => {
         e.preventDefault();
-        try {
-            await updateProfessional(selectedProfessional.id, formData);
-            setIsEditing(false);
-            setShowDetailsModal(false);
-            resetForm();
-            loadProfessionals();
-            toast.success('Profissional atualizado com sucesso!');
-        } catch (error) {
-            toast.error('Erro ao atualizar profissional');
-            console.error(error);
-        }
+        const id = selectedProfessional.id;
+        const updatedData = { ...formData };
+        setIsEditing(false);
+        setShowDetailsModal(false);
+        resetForm();
+
+        await optimistic(
+            prev => prev.map(p => p.id === id ? { ...p, ...updatedData } : p),
+            async () => {
+                await updateProfessional(id, updatedData);
+                showToast('Profissional atualizado!', 'success');
+            },
+            { errorMessage: 'Erro ao atualizar profissional. Ação revertida.' }
+        );
     };
 
     const handleDelete = async (id) => {
         if (!window.confirm('Deseja realmente remover este profissional?')) return;
-        try {
-            await deleteProfessional(id);
-            setShowDetailsModal(false);
-            loadProfessionals();
-            toast.success('Profissional removido com sucesso!');
-        } catch (error) {
-            toast.error('Erro ao remover profissional');
-            console.error(error);
-        }
+        setShowDetailsModal(false);
+
+        await optimistic(
+            prev => prev.filter(p => p.id !== id),
+            async () => {
+                await deleteProfessional(id);
+                showToast('Profissional removido.', 'success');
+            },
+            { errorMessage: 'Erro ao remover profissional. Ação revertida.' }
+        );
     };
 
     const openDetailsModal = (professional) => {

@@ -1,8 +1,9 @@
 @import './styles/design-system.css';
 @import './styles/auth.css';
 @import './styles/sidebar.css';
+@import './styles/tenant-luxury.css';
 
-/* Conteúdo principal (área branca do app) */
+/* Conteúdo principal (área marinho do app) */
 .app-content {
   background: var(--navy-950);
   min-height: 100vh;
@@ -15,7 +16,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(2, 6, 23, 0.85);
+  background: rgba(2, 6, 23, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,9 +24,190 @@
   padding: 1.5rem;
 }
 
-.card-header-row {
+.card-header-row,
+.page-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+}
+
+/* --- TEMA DARK LUXURY OVERRIDES --- */
+.card-dark {
+  background: var(--navy-900) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* --- GLOBAL RESPONSIVE ENGINE --- */
+@media (max-width: 768px) {
+
+  /* Layout Base */
+  .app-layout {
+    flex-direction: column !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 1rem !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Typography */
+  h1 {
+    font-size: 1.4rem !important;
+  }
+
+  h2 {
+    font-size: 1.2rem !important;
+  }
+
+  h3 {
+    font-size: 1.1rem !important;
+  }
+
+  /* Buttons & Flex Containers Stacking */
+  .card-header-row,
+  .page-header-row,
+  .data-card-header,
+  .flex,
+  .d-flex,
+  .btn-group,
+  div[style*="display: flex"][style*="gap"],
+  header[class*="header"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    height: auto !important;
+  }
+
+  /* Buttons Full Width */
+  .btn-primary,
+  .btn-secondary,
+  .btn-luxury,
+  .btn-luxury-gold,
+  .btn-auth-submit,
+  button[class*="btn"] {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.8rem 1rem !important;
+    font-size: 0.8rem !important;
+    white-space: normal !important;
+    /* Permite quebra de texto se o botão for pequeno */
+  }
+
+  /* Modals - Mobile Optimization */
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-content,
+  .auth-card-luxury,
+  .card,
+  div[class*="modal"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    /* Override fixed min-widths */
+    margin: 0 !important;
+    border-radius: 24px 24px 0 0 !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+    padding: 1.5rem !important;
+  }
+
+  /* Grid Stacking */
+  .grid,
+  .form-grid,
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4,
+  .indicator-grid,
+  .selection-grid,
+  .stats-grid,
+  .data-grid,
+  div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    width: 100% !important;
+  }
+
+  /* Tables - Scrollable with overlay indicator */
+  .table-luxury-wrapper,
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-bottom: 1rem !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    position: relative;
+  }
+
+  .table-luxury,
+  table {
+    min-width: 700px !important;
+    width: 100% !important;
+  }
+
+  /* Calendar - Extreme Squish Fix */
+  .react-calendar {
+    width: 100% !important;
+    border: none !important;
+    background: white !important;
+    /* Mantém contraste se for light */
+    border-radius: 12px !important;
+  }
+
+  .react-calendar__tile {
+    min-height: 60px !important;
+    /* Reduzi um pouco para não esticar tanto a tela */
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.1rem !important;
+  }
+
+  .react-calendar__month-view__weekdays__weekday {
+    font-size: 0.6rem !important;
+    padding: 0.25rem !important;
+  }
+
+  /* Dashboard Charts */
+  .recharts-responsive-container {
+    min-height: 250px !important;
+  }
+}
+
+/* Visual Hint for Tables */
+.table-luxury-wrapper::after {
+  content: 'Arraste para ver mais →';
+  display: block;
+  text-align: right;
+  font-size: 0.65rem;
+  color: var(--gold-400);
+  background: rgba(15, 23, 42, 0.8);
+  padding: 4px 10px;
+  position: sticky;
+  right: 0;
+  bottom: 0;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+@media (min-width: 769px) {
+  .table-luxury-wrapper::after {
+    display: none;
+  }
+}
+
+/* Specific Fix for Calendar Header buttons in the image */
+.page-header-row div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .page-header-row div {
+    flex-direction: column !important;
+  }
 }

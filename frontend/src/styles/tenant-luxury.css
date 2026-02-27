@@ -389,3 +389,103 @@
     border: 1px solid rgba(212, 175, 55, 0.2);
     animation: fadeIn 0.3s ease-in-out;
 }
+/* SPINNER SUBTLE — background revalidation indicator */
+.spinner-subtle {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(212, 175, 55, 0.2);
+    border-top-color: #d4af37;
+    border-radius: 50%;
+    animation: spin-subtle 0.8s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin-subtle {
+    to { transform: rotate(360deg); }
+}
+
+/* ROW PENDING STATE */
+.row-pending {
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+
+/* DARK LUXURY REPORT OVERRIDES - Fixes legibility for white text */
+.indicator-card-luxury, .data-card-luxury {
+    background: rgba(15, 23, 42, 0.4) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: var(--white) !important;
+}
+
+.data-card-header {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.indicator-data label {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.indicator-data p {
+    color: var(--white) !important;
+}
+
+.table-luxury {
+    background: transparent !important;
+    color: var(--white) !important;
+}
+
+.table-luxury th {
+    background: rgba(15, 23, 42, 0.8) !important;
+    color: var(--gold-400) !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+}
+
+.table-luxury td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    color: var(--white) !important;
+}
+
+.table-luxury tr:nth-child(even) td {
+    background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.table-luxury tr:hover td {
+    background: rgba(212, 175, 55, 0.05) !important;
+}
+
+
+/* FINAL CONTRAST FIXES - Bright White/Gold on Dark */
+.data-card-header h3 {
+    color: var(--white) !important;
+    opacity: 1 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.indicator-data label {
+    color: var(--gold-400) !important; /* Dourado para labels de KPI */
+    opacity: 1 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+}
+
+.indicator-data p {
+    color: var(--white) !important;
+    opacity: 1 !important;
+}
+
+.data-card-header {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Ensure chart axis labels are readable */
+.recharts-cartesian-axis-tick text {
+    fill: rgba(255, 255, 255, 0.6) !important;
+    font-size: 10px;
+}

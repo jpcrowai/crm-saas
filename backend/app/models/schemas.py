@@ -38,6 +38,10 @@ class EnvironmentBase(BaseModel):
     cor_principal: Optional[str] = "#0055FF"
     plan: Optional[str] = "basic"
     payment_status: Optional[str] = "trial"
+    plan_price: Optional[float] = 0.0
+    billing_cycle: Optional[str] = "mensal"
+    has_trial: Optional[bool] = False
+    payment_due_date: Optional[str] = None
     modulos_habilitados: List[str] = []
     contract_generated_url: Optional[str] = None
     contract_signed_url: Optional[str] = None
@@ -54,6 +58,10 @@ class EnvironmentUpdate(BaseModel):
     nicho_id: Optional[str] = None
     plan: Optional[str] = None
     payment_status: Optional[str] = None
+    plan_price: Optional[float] = None
+    billing_cycle: Optional[str] = None
+    has_trial: Optional[bool] = None
+    payment_due_date: Optional[str] = None
     ativo: Optional[bool] = None
     modulos_habilitados: Optional[List[str]] = None
     contract_status: Optional[str] = None

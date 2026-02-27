@@ -13,24 +13,24 @@ const PnLView = ({ dateRange }) => {
 
     const kpis = [
         <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: '#ecfdf5', color: 'var(--success)' }}><FileBarChart size={28} /></div>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}><FileBarChart size={28} /></div>
             <div className="indicator-data">
                 <label>Receita Bruta</label>
                 <p>R$ {data.revenue.toLocaleString('pt-BR')}</p>
             </div>
         </div>,
         <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--error)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: '#fef2f2', color: 'var(--error)' }}><ArrowRight size={28} /></div>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}><ArrowRight size={28} /></div>
             <div className="indicator-data">
                 <label>Despesas Operacionais</label>
                 <p>R$ {data.expenses.toLocaleString('pt-BR')}</p>
             </div>
         </div>,
-        <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--navy-900)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: 'var(--navy-900)', color: 'white' }}><FileBarChart size={28} /></div>
+        <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--primary)' }}>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)' }}><FileBarChart size={28} /></div>
             <div className="indicator-data">
                 <label>Lucro Líquido</label>
-                <p style={{ color: data.net_profit >= 0 ? 'var(--navy-950)' : 'var(--error)' }}>R$ {data.net_profit.toLocaleString('pt-BR')}</p>
+                <p style={{ color: data.net_profit >= 0 ? 'var(--success)' : 'var(--error)' }}>R$ {data.net_profit.toLocaleString('pt-BR')}</p>
             </div>
         </div>
     ];

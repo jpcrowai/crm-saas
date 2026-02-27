@@ -72,13 +72,38 @@ def generate_environment_contract_pdf(env_data: dict) -> str:
     pdf.multi_cell(0, 6, "O presente contrato tem por objeto o licenciamento de uso do software CRM de forma não exclusiva e intransferível, para gestão de relacionamento com clientes.")
     pdf.ln(5)
 
+    # --- CONDIÇÕES COMERCIAIS E DE PAGAMENTO ---
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "3. CONDIÇÕES COMERCIAIS E DE PAGAMENTO", 0, 1)
+    pdf.set_font("Arial", "", 10)
+    
+    plan_price = float(env_data.get('plan_price', 0))
+    billing_cycle = str(env_data.get('billing_cycle', 'mensal')).title()
+    has_trial = str(env_data.get('has_trial', 'false')).lower() == 'true'
+    trial_text = "com um período adicional de teste grátis (Trial) de 30 dias contemplado." if has_trial else "sem período preambular de degustação gratuita."
+    
+    preco_formatado = f"R$ {plan_price:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    
+    termos_comerciais = (
+        f"3.1. O licenciamento de uso do software possui ciclo de cobrança {billing_cycle}, "
+        f"sendo estipulado o valor recorrente de {preco_formatado} a ser pago na data acordada, "
+        f"{trial_text}\n"
+        "3.2. Os pagamentos das mensalidades servirão exclusivamente para a manutenção da licença tecnológica, infraestrutura em nuvem e uso perene do sistema.\n"
+        "3.3. O inadimplemento por prazo limite poderá acarretar a suspensão temporária do acesso à plataforma tecnológica."
+    )
+    pdf.multi_cell(0, 6, termos_comerciais)
+    pdf.ln(5)
+
     # --- MODULES ---
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "3. MÓDULOS CONTRATADOS", 0, 1)
+    pdf.cell(0, 10, "4. MÓDULOS CONTRATADOS", 0, 1)
     pdf.set_font("Arial", "", 10)
     
     modules = env_data.get("modulos_habilitados", [])
-    module_names = [m.replace("_", " ").upper() for m in modules]
+    if not modules:
+        modules = ["acesso_restrito", "sem_modulos_especificados"]
+        
+    module_names = [m.replace("_", " ").title() for m in modules]
     
     pdf.set_fill_color(240, 253, 250)
     pdf.rect(10, pdf.get_y(), 190, len(module_names)*8 + 10, 'F')
@@ -88,30 +113,51 @@ def generate_environment_contract_pdf(env_data: dict) -> str:
     for mod in module_names:
         pdf.cell(0, 8, f"- {mod}", 0, 1)
     
+    pdf.ln(8)
+
+    # --- CLÁUSULAS LEGAIS E PROTEÇÃO ---
+    pdf.set_font("Arial", "B", 12)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(0, 10, "5. TERMOS DE USO E RESPONSABILIDADES", 0, 1)
+    pdf.set_font("Arial", "", 10)
+    termos = (
+        "5.1. O sistema é fornecido 'no estado em que se encontra' (as is). A LICENCIANTE "
+        "envidará seus melhores esforços para garantir a disponibilidade (SLA estimado de 99%), "
+        "entretanto, stands insenta de responsabilidade civil ou criminal por eventuais perdas de "
+        "lucro, interrupção de atividades ou perda de informações da LICENCIADA decorrentes de falhas técnicas imprevistas.\n"
+        "5.2. A LICENCIADA é a única e exclusiva responsável pelas informações e dados inseridos no software."
+    )
+    pdf.multi_cell(0, 6, termos)
     pdf.ln(5)
 
     # --- AI AGENT CLAUSE ---
     if "ai_agent" in modules:
         pdf.set_font("Arial", "B", 12)
         pdf.set_text_color(180, 83, 9) # Dark Orange/Amber
-        pdf.cell(0, 10, "4. CLÁUSULA ESPECIAL - AGENTE DE IA", 0, 1)
+        pdf.cell(0, 10, "6. CLÁUSULA ESPECIAL - AGENTE DE IA", 0, 1)
         pdf.set_text_color(15, 23, 42)
         pdf.set_font("Arial", "", 10)
         ai_terms = (
-            "4.1. O módulo 'Agente de IA' utiliza modelos de linguagem de terceiros para processar interações.\n"
-            "4.2. A LICENCIADA declara estar ciente de que as respostas geradas pela IA são probabilísticas e devem ser supervisionadas.\n"
-            "4.3. É vedado o uso do Agente de IA para a geração de conteúdo ilícito, discriminatório ou que viole direitos de terceiros."
+            "6.1. O módulo 'Agente de IA' utiliza modelos de linguagem de terceiros (LLMs) para processar interações.\n"
+            "6.2. A LICENCIADA declara estar ciente de que as respostas geradas pela IA são computacionais, probabilísticas "
+            "e não representam direcionamento explícito da LICENCIANTE. Devem ser sempre supervisionadas pela LICENCIADA.\n"
+            "6.3. É expressamente vedado e configurará quebra de contrato imediata o uso do Agente de IA para a "
+            "geração de conteúdo ilícito, discriminatório, ou que viole direitos humanos ou leis aplicáveis."
         )
         pdf.multi_cell(0, 6, ai_terms)
         pdf.ln(5)
 
-    # --- LGPD ---
+    # --- LGPD E JURISDIÇÃO ---
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "5. PROTEÇÃO DE DADOS (LGPD)", 0, 1)
+    numero_lgpd = "7" if "ai_agent" in modules else "6"
+    pdf.cell(0, 10, f"{numero_lgpd}. PROTEÇÃO DE DADOS (LGPD) E JURISDIÇÃO", 0, 1)
     pdf.set_font("Arial", "", 10)
     lgpd_terms = (
-        "5.1. As partes comprometem-se a cumprir integralmente a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).\n"
-        "5.2. A LICENCIADA atua como Controladora dos dados pessoais inseridos no sistema, cabendo à LICENCIANTE o papel de Operadora, limitando-se ao tratamento necessário para a execução do serviço contratado."
+        f"{numero_lgpd}.1. As partes obrigam-se a cumprir e respeitar os preceitos previstos na Lei Geral de Proteção de Dados "
+        "(Lei Federal nº 13.709/2018). Toda coleta de dados efetuada pela LICENCIADA a seus terceiros (clientes finais) "
+        "deve contar com a base legal adequada, assumindo a LICENCIADA total responsabilidade perante a ANPD.\n"
+        f"{numero_lgpd}.2. Fica eleito o foro da comarca da LICENCIANTE para dirimir quaisquer litígios oriundos deste contrato, "
+        "com exclusão de qualquer outro."
     )
     pdf.multi_cell(0, 6, lgpd_terms)
 
@@ -142,7 +188,7 @@ def generate_environment_contract_pdf(env_data: dict) -> str:
     
     try:
         public_url = storage_service.upload_file(
-            pdf_content,
+            bytes(pdf_content),
             filename,
             env_data['slug'],
             "contratos"
@@ -180,7 +226,7 @@ async def get_environment_contract(slug: str, db: Session = Depends(get_db), cur
                 "nome_empresa": tenant.name,
                 "cnpj": tenant.document,
                 "endereco": tenant.address,
-                "modulos_habilitados": [] # TODO: Store this in DB? For now empty
+                "modulos_habilitados": tenant.modulos_habilitados if tenant.modulos_habilitados else []
             }
             pdf_path = generate_environment_contract_pdf(env_data)
             tenant.contract_generated_url = pdf_path
@@ -207,11 +253,15 @@ async def get_ambientes(db: Session = Depends(get_db), current_user: TokenData =
                 "cor_principal": t.primary_color or "#d4af37",
                 "plan": t.plan_tier or "basic",
                 "payment_status": t.payment_status or "trial",
+                "plan_price": float(t.plan_price or 0.0),
+                "billing_cycle": t.billing_cycle or "mensal",
+                "has_trial": bool(t.has_trial),
+                "payment_due_date": str(t.payment_due_date) if t.payment_due_date else None,
                 "contract_generated_url": t.contract_generated_url,
                 "contract_signed_url": t.contract_signed_url,
                 "contract_status": t.contract_status or "pending_generation",
                 "ativo": t.active,
-                "excel_file": f"{t.slug}.xlsx", # Legacy
+                "excel_file": f"{t.slug}.xlsx",
                 "nome": t.name,
                 "modulos_habilitados": t.modulos_habilitados or []
             }
@@ -234,6 +284,10 @@ async def create_ambiente(
     cor_principal: Optional[str] = Form("#0055FF"),
     plan: Optional[str] = Form("basic"),
     modulos_habilitados: Optional[str] = Form(None), # JSON string from frontend
+    plan_price: float = Form(0.0),
+    billing_cycle: str = Form("mensal"),
+    has_trial: bool = Form(False),
+    payment_due_date: Optional[str] = Form(None),
     logo: Optional[UploadFile] = File(None),
     contract_file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
@@ -289,7 +343,11 @@ async def create_ambiente(
         niche_id=nicho_id if nicho_id else None,
         primary_color=cor_principal,
         plan_tier=plan,
-        payment_status="trial",
+        payment_status="trial" if has_trial else "active",
+        plan_price=plan_price,
+        billing_cycle=billing_cycle,
+        has_trial=has_trial,
+        payment_due_date=payment_due_date,
         active=False, # Pendente de contrato
         contract_status="pending_generation",
         modulos_habilitados=json.loads(modulos_habilitados) if modulos_habilitados else []
@@ -304,6 +362,9 @@ async def create_ambiente(
             "nome_empresa": nome_empresa,
             "cnpj": cnpj,
             "endereco": endereco,
+            "plan_price": plan_price,
+            "billing_cycle": billing_cycle,
+            "has_trial": has_trial,
             "modulos_habilitados": json.loads(modulos_habilitados) if modulos_habilitados else []
         }
         pdf_path = generate_environment_contract_pdf(env_data)
@@ -376,6 +437,10 @@ async def update_ambiente(
     payment_status: Optional[str] = Form(None),
     ativo: Optional[str] = Form(None),
     modulos_habilitados: Optional[str] = Form(None),
+    plan_price: Optional[float] = Form(None),
+    billing_cycle: Optional[str] = Form(None),
+    has_trial: Optional[bool] = Form(None),
+    payment_due_date: Optional[str] = Form(None),
     logo: Optional[UploadFile] = File(None),
     contract_file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
@@ -391,6 +456,10 @@ async def update_ambiente(
     if nicho_id is not None: tenant.niche_id = nicho_id
     if plan is not None: tenant.plan_tier = plan
     if payment_status is not None: tenant.payment_status = payment_status
+    if plan_price is not None: tenant.plan_price = plan_price
+    if billing_cycle is not None: tenant.billing_cycle = billing_cycle
+    if has_trial is not None: tenant.has_trial = has_trial
+    if payment_due_date is not None: tenant.payment_due_date = payment_due_date
     if modulos_habilitados is not None:
         tenant.modulos_habilitados = json.loads(modulos_habilitados)
     
@@ -464,12 +533,23 @@ async def update_ambiente(
         id=str(tenant.id),
         slug=tenant.slug,
         nome_empresa=tenant.name,
+        nome=tenant.name,
         cnpj=tenant.document or "",
         endereco=tenant.address or "",
         nicho_id=str(tenant.niche_id) if tenant.niche_id else "",
         logo_url=tenant.logo_url,
+        cor_principal=tenant.primary_color or "#d4af37",
+        plan=tenant.plan_tier or "basic",
+        payment_status=tenant.payment_status or "trial",
+        plan_price=float(tenant.plan_price or 0.0),
+        billing_cycle=tenant.billing_cycle or "mensal",
+        has_trial=bool(tenant.has_trial),
+        payment_due_date=str(tenant.payment_due_date) if tenant.payment_due_date else None,
+        contract_generated_url=tenant.contract_generated_url,
+        contract_signed_url=tenant.contract_signed_url,
+        contract_status=tenant.contract_status or "pending_generation",
         ativo=tenant.active,
-        modulos_habilitados=json.loads(modulos_habilitados) if modulos_habilitados else []
+        modulos_habilitados=tenant.modulos_habilitados or []
     )
 
 @router.delete("/ambientes/{slug}")

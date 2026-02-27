@@ -22,14 +22,14 @@ const AgingView = () => {
 
     const kpis = [
         <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--error)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: '#fef2f2', color: 'var(--error)' }}><AlertTriangle size={28} /></div>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}><AlertTriangle size={28} /></div>
             <div className="indicator-data">
                 <label>Total Em Atraso</label>
                 <p>R$ {totalOverdue.toLocaleString('pt-BR')}</p>
             </div>
         </div>,
-        <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--warning)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: '#fffbeb', color: 'var(--warning)' }}><Clock size={28} /></div>
+        <div className="indicator-card-luxury" style={{ borderTopColor: '#f59e0b' }}>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}><Clock size={28} /></div>
             <div className="indicator-data">
                 <label>Risco Médio</label>
                 <p>---</p>

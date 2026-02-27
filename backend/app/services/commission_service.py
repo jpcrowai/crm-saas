@@ -52,11 +52,59 @@ def calculate_commission(db: Session, appointment_id: str, tenant_id: str):
     )
     db.add(new_commission)
     
-    # 5. Update Performance Metrics (Asynchronous/Pre-calculated style)
+    # 5. Update Performance Metrics
     update_performance_metrics(db, prof.id, tenant_id, service_value, commission_value)
     
     db.flush()
     return new_commission
+
+
+def calculate_commission_from_subscription(db: Session, subscription_id: str, professional_id: str, tenant_id: str, subscription_value: Decimal):
+    """
+    Calculates and records a commission for a professional linked to a new subscription.
+    Allows subscription revenue to appear in the commissions dashboard.
+    """
+    # 1. Idempotency check
+    existing = db.query(Commission).filter(
+        Commission.subscription_id == subscription_id,
+        Commission.tenant_id == tenant_id
+    ).first()
+    if existing:
+        return existing
+
+    # 2. Get professional commission rules
+    prof = db.query(Professional).filter(
+        Professional.id == professional_id,
+        Professional.tenant_id == tenant_id
+    ).first()
+    if not prof:
+        return None
+
+    percentage = Decimal(str(prof.commission_percentage or 0))
+    if percentage <= 0:
+        return None
+
+    commission_value = (subscription_value * percentage) / Decimal("100")
+
+    # 3. Create Commission record linked to the subscription
+    new_commission = Commission(
+        tenant_id=tenant_id,
+        professional_id=prof.id,
+        subscription_id=subscription_id,
+        appointment_id=None,
+        service_value=subscription_value,
+        commission_percentage=percentage,
+        commission_value=commission_value,
+        status="pending"
+    )
+    db.add(new_commission)
+
+    # 4. Update performance metrics
+    update_performance_metrics(db, prof.id, tenant_id, subscription_value, commission_value)
+
+    db.flush()
+    return new_commission
+
 
 def update_performance_metrics(db: Session, professional_id: str, tenant_id: str, service_value: Decimal, commission_value: Decimal):
     period = datetime.now().strftime("%Y-%m")
@@ -73,7 +121,7 @@ def update_performance_metrics(db: Session, professional_id: str, tenant_id: str
             professional_id=professional_id,
             period=period,
             total_services=1,
-            total_customers=1, # Simplified: roughly 1 per service in many cases
+            total_customers=1,
             total_revenue=service_value,
             total_commission=commission_value
         )
@@ -82,5 +130,3 @@ def update_performance_metrics(db: Session, professional_id: str, tenant_id: str
         perf.total_services += 1
         perf.total_revenue = Decimal(str(perf.total_revenue)) + service_value
         perf.total_commission = Decimal(str(perf.total_commission)) + commission_value
-        # We can also count distinct customers if we query the commissions table, 
-        # but for pre-calculated speed we keep it simple here.

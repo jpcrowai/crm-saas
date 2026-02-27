@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getSubscriptions, getPlans, getCustomers, createSubscription, updateSubscriptionStatus, uploadSubscriptionContract, API_URL } from '../services/api';
+import { getSubscriptions, getPlans, getCustomers, createSubscription, updateSubscriptionStatus, uploadSubscriptionContract, API_URL, getProfessionals } from '../services/api';
 import { Plus, Search, CreditCard, User, Package, Calendar, MoreVertical, XCircle, CheckCircle2, AlertCircle, FileText, Settings, Upload } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
@@ -7,19 +7,21 @@ const Subscriptions = () => {
     const [subscriptions, setSubscriptions] = useState([]);
     const [plans, setPlans] = useState([]);
     const [customers, setCustomers] = useState([]);
+    const [professionals, setProfessionals] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [newSub, setNewSub] = useState({ customer_id: '', plan_id: '' });
+    const [newSub, setNewSub] = useState({ customer_id: '', plan_id: '', professional_id: '' });
     const [manageSub, setManageSub] = useState(null);
 
     useEffect(() => { loadData(); }, []);
 
     const loadData = async () => {
         try {
-            const [sRes, pRes, cRes] = await Promise.all([getSubscriptions(), getPlans(), getCustomers()]);
+            const [sRes, pRes, cRes, proRes] = await Promise.all([getSubscriptions(), getPlans(), getCustomers(), getProfessionals()]);
             const sData = Array.isArray(sRes.data) ? sRes.data : [];
             const pData = Array.isArray(pRes.data) ? pRes.data : [];
             const cData = Array.isArray(cRes.data) ? cRes.data : [];
+            const proData = Array.isArray(proRes.data) ? proRes.data : [];
 
             // Map names for the UI
             const mappedSubs = sData.map(s => {
@@ -36,6 +38,7 @@ const Subscriptions = () => {
             setSubscriptions(mappedSubs);
             setPlans(pData);
             setCustomers(cData);
+            setProfessionals(proData);
         } catch (e) {
             console.error("Erro ao carregar dados:", e);
             setSubscriptions([]);
@@ -70,6 +73,7 @@ const Subscriptions = () => {
             const payload = {
                 customer_id: newSub.customer_id,
                 plano_id: newSub.plan_id,
+                professional_id: newSub.professional_id,
                 data_inicio: startDate.toISOString().split('T')[0],
                 data_fim: endDate.toISOString().split('T')[0],
                 periodicidade: plan.periodicity || plan.periodicidade || 'mensal',
@@ -86,7 +90,7 @@ const Subscriptions = () => {
 
             await createSubscription(payload);
             setShowForm(false);
-            setNewSub({ customer_id: '', plan_id: '', duration_months: 12 });
+            setNewSub({ customer_id: '', plan_id: '', professional_id: '', duration_months: 12 });
             loadData();
         } catch (e) {
             console.error(e);
@@ -160,6 +164,7 @@ const Subscriptions = () => {
                             <tr>
                                 <th>Titular da Conta</th>
                                 <th>Plano Contratado</th>
+                                <th>Profissional</th>
                                 <th>Status</th>
                                 <th>Vencimento</th>
                                 <th style={{ textAlign: 'right' }}>Valor Mensal</th>
@@ -181,6 +186,12 @@ const Subscriptions = () => {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             <Package size={14} color="var(--gold-600)" />
                                             <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.plan_name}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <User size={14} color="var(--primary)" />
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.professional_name || 'Não definido'}</span>
                                         </div>
                                     </td>
                                     <td>{getStatusBadge(s.status)}</td>
@@ -231,6 +242,13 @@ const Subscriptions = () => {
                                 <select className="input-premium" value={newSub.plan_id} onChange={e => setNewSub({ ...newSub, plan_id: e.target.value })} required>
                                     <option value="">Escolha um plano...</option>
                                     {plans.map(p => <option key={p.id} value={p.id}>{p.nome || p.name} - R$ {p.valor_base || p.price}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Profissional Responsável</label>
+                                <select className="input-premium" value={newSub.professional_id} onChange={e => setNewSub({ ...newSub, professional_id: e.target.value })}>
+                                    <option value="">Nenhum (Venda Direta)</option>
+                                    {professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
                             </div>
                             <div className="form-group">

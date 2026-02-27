@@ -16,14 +16,14 @@ const SupplierView = ({ dateRange }) => {
 
     const kpis = [
         <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--primary)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: 'var(--navy-900)', color: 'white' }}><DollarSign size={28} /></div>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)' }}><DollarSign size={28} /></div>
             <div className="indicator-data">
                 <label>Total Pago</label>
                 <p>R$ {totalPaid.toLocaleString('pt-BR')}</p>
             </div>
         </div>,
-        <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--warning)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: '#fffbeb', color: 'var(--warning)' }}><CreditCard size={28} /></div>
+        <div className="indicator-card-luxury" style={{ borderTopColor: '#f59e0b' }}>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}><CreditCard size={28} /></div>
             <div className="indicator-data">
                 <label>A Pagar</label>
                 <p>R$ {totalOpen.toLocaleString('pt-BR')}</p>

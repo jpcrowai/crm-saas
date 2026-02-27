@@ -104,16 +104,16 @@ const FinanceExtrato = () => {
                     <h1>Extrato Financeiro</h1>
                     <p>Gestão de fluxo de caixa e conciliação bancária</p>
                 </div>
-                <div className="page-header-actions">
+                <div className="page-header-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexDirection: 'row' }}>
                     <Link to="/finances/settings">
-                        <button className="btn-secondary" style={{ width: '100%', height: '100%', minHeight: '42px' }}>
+                        <button className="btn-secondary" style={{ height: '42px', padding: '0 1rem' }}>
                             <Settings size={20} />
                         </button>
                     </Link>
-                    <button className="btn-primary" onClick={handleExport}>
+                    <button className="btn-primary" style={{ height: '42px' }} onClick={handleExport}>
                         <Download size={18} /> Exportar
                     </button>
-                    <button className="btn-primary" onClick={() => setShowWizard(true)}>
+                    <button className="btn-primary" style={{ height: '42px' }} onClick={() => setShowWizard(true)}>
                         <Plus size={20} /> Novo
                     </button>
                 </div>

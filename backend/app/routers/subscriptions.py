@@ -20,6 +20,8 @@ from app.models.sql_models import (
     Product as SQLProduct
 )
 from app.services import storage_service
+from app.services.commission_service import calculate_commission_from_subscription
+from decimal import Decimal
 
 router = APIRouter(prefix="/tenant", tags=["subscriptions"])
 
@@ -57,6 +59,7 @@ class SubscriptionSchema(BaseModel):
     id: Optional[str] = None
     customer_id: str
     plano_id: str
+    professional_id: Optional[str] = None
     data_inicio: str
     data_fim: Optional[str] = None
     status: str = "Pendente Assinatura"
@@ -65,6 +68,7 @@ class SubscriptionSchema(BaseModel):
     itens: List[SubscriptionItemSchema] = []
     contrato_pdf: Optional[str] = None
     created_at: Optional[datetime] = None
+    professional_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -188,6 +192,8 @@ async def get_subscriptions(current_user: TokenData = Depends(get_current_tenant
             "id": str(s.id),
             "customer_id": str(s.customer_id),
             "plano_id": str(s.plan_id),
+            "professional_id": str(s.professional_id) if s.professional_id else None,
+            "professional_name": s.professional.name if s.professional else None,
             "data_inicio": s.start_date.isoformat(),
             "data_fim": s.next_billing_date.isoformat() if s.next_billing_date else None,
             "status": s.status,
@@ -215,6 +221,7 @@ async def create_subscription(sub_in: SubscriptionSchema, current_user: TokenDat
         tenant_id=current_user.tenant_id,
         customer_id=sub_in.customer_id,
         plan_id=sub_in.plano_id,
+        professional_id=sub_in.professional_id,
         status="Pendente Assinatura",
         start_date=start_date,
         next_billing_date=next_billing,
@@ -229,6 +236,7 @@ async def create_subscription(sub_in: SubscriptionSchema, current_user: TokenDat
     new_sub.contract_url = pdf_url
     
     db.add(new_sub)
+    db.flush()  # Flush so sub_id is available for commission FK
     
     # Future finance entries
     num_installments = 1 # Simple default
@@ -244,7 +252,17 @@ async def create_subscription(sub_in: SubscriptionSchema, current_user: TokenDat
             status="pendente",
             origin="assinatura"
         ))
-        
+
+    # Calculate commission for the professional if one was linked
+    if sub_in.professional_id:
+        calculate_commission_from_subscription(
+            db=db,
+            subscription_id=str(sub_id),
+            professional_id=sub_in.professional_id,
+            tenant_id=str(current_user.tenant_id),
+            subscription_value=Decimal(str(sub_in.valor_total))
+        )
+
     db.commit()
     return {"id": str(sub_id), "contract_url": pdf_url}
 

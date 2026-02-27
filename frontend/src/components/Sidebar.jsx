@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon, DollarSign, Activity, Settings, Package, Layers, FileText, Shield, Building, ChevronDown, Percent
+  LayoutDashboard, ChevronLeft, ChevronRight, LogOut, Briefcase, Users, Calendar as CalendarIcon,
+  DollarSign, Activity, Settings, Package, Layers, FileText, Shield, Building, ChevronDown,
+  Percent, UserCheck, ShoppingBag, Truck
 } from 'lucide-react';
 import '../styles/sidebar.css';
 import { useAuth } from '../context/AuthContext';
@@ -10,10 +12,7 @@ import logoFull from '../assets/branding/logo_full.png';
 import logoIcon from '../assets/branding/logo_icon.png';
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
-  const [servicesOpen, setServicesOpen] = React.useState(false);
-  const [financesOpen, setFinancesOpen] = React.useState(false);
-  const [clientsOpen, setClientsOpen] = React.useState(false);
-  const [accessOpen, setAccessOpen] = React.useState(false);
+  const [openGroups, setOpenGroups] = React.useState({});
   const [isTablet, setIsTablet] = React.useState(window.innerWidth <= 1024);
 
   const location = useLocation();
@@ -55,7 +54,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     // 1. MASTER GLOBAL VIEW (Not inside a specific company)
     allMenuItems = [
       { label: 'Painel Master', icon: <Shield size={20} />, path: '/' },
-      { label: 'Gerir Nichos', icon: <Layers size={20} />, path: '/niches' },
       { label: 'Minha Conta', icon: <Settings size={20} />, path: '/profile' }
     ];
   } else {
@@ -70,7 +68,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       }] : []),
       { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/', module: 'dashboard' },
       {
-        label: 'Vendas/CRM',
+        label: 'Vendas / CRM',
         icon: <Briefcase size={20} />,
         isGroup: true,
         subItems: [
@@ -80,13 +78,20 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       },
       { label: 'Agenda & Compromissos', icon: <CalendarIcon size={20} />, path: '/calendar', module: 'agenda' },
       {
-        label: 'Gestão de Serviços',
-        icon: <Package size={20} />,
+        label: 'Equipe & Operações',
+        icon: <UserCheck size={20} />,
         isGroup: true,
         subItems: [
-          { label: 'Profissionais (Equipe)', icon: <Users size={18} />, path: '/professionals', module: 'equipe' },
+          { label: 'Profissionais', icon: <Users size={18} />, path: '/professionals', module: 'equipe' },
           { label: 'Comissões', icon: <Percent size={18} />, path: '/commissions', module: 'equipe' },
-          { label: 'Fornecedores', icon: <Building size={18} />, path: '/suppliers', module: 'equipe' },
+          { label: 'Fornecedores', icon: <Truck size={18} />, path: '/suppliers', module: 'fornecedores' },
+        ]
+      },
+      {
+        label: 'Produtos & Assinaturas',
+        icon: <ShoppingBag size={20} />,
+        isGroup: true,
+        subItems: [
           { label: 'Catálogo de Produtos', icon: <Package size={18} />, path: '/products', module: 'produtos' },
           { label: 'Gestão de Planos', icon: <Layers size={18} />, path: '/plans', module: 'assinaturas' },
           { label: 'Assinaturas Ativas', icon: <FileText size={18} />, path: '/subscriptions', module: 'assinaturas' },
@@ -183,21 +188,18 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         {menuItems.map((item) => {
           if (item.isGroup) {
             const isAnySubActive = item.subItems.some(sub => location.pathname === sub.path);
-            const visibleSubItems = item.subItems.filter(sub => (user?.modulos_habilitados || []).includes(sub.module));
+            const visibleSubItems = isMaster
+              ? item.subItems
+              : item.subItems.filter(sub => !sub.module || (user?.modulos_habilitados || []).includes(sub.module));
 
-            // Map group toggle state
-            let isOpen = false;
-            let setOpen = () => { };
-            if (item.label === 'Gestão de Serviços') { isOpen = servicesOpen; setOpen = setServicesOpen; }
-            else if (item.label === 'Gestão Financeira') { isOpen = financesOpen; setOpen = setFinancesOpen; }
-            else if (item.label === 'Vendas/CRM') { isOpen = clientsOpen; setOpen = setClientsOpen; }
-            else if (item.label === 'Configurações') { isOpen = accessOpen; setOpen = setAccessOpen; }
+            const isOpen = !!openGroups[item.label] || isAnySubActive;
+            const toggleOpen = () => setOpenGroups(prev => ({ ...prev, [item.label]: !prev[item.label] }));
 
             return (
-              <div key={item.label} className={`nav-group ${isOpen || isAnySubActive ? 'open' : ''}`}>
+              <div key={item.label} className={`nav-group ${isOpen ? 'open' : ''}`}>
                 <button
                   className={`nav-item group-toggle ${isAnySubActive ? 'active' : ''}`}
-                  onClick={() => setOpen(!isOpen)}
+                  onClick={toggleOpen}
                 >
                   <span className="icon">{item.icon}</span>
                   {!collapsed && (
@@ -207,7 +209,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                     </>
                   )}
                 </button>
-                {(isOpen || isAnySubActive) && !collapsed && (
+                {isOpen && !collapsed && (
                   <div className="sub-menu">
                     {visibleSubItems.map(sub => (
                       <Link

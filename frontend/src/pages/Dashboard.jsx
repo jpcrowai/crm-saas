@@ -38,21 +38,21 @@ const MasterAdminView = () => {
 
       <div className="indicator-grid">
         <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--primary)' }}>
-          <div className="indicator-icon-wrapper" style={{ background: 'var(--gold-50)', color: 'var(--gold-600)' }}><Users size={28} /></div>
+          <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)' }}><Users size={28} /></div>
           <div className="indicator-data">
             <label>Contas de Usuário</label>
             <p>{stats.user_count}</p>
           </div>
         </div>
         <div className="indicator-card-luxury" style={{ borderTopColor: stats.payment_status === 'em dia' ? 'var(--success)' : 'var(--error)' }}>
-          <div className="indicator-icon-wrapper" style={{ background: '#f8fafc', color: 'var(--navy-900)' }}><CreditCard size={28} /></div>
+          <div className="indicator-icon-wrapper" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'white' }}><CreditCard size={28} /></div>
           <div className="indicator-data">
             <label>Status Financeiro</label>
             <p style={{ textTransform: 'uppercase', fontSize: '1.2rem' }}>{stats.payment_status}</p>
           </div>
         </div>
         <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--navy-700)' }}>
-          <div className="indicator-icon-wrapper" style={{ background: '#f1f5f9', color: 'var(--navy-800)' }}><Shield size={28} /></div>
+          <div className="indicator-icon-wrapper" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'white' }}><Shield size={28} /></div>
           <div className="indicator-data">
             <label>Administrador Responsável</label>
             <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{stats.admin_email}</p>
@@ -109,22 +109,22 @@ const ClientDashboard = () => {
 
   // KPI CARDS DEFINITIONS
   const generalKpis = stats ? [
-    <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--navy-900)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: 'var(--navy-950)', color: 'white' }}><Users size={28} /></div>
+    <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--navy-600)' }}>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'white' }}><Users size={28} /></div>
       <div className="indicator-data">
         <label>Total de Leads</label>
         <p>{stats.total_leads}</p>
       </div>
     </div>,
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--primary)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: 'var(--gold-50)', color: 'var(--gold-600)' }}><DollarSign size={28} /></div>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)' }}><DollarSign size={28} /></div>
       <div className="indicator-data">
         <label>Receita Bruta</label>
         <p>R$ {stats.total_revenue.toLocaleString('pt-BR')}</p>
       </div>
     </div>,
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: '#ecfdf5', color: 'var(--success)' }}><TrendingUp size={28} /></div>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}><TrendingUp size={28} /></div>
       <div className="indicator-data">
         <label>Taxa de Conversão</label>
         <p>{stats.conversion_rate}%</p>
@@ -138,21 +138,21 @@ const ClientDashboard = () => {
 
   const financeKpis = reportData ? [
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--primary)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: 'var(--gold-50)', color: 'var(--gold-600)' }}><Target size={28} /></div>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)' }}><Target size={28} /></div>
       <div className="indicator-data">
         <label>ROI Médio / Lead</label>
         <p>R$ {(reportData.total_revenue / (reportData.total_leads || 1)).toFixed(2)}</p>
       </div>
     </div>,
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: '#ecfdf5', color: 'var(--success)' }}><TrendingUp size={28} /></div>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}><TrendingUp size={28} /></div>
       <div className="indicator-data">
         <label>Receita Líquida</label>
         <p>R$ {(reportData.total_revenue - reportData.total_expenses).toLocaleString('pt-BR')}</p>
       </div>
     </div>,
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--error)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: '#fef2f2', color: 'var(--error)' }}><CreditCard size={28} /></div>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}><CreditCard size={28} /></div>
       <div className="indicator-data">
         <label>Despesas Totais</label>
         <p>R$ {reportData.total_expenses.toLocaleString('pt-BR')}</p>
@@ -202,12 +202,12 @@ const ClientDashboard = () => {
               </div>
               <div style={{ padding: '1.5rem' }}>
                 <div style={{ height: '300px', width: '100%' }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                     <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '0.75rem' }} />
-                      <YAxis axisLine={false} tickLine={false} style={{ fontSize: '0.75rem' }} />
-                      <Tooltip cursor={{ fill: 'rgba(212, 175, 55, 0.05)' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '0.75rem' }} stroke="rgba(255,255,255,0.4)" />
+                      <YAxis axisLine={false} tickLine={false} style={{ fontSize: '0.75rem' }} stroke="rgba(255,255,255,0.4)" />
+                      <Tooltip cursor={{ fill: 'rgba(212, 175, 55, 0.05)' }} contentStyle={{ borderRadius: '12px', background: 'var(--navy-900)', border: '1px solid rgba(255,255,255,0.1)' }} />
                       <Bar dataKey="leads" fill="var(--gold-500)" radius={[4, 4, 0, 0]} barSize={30} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -220,16 +220,16 @@ const ClientDashboard = () => {
               </div>
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {stats ? stats.recent_leads.slice(0, 5).map((lead) => (
-                  <div key={lead.id} className="list-row-hover" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '10px' }}>
-                    <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--navy-900)', color: 'white', fontSize: '0.75rem' }}>
-                      {lead.name.charAt(0)}
+                  <div key={lead.id} className="list-row-hover" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--grad-gold)', color: 'var(--navy-950)', fontSize: '0.75rem', fontWeight: 800 }}>
+                      {lead.name.charAt(0).toUpperCase()}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: '0.85rem', fontWeight: 700 }}>{lead.name}</p>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{lead.email}</p>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--white)' }}>{lead.name}</p>
+                      <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.8)' }}>{lead.email}</p>
                     </div>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.25rem 0.5rem', borderRadius: '4px', background: lead.funil_stage === 'converted' ? '#dcfce7' : '#f1f5f9', color: lead.funil_stage === 'converted' ? '#166534' : '#64748b' }}>
-                      {lead.funil_stage}
+                    <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.35rem 0.6rem', borderRadius: '6px', background: lead.funil_stage === 'converted' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.1)', color: lead.funil_stage === 'converted' ? '#34d399' : '#cbd5e1' }}>
+                      {lead.funil_stage?.toUpperCase()}
                     </span>
                   </div>
                 )) : (
@@ -269,14 +269,14 @@ const ClientDashboard = () => {
               </div>
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {reportData ? reportData.customer_ranking?.slice(0, 5).map((c, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: idx === 0 ? 'var(--gold-50)' : '#f8fafc', borderRadius: '10px', border: idx === 0 ? '1px solid var(--gold-400)' : 'none' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: idx === 0 ? 'var(--grad-gold)' : 'var(--navy-900)', color: idx === 0 ? 'var(--navy-950)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: idx === 0 ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255,255,255,0.03)', borderRadius: '10px', border: idx === 0 ? '1px solid var(--gold-500)' : '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: idx === 0 ? 'var(--grad-gold)' : 'rgba(255,255,255,0.1)', color: idx === 0 ? 'var(--navy-950)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
                       {idx + 1}
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: '0.85rem', fontWeight: 700 }}>{c.customer_name}</p>
                     </div>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 800 }}>R$ {c.total_revenue.toLocaleString('pt-BR')}</p>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 800, color: idx === 0 ? 'var(--gold-400)' : 'white' }}>R$ {c.total_revenue.toLocaleString('pt-BR')}</p>
                   </div>
                 )) : (
                   [1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton" style={{ height: '50px', borderRadius: '10px' }}></div>)

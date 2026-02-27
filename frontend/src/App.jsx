@@ -4,7 +4,6 @@ import MainLayout from './layouts/MainLayout'
 import Login from './pages/Login/Login'
 import Dashboard from './pages/Dashboard'
 import MasterAmbientes from './pages/MasterAmbientes'
-import MatcherAmbientes from './pages/MasterAmbientes'
 import Profile from './pages/Profile'
 import Pipeline from './pages/Pipeline'
 import Customers from './pages/Customers'
@@ -93,7 +92,7 @@ function App() {
         } />
         <Route path="/suppliers" element={
           <PrivateRoute>
-            <ModuleRoute module="equipe">
+            <ModuleRoute module="fornecedores">
               <Suppliers />
             </ModuleRoute>
           </PrivateRoute>

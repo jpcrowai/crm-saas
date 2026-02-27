@@ -1,44 +1,64 @@
-import React, { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import React, { useState } from 'react';
 import { getItems, createItem, deleteItem, updateItem, exportItems, importItems } from '../services/api';
+import { useDataCache } from '../hooks/useDataCache';
+import { useOptimistic } from '../hooks/useOptimistic';
+import { showToast } from '../components/Toast';
 import { Plus, Search, ShoppingBag, Package, Trash2, DollarSign, XCircle, Settings, Upload, Download, Tag, Edit3 } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
 const generateSku = () => 'ITEM-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
 const ProductCatalog = () => {
-    const [items, setItems] = useState([]);
+    const { data: items, loading, mutate } = useDataCache('products', getItems);
+    const optimistic = useOptimistic(mutate);
     const [searchTerm, setSearchTerm] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [newItem, setNewItem] = useState({ sku: '', name: '', description: '', price: 0, category: 'Service' });
 
-    useEffect(() => { loadItems(); }, []);
-
-    const loadItems = async () => {
-        try {
-            const res = await getItems();
-            setItems(res.data);
-        } catch (e) { console.error(e); }
-    };
-
     const handleCreate = async (e) => {
         e.preventDefault();
-        try {
-            if (editingItem) await updateItem(editingItem.id, newItem);
-            else await createItem(newItem);
-            setShowForm(false);
-            setEditingItem(null);
+        if (editingItem) {
+            // Update — optimistic
+            const id = editingItem.id;
+            const updated = { ...newItem };
+            setShowForm(false); setEditingItem(null);
             setNewItem({ sku: '', name: '', description: '', price: 0, category: 'Service' });
-            loadItems();
-            toast.success("Item salvo com sucesso!");
-        } catch (e) { toast.error("Erro ao salvar item"); }
+            await optimistic(
+                prev => prev.map(i => i.id === id ? { ...i, ...updated } : i),
+                async () => { await updateItem(id, updated); showToast('Item atualizado!', 'success'); },
+                { errorMessage: 'Erro ao atualizar item. Ação revertida.' }
+            );
+        } else {
+            // Create — optimistic
+            const tempId = `temp_${Date.now()}`;
+            const tempItem = { ...newItem, id: tempId, _pending: true };
+            setShowForm(false);
+            setNewItem({ sku: '', name: '', description: '', price: 0, category: 'Service' });
+            await optimistic(
+                prev => [...(prev || []), tempItem],
+                async () => {
+                    const res = await createItem(newItem);
+                    mutate(prev => prev.map(i => i.id === tempId ? { ...res.data, _pending: false } : i));
+                    showToast('Item adicionado ao catálogo!', 'success');
+                },
+                { errorMessage: 'Erro ao criar item. Ação revertida.' }
+            );
+        }
     };
 
     const handleEdit = (item) => {
         setEditingItem(item);
         setNewItem({ sku: item.sku || generateSku(), name: item.name, description: item.description, price: item.price, category: item.category });
         setShowForm(true);
+    };
+
+    const handleDelete = async (id) => {
+        await optimistic(
+            prev => prev.filter(i => i.id !== id),
+            () => deleteItem(id),
+            { errorMessage: 'Erro ao remover item. Ação revertida.' }
+        );
     };
 
     const handleExport = async () => {
@@ -50,7 +70,7 @@ const ProductCatalog = () => {
             link.setAttribute('download', 'catalogo_produtos.xlsx');
             document.body.appendChild(link);
             link.click();
-        } catch (e) { toast.error("Erro ao exportar"); }
+        } catch (e) { showToast('Erro ao exportar', 'error'); }
     };
 
     const handleImport = async (e) => {
@@ -60,9 +80,10 @@ const ProductCatalog = () => {
         formData.append('file', file);
         try {
             await importItems(formData);
-            toast.success("Catálogo atualizado com sucesso via Excel!");
-            loadItems();
-        } catch (e) { toast.error("Erro na importação: Verifique as colunas do arquivo."); }
+            showToast('Catálogo atualizado via Excel!', 'success');
+            // Force full refetch from server
+            mutate(null);
+        } catch (e) { showToast('Erro na importação: Verifique as colunas do arquivo.', 'error'); }
     };
 
     const filtered = items.filter(i => (i.name || '').toLowerCase().includes(searchTerm.toLowerCase()));
@@ -134,7 +155,7 @@ const ProductCatalog = () => {
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                             <button className="btn-action-luxury" onClick={() => handleEdit(i)}><Edit3 size={16} /></button>
-                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => deleteItem(i.id).then(loadItems)}><Trash2 size={16} /></button>
+                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => handleDelete(i.id)}><Trash2 size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>

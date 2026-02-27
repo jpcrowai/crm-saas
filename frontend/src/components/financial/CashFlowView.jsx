@@ -17,24 +17,24 @@ const CashFlowView = ({ dateRange }) => {
 
     const kpis = [
         <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: '#ecfdf5', color: 'var(--success)' }}><ArrowUpCircle size={28} /></div>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}><ArrowUpCircle size={28} /></div>
             <div className="indicator-data">
                 <label>Entradas</label>
                 <p>R$ {totalIncome.toLocaleString('pt-BR')}</p>
             </div>
         </div>,
         <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--error)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: '#fef2f2', color: 'var(--error)' }}><ArrowDownCircle size={28} /></div>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}><ArrowDownCircle size={28} /></div>
             <div className="indicator-data">
                 <label>Saídas</label>
                 <p>R$ {totalExpense.toLocaleString('pt-BR')}</p>
             </div>
         </div>,
         <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--primary)' }}>
-            <div className="indicator-icon-wrapper" style={{ background: 'var(--navy-900)', color: 'white' }}><TrendingUp size={28} /></div>
+            <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)' }}><TrendingUp size={28} /></div>
             <div className="indicator-data">
                 <label>Saldo Líquido</label>
-                <p style={{ color: net >= 0 ? 'var(--navy-950)' : 'var(--error)' }}>R$ {net.toLocaleString('pt-BR')}</p>
+                <p style={{ color: net >= 0 ? 'var(--success)' : 'var(--error)' }}>R$ {net.toLocaleString('pt-BR')}</p>
             </div>
         </div>
     ];

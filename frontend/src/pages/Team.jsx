@@ -1,17 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { getTeam, createTeamMember, updateTeamMember, deleteTeamMember } from '../services/api';
+import { useDataCache } from '../hooks/useDataCache';
+import { useOptimistic } from '../hooks/useOptimistic';
+import { showToast } from '../components/Toast';
 import { Plus, User, Shield, Mail, Trash2, XCircle, Users, Settings, Briefcase, Edit, Lock } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
 const AVAILABLE_MODULES = [
-    { id: 'leads_pipeline', name: 'Pipeline de Vendas', icon: '🎯' },
+    { id: 'dashboard', name: 'Dashboard & Relatórios', icon: '📊' },
+    { id: 'leads_pipeline', name: 'Pipeline / CRM', icon: '🎯' },
+    { id: 'agenda', name: 'Agenda & Compromissos', icon: '📅' },
     { id: 'clientes', name: 'Clientes', icon: '👥' },
-    { id: 'financeiro', name: 'Financeiro', icon: '💰' },
+    { id: 'equipe', name: 'Profissionais & Comissões', icon: '👨‍💼' },
+    { id: 'fornecedores', name: 'Fornecedores', icon: '🏭' },
+    { id: 'financeiro', name: 'Financeiro (Caixa)', icon: '💰' },
     { id: 'produtos', name: 'Catálogo de Produtos', icon: '📦' },
-    { id: 'agenda', name: 'Agenda & Eventos', icon: '📅' },
-    { id: 'dashboard', name: 'Relatórios & Insights', icon: '📊' },
-    { id: 'equipe', name: 'Gestão de Equipe & Fornecedores', icon: '👨‍💼' },
-    { id: 'assinaturas', name: 'Assinaturas & Planos', icon: '🔄' }
+    { id: 'assinaturas', name: 'Planos & Assinaturas', icon: '🔄' },
 ];
 
 const ROLE_OPTIONS = [
@@ -23,25 +27,13 @@ const ROLE_OPTIONS = [
 ];
 
 const Team = () => {
-    const [team, setTeam] = useState([]);
+    const { data: team, mutate } = useDataCache('team', getTeam);
+    const optimistic = useOptimistic(mutate);
     const [showForm, setShowForm] = useState(false);
     const [editingMember, setEditingMember] = useState(null);
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        role: 'vendedor',
-        password: '',
-        modules_allowed: []
+        name: '', email: '', role: 'vendedor', password: '', modules_allowed: []
     });
-
-    useEffect(() => { loadData(); }, []);
-
-    const loadData = async () => {
-        try {
-            const res = await getTeam();
-            setTeam(res.data);
-        } catch (e) { console.error(e); }
-    };
 
     const openCreateForm = () => {
         setEditingMember(null);
@@ -63,34 +55,32 @@ const Team = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            // Auto-assign modules based on role if not custom
-            let finalModules = formData.modules_allowed;
+        let finalModules = formData.modules_allowed;
+        if (formData.role === 'admin') finalModules = AVAILABLE_MODULES.map(m => m.id);
+        else if (formData.role === 'financeiro') finalModules = ['financeiro', 'dashboard', 'clientes', 'assinaturas'];
+        else if (formData.role === 'vendedor') finalModules = ['leads_pipeline', 'clientes', 'agenda', 'dashboard'];
+        else if (formData.role === 'operacional') finalModules = ['agenda', 'produtos', 'clientes', 'equipe'];
 
-            if (formData.role === 'admin') {
-                finalModules = AVAILABLE_MODULES.map(m => m.id);
-            } else if (formData.role === 'financeiro') {
-                finalModules = ['financeiro', 'dashboard', 'clientes'];
-            } else if (formData.role === 'vendedor') {
-                finalModules = ['leads_pipeline', 'clientes', 'agenda'];
-            } else if (formData.role === 'operacional') {
-                finalModules = ['agenda', 'produtos', 'clientes'];
-            }
+        const payload = { ...formData, modules_allowed: finalModules };
+        const isEditing = !!editingMember;
+        const editId = editingMember?.id;
+        setShowForm(false);
+        setFormData({ name: '', email: '', role: 'vendedor', password: '', modules_allowed: [] });
+        setEditingMember(null);
 
-            const payload = { ...formData, modules_allowed: finalModules };
-
-            if (editingMember) {
-                await updateTeamMember(editingMember.id, payload);
-            } else {
-                await createTeamMember(payload);
-            }
-
-            setShowForm(false);
-            setFormData({ name: '', email: '', role: 'vendedor', password: '', modules_allowed: [] });
-            loadData();
-        } catch (e) {
-            alert(editingMember ? "Erro ao atualizar membro" : "Erro ao cadastrar membro");
-        }
+        await optimistic(
+            prev => isEditing
+                ? (prev || []).map(m => m.id === editId ? { ...m, ...payload } : m)
+                : [...(prev || []), { ...payload, id: `temp_${Date.now()}`, _pending: true }],
+            async () => {
+                if (isEditing) await updateTeamMember(editId, payload);
+                else await createTeamMember(payload);
+                showToast(isEditing ? 'Membro atualizado!' : 'Acesso liberado com sucesso!', 'success');
+                // Sync real IDs
+                mutate(null);
+            },
+            { errorMessage: isEditing ? 'Erro ao atualizar membro.' : 'Erro ao cadastrar membro.' }
+        );
     };
 
     const toggleModule = (moduleId) => {
@@ -174,7 +164,11 @@ const Team = () => {
                                             <button className="btn-action-luxury" onClick={() => openEditForm(member)} title="Editar Permissões">
                                                 <Edit size={16} color="var(--primary)" />
                                             </button>
-                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => deleteTeamMember(member.id).then(loadData)} title="Remover Acesso">
+                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => optimistic(
+                                                prev => (prev || []).filter(m => m.id !== member.id),
+                                                () => deleteTeamMember(member.id),
+                                                { errorMessage: 'Erro ao remover membro. Revertido.' }
+                                            )} title="Remover Acesso">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>

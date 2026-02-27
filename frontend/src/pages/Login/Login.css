@@ -5,8 +5,15 @@
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at top right, #1e293b, #020617);
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
   font-family: 'Outfit', sans-serif;
+  overflow-y: auto;
+}
+
+@media (max-height: 700px) {
+  .auth-page {
+    align-items: flex-start;
+  }
 }
 
 .auth-card-luxury {

@@ -283,6 +283,7 @@ label {
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-md);
+  color: var(--navy-900);
 }
 
 .card-dark {

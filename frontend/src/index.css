@@ -35,6 +35,7 @@
 /* --- TEMA DARK LUXURY OVERRIDES --- */
 .card-dark {
   background: var(--navy-900) !important;
+  color: var(--white) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
 }

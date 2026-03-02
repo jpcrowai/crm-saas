@@ -186,19 +186,19 @@ const FinanceExtrato = () => {
                                     <td>
                                         {entry.tipo === 'receita' ? <ArrowUpCircle size={18} color="var(--success)" /> : <ArrowDownCircle size={18} color="var(--error)" />}
                                     </td>
-                                    <td style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--navy-700)' }}>
+                                    <td style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--white)' }}>
                                         {new Date(entry.data_vencimento).toLocaleDateString('pt-BR')}
                                     </td>
                                     <td>
                                         <div>
-                                            <p style={{ fontWeight: 700, color: 'var(--navy-900)', fontSize: '0.9rem' }}>{entry.descricao}</p>
-                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>via {entry.origem}</p>
+                                            <p style={{ fontWeight: 700, color: 'var(--white)', fontSize: '0.9rem' }}>{entry.descricao}</p>
+                                            <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>via {entry.origem}</p>
                                         </div>
                                     </td>
                                     <td>
                                         <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.5rem', borderRadius: '4px', background: '#f1f5f9', color: '#64748b' }}>{entry.categoria_nome || 'Livre'}</span>
                                     </td>
-                                    <td style={{ textAlign: 'right', fontWeight: 800, color: entry.tipo === 'receita' ? 'var(--navy-900)' : 'var(--error)' }}>
+                                    <td style={{ textAlign: 'right', fontWeight: 800, color: entry.tipo === 'receita' ? 'var(--success)' : 'var(--error)' }}>
                                         {entry.tipo === 'despesa' ? '-' : ''} R$ {entry.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </td>
                                     <td>{getStatusBadge(entry.status)}</td>

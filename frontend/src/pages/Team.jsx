@@ -126,7 +126,7 @@ const Team = () => {
 
             <div className="data-card-luxury">
                 <div className="data-card-header">
-                    <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--navy-900)' }}>Membros Ativos ({team.length})</h3>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)' }}>Membros Ativos ({team.length})</h3>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                     <table className="table-luxury">
@@ -147,7 +147,7 @@ const Team = () => {
                                             <div className="indicator-icon-wrapper" style={{ width: 36, height: 36, background: 'var(--navy-900)', color: 'white', fontSize: '0.8rem', fontWeight: 800 }}>
                                                 {(member.name || 'U').charAt(0)}
                                             </div>
-                                            <span style={{ fontWeight: 700, color: 'var(--navy-900)' }}>{member.name}</span>
+                                            <span style={{ fontWeight: 700, color: 'var(--white)' }}>{member.name}</span>
                                         </div>
                                     </td>
                                     <td><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>{member.email}</span></td>
@@ -247,7 +247,7 @@ const Team = () => {
                                                     onChange={() => toggleModule(module.id)}
                                                 />
                                                 <div className="selection-card-content">
-                                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--navy-900)' }}>{module.icon} {module.name}</span>
+                                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--white)' }}>{module.icon} {module.name}</span>
                                                 </div>
                                             </div>
                                         ))}

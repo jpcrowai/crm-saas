@@ -179,7 +179,7 @@ const Subscriptions = () => {
                                             <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--navy-900)', color: 'white', fontSize: '0.75rem', fontWeight: 800 }}>
                                                 {s.customer_name?.charAt(0)}
                                             </div>
-                                            <span style={{ fontWeight: 700, color: 'var(--navy-900)' }}>{s.customer_name}</span>
+                                            <span style={{ fontWeight: 700, color: 'var(--white)' }}>{s.customer_name}</span>
                                         </div>
                                     </td>
                                     <td>
@@ -288,7 +288,7 @@ const Subscriptions = () => {
                         </div>
                         <div style={{ padding: '2rem' }}>
                             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--navy-900)' }}>{manageSub.plan_name}</h3>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--white)' }}>{manageSub.plan_name}</h3>
                                 <p style={{ color: 'var(--text-muted)' }}>{manageSub.customer_name}</p>
                             </div>
 

@@ -97,7 +97,7 @@ const Customers = () => {
                                                 <div className="indicator-icon-wrapper" style={{ width: 36, height: 36, background: 'var(--navy-900)', color: 'white', fontSize: '0.8rem', fontWeight: 800 }}>
                                                     {(c.name || 'C').charAt(0)}
                                                 </div>
-                                                <span style={{ fontWeight: 700, color: 'var(--navy-900)' }}>
+                                                <span style={{ fontWeight: 700, color: 'var(--white)' }}>
                                                     {c.name}
                                                     {c._pending && <span style={{ fontSize: '0.65rem', marginLeft: '0.5rem', color: 'var(--text-muted)', fontWeight: 400 }}>salvando...</span>}
                                                 </span>

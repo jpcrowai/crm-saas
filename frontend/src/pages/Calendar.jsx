@@ -222,71 +222,157 @@ const AppointmentsCalendar = () => {
         return apptTime < new Date();
     };
 
+    const getWeekDays = (currentDate) => {
+        const days = [];
+        const startOfWeek = new Date(currentDate);
+        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay()); // Sunday
+
+        for (let i = 0; i < 7; i++) {
+            const day = new Date(startOfWeek);
+            day.setDate(startOfWeek.getDate() + i);
+            days.push(day);
+        }
+        return days;
+    };
+
+    const weekDays = getWeekDays(date);
+    const hours = Array.from({ length: 15 }, (_, i) => i + 8); // 08:00 to 22:00
+
+    const getApptPosition = (startTime, duration) => {
+        const dateObj = new Date(startTime);
+        const startHour = dateObj.getHours();
+        const startMinutes = dateObj.getMinutes();
+
+        // 1 hour = 60px. Baseline is 08:00
+        const top = ((startHour - 8) * 60) + startMinutes;
+        const height = duration; // 1 min = 1px
+        return { top, height };
+    };
+
     return (
         <div className="tenant-page-container">
             <header className="page-header-row">
                 <div className="page-title-group">
                     <h1>Agenda & Compromissos</h1>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem' }}>
-                        <p style={{ margin: 0 }}>Sincronização centralizada para sua produtividade</p>
+                        <p style={{ margin: 0 }}>Gestão profissional por especialista</p>
                         {user.role_global === 'master' && (
                             <button
                                 onClick={() => setShowGoogleConfig(true)}
                                 style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: 'var(--gold-500)', cursor: 'pointer', textDecoration: 'underline' }}
                             >
-                                Configurações de API (Master)
+                                Configurações API
                             </button>
                         )}
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    {!connectionInfo.connected ? (
-                        <button
-                            className="btn-primary"
-                            onClick={handleConnectGoogle}
-                            style={{ background: '#4285F4', border: 'none' }}
-                        >
-                            <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: '16px', marginRight: '8px', filter: 'brightness(10)' }} />
-                            Vincular com Conta Google
-                        </button>
-                    ) : (
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.75rem',
-                            padding: '0 1rem',
-                            background: 'rgba(5, 150, 105, 0.1)',
-                            borderRadius: '12px',
-                            border: '1px solid #10b981'
-                        }}>
-                            <CheckCircle2 size={18} color="#059669" />
-                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#059669' }}>Google Conectado</span>
-                        </div>
-                    )}
                     <button className="btn-primary" onClick={() => setShowModal(true)}>
                         <Plus size={20} /> Novo Agendamento
                     </button>
                 </div>
             </header>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                <div className="data-card-luxury" style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div className="data-card-header" style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--navy-900)' }}>Visão Geral do Mês</h3>
+            <div className="calendar-day-view">
+                {/* WEEK STRIP */}
+                <div className="calendar-week-strip" style={{ position: 'relative', marginTop: '2rem' }}>
+                    <div style={{ position: 'absolute', top: '-2.5rem', left: '0', fontSize: '1.2rem', fontWeight: 800, color: 'var(--white)' }}>
+                        {date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                     </div>
-                    <div style={{ padding: '1.5rem' }}>
-                        <Calendar
-                            onChange={handleDayClick}
-                            value={date}
-                            className="luxury-calendar-override big-calendar"
-                            tileClassName={({ date: tileDate }) => {
-                                const hasAppt = appointments.some(a => {
-                                    const apptDate = a.start_time || a.appointment_date;
-                                    return apptDate && new Date(apptDate).toDateString() === tileDate.toDateString();
-                                });
-                                return hasAppt ? 'has-appointment' : null;
-                            }}
-                        />
+                    {weekDays.map((d, i) => {
+                        const isActive = d.toDateString() === date.toDateString();
+                        const names = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+                        return (
+                            <div
+                                key={i}
+                                className={`week-strip-day ${isActive ? 'active' : ''}`}
+                                onClick={() => setDate(d)}
+                            >
+                                <span className="day-name">{names[d.getDay()]}</span>
+                                <span className="day-number">{d.getDate()}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* GRID CONTAINER */}
+                <div className="calendar-grid-container">
+                    {/* TIME AXIS */}
+                    <div className="time-axis">
+                        <div style={{ height: '80px' }}></div> {/* Spacer for Pro Header */}
+                        {hours.map(h => (
+                            <div key={h} className="time-slot-label">
+                                {String(h).padStart(2, '0')}:00
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* PROFESSIONAL COLUMNS */}
+                    <div className="professional-columns-container">
+                        {professionals.length === 0 ? (
+                            <div style={{ flex: 1, padding: '4rem', textAlign: 'center', opacity: 0.5 }}>
+                                <User size={48} style={{ margin: '0 auto 1rem' }} />
+                                <p>Nenhum profissional cadastrado para exibir na agenda.</p>
+                            </div>
+                        ) : professionals.map(pro => {
+                            const proAppts = dayAppointments.filter(a =>
+                                a.professional_id === pro.id || a.professional_name === pro.name
+                            );
+
+                            return (
+                                <div key={pro.id} className="pro-column">
+                                    <div className="pro-column-header">
+                                        {pro.photo_url ? (
+                                            <img src={pro.photo_url.startsWith('http') ? pro.photo_url : `${import.meta.env.VITE_API_URL || ''}${pro.photo_url}`} className="pro-avatar" alt="" />
+                                        ) : (
+                                            <div className="pro-avatar" style={{ background: 'var(--navy-900)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
+                                                {pro.name.charAt(0)}
+                                            </div>
+                                        )}
+                                        <span className="pro-name">{pro.name.split(' ')[0]}</span>
+                                    </div>
+
+                                    <div className="appointments-grid-area" onClick={() => {
+                                        setNewAppt({ ...newAppt, professional_id: pro.id });
+                                        setShowModal(true);
+                                    }}>
+                                        {hours.map(h => (
+                                            <div key={h} className="grid-hour-line" style={{ top: `${(h - 8) * 60}px` }}></div>
+                                        ))}
+
+                                        {proAppts.map(appt => {
+                                            const { top, height } = getApptPosition(appt.start_time || appt.appointment_date, appt.service_duration_minutes || 30);
+                                            const isPast = isPastAppointment(appt);
+
+                                            return (
+                                                <div
+                                                    key={appt.id}
+                                                    className="appointment-block"
+                                                    style={{
+                                                        top: `${top}px`,
+                                                        height: `${height}px`,
+                                                        opacity: isPast ? 0.6 : 1,
+                                                        background: appt.status === 'completed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(212, 175, 55, 0.2)',
+                                                        borderColor: appt.status === 'completed' ? '#10b981' : 'var(--gold-500)'
+                                                    }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDate(new Date(appt.start_time || appt.appointment_date));
+                                                        setShowDayModal(true);
+                                                    }}
+                                                >
+                                                    <span className="appt-customer">{appt.customer_name}</span>
+                                                    <span className="appt-time">
+                                                        {new Date(appt.start_time || appt.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                        {` - ${appt.title}`}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

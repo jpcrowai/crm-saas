@@ -622,3 +622,191 @@
     position: relative; /* Change to relative for dropdown */
     margin-left: auto;
 }
+
+/* Fix visibility of buttons inside cards */
+.data-card-item .btn-icon, 
+.data-card-item .btn-action-luxury {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    color: var(--gold-400) !important;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+}
+
+.data-card-item .btn-icon:hover, 
+.data-card-item .btn-action-luxury:hover {
+    background: var(--gold-500) !important;
+    color: var(--navy-950) !important;
+    border-color: var(--gold-500) !important;
+}
+
+/* --- PROFESSIONAL CALENDAR GRID --- */
+.calendar-day-view {
+    background: var(--bg-card);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-week-strip {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.week-strip-day {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.75rem 0.5rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.week-strip-day .day-name {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.week-strip-day .day-number {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--white);
+}
+
+.week-strip-day.active {
+    background: var(--gold-500);
+}
+
+.week-strip-day.active .day-name,
+.week-strip-day.active .day-number {
+    color: var(--navy-950);
+}
+
+.calendar-grid-container {
+    display: flex;
+    overflow-x: auto;
+    position: relative;
+}
+
+.time-axis {
+    width: 60px;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.4);
+    z-index: 10;
+}
+
+.time-slot-label {
+    height: 60px; /* 1 hour = 60px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.professional-columns-container {
+    display: flex;
+    flex: 1;
+}
+
+.pro-column {
+    min-width: 200px;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+}
+
+.pro-column-header {
+    height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.01);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.pro-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gold-500);
+}
+
+.pro-name {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--white);
+}
+
+.appointments-grid-area {
+    position: relative;
+    height: 840px; /* 14 hours * 60px = 840px (from 08:00 to 22:00) */
+}
+
+.grid-hour-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.03);
+    pointer-events: none;
+}
+
+.appointment-block {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    border-radius: 8px;
+    padding: 0.5rem;
+    font-size: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border-left: 3px solid var(--gold-500);
+    z-index: 1;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s;
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.appointment-block:hover {
+    transform: scale(1.02);
+    z-index: 2;
+}
+
+.appt-customer {
+    font-weight: 800;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.appt-time {
+    font-size: 0.6rem;
+    opacity: 0.7;
+    font-weight: 600;
+}
+

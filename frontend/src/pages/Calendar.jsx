@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
 import { getAppointments, createAppointment, getCustomers, getServices, getCustomerPlans, completeAppointment } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Video, MapPin, Clock, User, XCircle, Calendar as CalendarIcon, CheckCircle2, CheckCircle } from 'lucide-react';
@@ -41,6 +39,10 @@ const AppointmentsCalendar = () => {
         plan_id: ''
     });
 
+    const [selectedPros, setSelectedPros] = useState([]);
+    const [showProFilter, setShowProFilter] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+
     const { user } = useAuth();
 
     useEffect(() => {
@@ -72,6 +74,7 @@ const AppointmentsCalendar = () => {
             localStorage.setItem('cached_appointments', JSON.stringify(apptRes.data));
             setCustomers(custRes.data);
             setProfessionals(profRes.data);
+            setSelectedPros(profRes.data.map(p => p.id)); // Default: Select all
             setConnectionInfo(infoRes.data);
 
             if (infoRes.data.connected) {
@@ -249,36 +252,102 @@ const AppointmentsCalendar = () => {
         return { top, height };
     };
 
-    return (
-        <div className="tenant-page-container">
-            <header className="page-header-row">
-                <div className="page-title-group">
-                    <h1>Agenda & Compromissos</h1>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem' }}>
-                        <p style={{ margin: 0 }}>Gestão profissional por especialista</p>
-                        {user.role_global === 'master' && (
-                            <button
-                                onClick={() => setShowGoogleConfig(true)}
-                                style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: 'var(--gold-500)', cursor: 'pointer', textDecoration: 'underline' }}
-                            >
-                                Configurações API
-                            </button>
-                        )}
-                    </div>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn-primary" onClick={() => setShowModal(true)}>
-                        <Plus size={20} /> Novo Agendamento
-                    </button>
-                </div>
-            </header>
+    const handlePrevWeek = () => {
+        const d = new Date(date);
+        d.setDate(d.getDate() - 7);
+        setDate(d);
+    };
 
-            <div className="calendar-day-view">
-                {/* WEEK STRIP */}
-                <div className="calendar-week-strip" style={{ position: 'relative', marginTop: '2rem' }}>
-                    <div style={{ position: 'absolute', top: '-2.5rem', left: '0', fontSize: '1.2rem', fontWeight: 800, color: 'var(--white)' }}>
-                        {date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+    const handleNextWeek = () => {
+        const d = new Date(date);
+        d.setDate(d.getDate() + 7);
+        setDate(d);
+    };
+
+    const togglePro = (id) => {
+        if (selectedPros.includes(id)) {
+            setSelectedPros(selectedPros.filter(p => p !== id));
+        } else {
+            setSelectedPros([...selectedPros, id]);
+        }
+    };
+
+    const toggleAllPros = () => {
+        if (selectedPros.length === professionals.length) {
+            setSelectedPros([]);
+        } else {
+            setSelectedPros(professionals.map(p => p.id));
+        }
+    };
+
+    const visibleProfessionals = professionals.filter(p => selectedPros.includes(p.id));
+
+    return (
+        <div className="tenant-page-container" style={{ padding: '1.5rem 2.5rem' }}>
+            <div className="calendar-day-view-full">
+                {/* CALENDAR TOP BAR */}
+                <div className="calendar-top-bar">
+                    <div className="calendar-nav-group">
+                        <button className="btn-nav-week" onClick={handlePrevWeek}>&lt;</button>
+
+                        <div className="pro-filter-dropdown">
+                            <div className="month-selector" onClick={() => setShowDatePicker(!showDatePicker)}>
+                                <CalendarIcon size={20} className="pro-color-0" />
+                                {date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                            </div>
+
+                            {showDatePicker && (
+                                <div className="filter-dropdown-content" style={{ right: 'auto', left: 0, width: 'auto', padding: '0.5rem' }}>
+                                    <input
+                                        type="date"
+                                        className="input-premium"
+                                        value={date.toISOString().split('T')[0]}
+                                        onChange={(e) => {
+                                            setDate(new Date(e.target.value + 'T12:00:00'));
+                                            setShowDatePicker(false);
+                                        }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <button className="btn-nav-week" onClick={handleNextWeek}>&gt;</button>
                     </div>
+
+                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                        <div className="pro-filter-dropdown">
+                            <button className="btn-filter-luxury" onClick={() => setShowProFilter(!showProFilter)}>
+                                <User size={18} /> Profissionais ({selectedPros.length})
+                            </button>
+
+                            {showProFilter && (
+                                <div className="filter-dropdown-content">
+                                    <div className="filter-item" onClick={toggleAllPros}>
+                                        <input type="checkbox" checked={selectedPros.length === professionals.length} readOnly />
+                                        <span style={{ fontWeight: 800 }}>Selecionar Todos</span>
+                                    </div>
+                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0.5rem 0' }}></div>
+                                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                        {professionals.map((pro, idx) => (
+                                            <div key={pro.id} className="filter-item" onClick={() => togglePro(pro.id)}>
+                                                <input type="checkbox" checked={selectedPros.includes(pro.id)} readOnly />
+                                                <div className={`pro-color-dot pro-color-${idx % 8}`} style={{ background: 'currentColor' }}></div>
+                                                <span>{pro.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <button className="btn-primary" onClick={() => setShowModal(true)} style={{ padding: '0.75rem 1.5rem' }}>
+                            <Plus size={20} /> Agendar
+                        </button>
+                    </div>
+                </div>
+
+                {/* WEEK STRIP */}
+                <div className="calendar-week-strip" style={{ padding: '0.5rem 2.5rem' }}>
                     {weekDays.map((d, i) => {
                         const isActive = d.toDateString() === date.toDateString();
                         const names = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
@@ -296,9 +365,9 @@ const AppointmentsCalendar = () => {
                 </div>
 
                 {/* GRID CONTAINER */}
-                <div className="calendar-grid-container">
+                <div className="calendar-grid-container" style={{ flex: 1, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     {/* TIME AXIS */}
-                    <div className="time-axis">
+                    <div className="time-axis" style={{ height: 'fit-content' }}>
                         <div style={{ height: '80px' }}></div> {/* Spacer for Pro Header */}
                         {hours.map(h => (
                             <div key={h} className="time-slot-label">
@@ -309,23 +378,28 @@ const AppointmentsCalendar = () => {
 
                     {/* PROFESSIONAL COLUMNS */}
                     <div className="professional-columns-container">
-                        {professionals.length === 0 ? (
-                            <div style={{ flex: 1, padding: '4rem', textAlign: 'center', opacity: 0.5 }}>
-                                <User size={48} style={{ margin: '0 auto 1rem' }} />
-                                <p>Nenhum profissional cadastrado para exibir na agenda.</p>
+                        {visibleProfessionals.length === 0 ? (
+                            <div style={{ flex: 1, padding: '4rem', textAlign: 'center', opacity: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                <User size={48} style={{ marginBottom: '1rem' }} />
+                                <p>Selecione profissionais para visualizar a agenda.</p>
                             </div>
-                        ) : professionals.map(pro => {
+                        ) : visibleProfessionals.map((pro, idx) => {
+                            const proColorIdx = professionals.findIndex(p => p.id === pro.id) % 8;
                             const proAppts = dayAppointments.filter(a =>
                                 a.professional_id === pro.id || a.professional_name === pro.name
                             );
 
                             return (
-                                <div key={pro.id} className="pro-column">
-                                    <div className="pro-column-header">
+                                <div key={pro.id} className="pro-column" style={{ minWidth: visibleProfessionals.length > 4 ? '180px' : '220px' }}>
+                                    <div className={`pro-column-header pro-color-${proColorIdx} pro-header-colored`}>
                                         {pro.photo_url ? (
-                                            <img src={pro.photo_url.startsWith('http') ? pro.photo_url : `${import.meta.env.VITE_API_URL || ''}${pro.photo_url}`} className="pro-avatar" alt="" />
+                                            <img
+                                                src={pro.photo_url.startsWith('http') ? pro.photo_url : `${import.meta.env.VITE_API_URL || ''}${pro.photo_url}`}
+                                                className={`pro-avatar pro-avatar-colored pro-color-${proColorIdx}`}
+                                                alt=""
+                                            />
                                         ) : (
-                                            <div className="pro-avatar" style={{ background: 'var(--navy-900)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
+                                            <div className={`pro-avatar pro-avatar-colored pro-color-${proColorIdx}`} style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
                                                 {pro.name.charAt(0)}
                                             </div>
                                         )}
@@ -347,13 +421,12 @@ const AppointmentsCalendar = () => {
                                             return (
                                                 <div
                                                     key={appt.id}
-                                                    className="appointment-block"
+                                                    className={`appointment-block pro-bg-${proColorIdx}`}
                                                     style={{
                                                         top: `${top}px`,
                                                         height: `${height}px`,
                                                         opacity: isPast ? 0.6 : 1,
-                                                        background: appt.status === 'completed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(212, 175, 55, 0.2)',
-                                                        borderColor: appt.status === 'completed' ? '#10b981' : 'var(--gold-500)'
+                                                        borderColor: appt.status === 'completed' ? '#10b981' : 'inherit'
                                                     }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -585,92 +658,6 @@ const AppointmentsCalendar = () => {
                 </div>
             )}
 
-            <style>{`
-                .luxury-calendar-override {
-                    width: 100% !important;
-                    border: none !important;
-                    font-family: 'Outfit', sans-serif !important;
-                }
-                .react-calendar__viewContainer {
-                    width: 100%;
-                }
-                .react-calendar__month-view {
-                    width: 100%;
-                }
-                .react-calendar__month-view__days {
-                    width: 100% !important;
-                }
-                .react-calendar__month-view__weekdays {
-                    text-align: center;
-                    font-size: 0.75rem;
-                    font-weight: 800;
-                    color: var(--navy-500);
-                    text-transform: uppercase;
-                    padding-bottom: 0.5rem;
-                }
-                .react-calendar__tile {
-                    height: auto !important;
-                    min-height: 90px !important;
-                    padding: 10px 6px !important;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: flex-start;
-                    font-size: 1.05rem !important;
-                    border-radius: 10px;
-                    transition: all 0.15s ease;
-                }
-                .react-calendar__tile--active {
-                    background: var(--navy-900) !important;
-                    color: white !important;
-                    border-radius: 12px !important;
-                }
-                .react-calendar__tile--now {
-                    background: var(--gold-50) !important;
-                    color: var(--gold-600) !important;
-                    border-radius: 12px !important;
-                    font-weight: 800 !important;
-                }
-                .react-calendar__tile:hover {
-                    background: #f1f5f9 !important;
-                    border-radius: 12px !important;
-                    transform: translateY(-2px);
-                    transition: all 0.2s ease;
-                }
-                .react-calendar__tile--active:hover {
-                    background: var(--navy-800) !important;
-                }
-                .has-appointment::after {
-                    content: '•';
-                    font-size: 1.4rem;
-                    color: var(--gold-500);
-                    margin-top: -4px;
-                    line-height: 1;
-                }
-                .react-calendar__navigation {
-                    margin-bottom: 1rem;
-                }
-                .react-calendar__navigation button {
-                    font-size: 1rem;
-                    font-weight: 700;
-                    color: var(--navy-900);
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    padding: 0.5rem;
-                    border-radius: 8px;
-                    transition: background 0.15s;
-                }
-                .react-calendar__navigation button:hover {
-                    background: var(--gold-50);
-                }
-                .react-calendar__navigation__label {
-                    font-size: 1.1rem !important;
-                    font-weight: 800 !important;
-                    color: var(--navy-900) !important;
-                    text-transform: capitalize;
-                }
-            `}</style>
         </div>
     );
 };

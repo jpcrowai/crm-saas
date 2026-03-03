@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { getFinanceEntries, deleteFinanceEntry, updateFinanceEntryStatus, exportFinanceEntries } from '../services/api';
-import { Search, Filter, Download, Plus, ArrowUpCircle, ArrowDownCircle, MoreVertical, Trash2, CheckCircle2, AlertCircle, Clock, XCircle, DollarSign, Wallet, Settings } from 'lucide-react';
+import { useDataCache } from '../hooks/useDataCache';
+import { getFinanceEntries, createFinanceEntry, updateFinanceEntryStatus, deleteFinanceEntry, exportFinanceEntries } from '../services/api';
+import { Plus, Search, DollarSign, Download, Settings, Trash2, CheckCircle2, ArrowUpCircle, ArrowDownCircle, XCircle, Activity, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import FinanceWizard from '../components/FinanceWizard';
 import KpiCarousel from '../components/KpiCarousel';
+import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
 import '../components/KpiCarousel.css';
 
 const FinanceExtrato = () => {
-    const [entries, setEntries] = useState([]);
+    const { data: entries, isLoading, error, refreshData: loadData } = useDataCache('financeEntries', getFinanceEntries);
     const [filtered, setFiltered] = useState([]);
     const [showWizard, setShowWizard] = useState(false);
     const [filters, setFilters] = useState({
@@ -18,16 +20,11 @@ const FinanceExtrato = () => {
         startDate: '',
         endDate: ''
     });
+    const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_Finance') || 'grid');
 
-    useEffect(() => { loadData(); }, []);
-
-    const loadData = async () => {
-        try {
-            const res = await getFinanceEntries();
-            setEntries(res.data);
-            setFiltered(res.data);
-        } catch (e) { console.error(e); }
-    };
+    React.useEffect(() => {
+        localStorage.setItem('viewMode_Finance', viewMode);
+    }, [viewMode]);
 
     const handleExport = async () => {
         try {
@@ -45,7 +42,7 @@ const FinanceExtrato = () => {
     };
 
     useEffect(() => {
-        let result = entries;
+        let result = entries || [];
         if (filters.type !== 'all') result = result.filter(e => e.tipo === filters.type);
         if (filters.status !== 'all') result = result.filter(e => e.status === filters.status);
         if (filters.search) {
@@ -167,53 +164,103 @@ const FinanceExtrato = () => {
                     </div>
                 </div>
 
+                <div className="luxury-filter-bar" style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 0, paddingBottom: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+                </div>
+
                 <div style={{ overflowX: 'auto' }}>
-                    <table className="table-luxury">
-                        <thead>
-                            <tr>
-                                <th style={{ width: '50px' }}></th>
-                                <th>Vencimento</th>
-                                <th>Descrição / Origem</th>
-                                <th>Categoria</th>
-                                <th style={{ textAlign: 'right' }}>Valor</th>
-                                <th>Status</th>
-                                <th style={{ textAlign: 'right' }}>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filtered.map(entry => (
-                                <tr key={entry.id}>
-                                    <td>
-                                        {entry.tipo === 'receita' ? <ArrowUpCircle size={18} color="var(--success)" /> : <ArrowDownCircle size={18} color="var(--error)" />}
-                                    </td>
-                                    <td style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--white)' }}>
-                                        {new Date(entry.data_vencimento).toLocaleDateString('pt-BR')}
-                                    </td>
-                                    <td>
-                                        <div>
-                                            <p style={{ fontWeight: 700, color: 'var(--white)', fontSize: '0.9rem' }}>{entry.descricao}</p>
-                                            <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>via {entry.origem}</p>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.5rem', borderRadius: '4px', background: '#f1f5f9', color: '#64748b' }}>{entry.categoria_nome || 'Livre'}</span>
-                                    </td>
-                                    <td style={{ textAlign: 'right', fontWeight: 800, color: entry.tipo === 'receita' ? 'var(--success)' : 'var(--error)' }}>
-                                        {entry.tipo === 'despesa' ? '-' : ''} R$ {entry.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td>{getStatusBadge(entry.status)}</td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            {(entry.status === 'pendente' || entry.status === 'atrasado') && (
-                                                <button className="btn-action-luxury" title="Marcar como Pago" onClick={() => updateFinanceEntryStatus(entry.id, 'pago').then(loadData)}><CheckCircle2 size={16} color="var(--success)" /></button>
-                                            )}
-                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => deleteFinanceEntry(entry.id).then(loadData)}><Trash2 size={16} /></button>
-                                        </div>
-                                    </td>
+                    {viewMode === 'list' ? (
+                        <table className="table-luxury table-compact">
+                            <thead>
+                                <tr>
+                                    <th style={{ width: '50px' }}></th>
+                                    <th>Vencimento</th>
+                                    <th>Descrição / Origem</th>
+                                    <th>Categoria</th>
+                                    <th style={{ textAlign: 'right' }}>Valor</th>
+                                    <th>Status</th>
+                                    <th style={{ textAlign: 'right' }}>Ações</th>
                                 </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map(entry => (
+                                    <tr key={entry.id}>
+                                        <td>
+                                            {entry.tipo === 'receita' ? <ArrowUpCircle size={18} color="var(--success)" /> : <ArrowDownCircle size={18} color="var(--error)" />}
+                                        </td>
+                                        <td style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--white)' }}>
+                                            {new Date(entry.data_vencimento).toLocaleDateString('pt-BR')}
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <p style={{ fontWeight: 700, color: 'var(--white)', fontSize: '0.9rem' }}>{entry.descricao}</p>
+                                                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>via {entry.origem}</p>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.5rem', borderRadius: '4px', background: '#f1f5f9', color: '#64748b' }}>{entry.categoria_nome || 'Livre'}</span>
+                                        </td>
+                                        <td style={{ textAlign: 'right', fontWeight: 800, color: entry.tipo === 'receita' ? 'var(--success)' : 'var(--error)' }}>
+                                            {entry.tipo === 'despesa' ? '-' : ''} R$ {entry.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td>{getStatusBadge(entry.status)}</td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                {(entry.status === 'pendente' || entry.status === 'atrasado') && (
+                                                    <button className="btn-action-luxury" title="Marcar como Pago" onClick={() => updateFinanceEntryStatus(entry.id, 'pago').then(loadData)}><CheckCircle2 size={16} color="var(--success)" /></button>
+                                                )}
+                                                <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => deleteFinanceEntry(entry.id).then(loadData)}><Trash2 size={16} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className="data-grid-cards">
+                            {filtered.map(entry => (
+                                <div key={entry.id} className="data-card-item">
+                                    <div className="card-actions-dropdown">
+                                        {(entry.status === 'pendente' || entry.status === 'atrasado') && (
+                                            <button className="btn-icon" title="Marcar como Pago" onClick={() => updateFinanceEntryStatus(entry.id, 'pago').then(loadData)}>
+                                                <CheckCircle2 size={16} color="var(--success)" />
+                                            </button>
+                                        )}
+                                        <button className="btn-icon" title="Excluir" onClick={() => deleteFinanceEntry(entry.id).then(loadData)}>
+                                            <Trash2 size={16} color="var(--error)" />
+                                        </button>
+                                    </div>
+                                    <div className="data-card-header-flex">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div className="indicator-icon-wrapper" style={{ width: 44, height: 44, background: entry.tipo === 'receita' ? 'rgba(5, 150, 105, 0.1)' : 'rgba(239, 68, 68, 0.1)' }}>
+                                                {entry.tipo === 'receita' ? <ArrowUpCircle size={24} color="var(--success)" /> : <ArrowDownCircle size={24} color="var(--error)" />}
+                                            </div>
+                                            <div>
+                                                <h3 className="data-card-title">{entry.descricao}</h3>
+                                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Venc. {new Date(entry.data_vencimento).toLocaleDateString('pt-BR')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="data-card-body" style={{ marginTop: '1rem' }}>
+                                        <p>
+                                            <span className="label">Categoria</span>
+                                            <span style={{ fontWeight: 600 }}>{entry.categoria_nome || 'Livre'} • {entry.origem}</span>
+                                        </p>
+                                        <p>
+                                            <span className="label">Status</span>
+                                            {getStatusBadge(entry.status)}
+                                        </p>
+                                    </div>
+                                    <div className="data-card-footer">
+                                        <span className="label">Valor</span>
+                                        <strong style={{ fontSize: '1.25rem', color: entry.tipo === 'receita' ? 'var(--success)' : 'var(--error)' }}>
+                                            {entry.tipo === 'despesa' ? '-' : ''} R$ {entry.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </strong>
+                                    </div>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+                    )}
                     {filtered.length === 0 && (
                         <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                             <DollarSign size={64} style={{ opacity: 0.1, margin: '0 auto 1.5rem' }} />

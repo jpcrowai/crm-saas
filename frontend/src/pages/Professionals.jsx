@@ -4,6 +4,7 @@ import { useDataCache } from '../hooks/useDataCache';
 import { useOptimistic } from '../hooks/useOptimistic';
 import { showToast } from '../components/Toast';
 import { Plus, User, Mail, Phone, Briefcase, Trash2, Edit, X, Users, Percent, Calendar, TrendingUp } from 'lucide-react';
+import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
 import '../styles/professionals.css';
 
@@ -14,6 +15,11 @@ const Professionals = () => {
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedProfessional, setSelectedProfessional] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_Professionals') || 'grid');
+
+    React.useEffect(() => {
+        localStorage.setItem('viewMode_Professionals', viewMode);
+    }, [viewMode]);
 
     const [formData, setFormData] = useState({
         name: '', email: '', phone: '', specialty: '', photo_url: '', bio: '',
@@ -119,69 +125,115 @@ const Professionals = () => {
         <div className="tenant-page-container">
             <header className="page-header-row">
                 <div className="page-title-group">
-                    <h1>Profissionais</h1>
-                    <p>Gerencie sua equipe de especialistas e comissões</p>
+                    <h1>Equipe & Especialistas</h1>
+                    <p>Gerencie sua equipe, comissões e disponibilidade</p>
                 </div>
-                <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
-                    <Plus size={20} /> Adicionar Profissional
-                </button>
+                <div className="page-header-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+                    <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
+                        <Plus size={20} /> Adicionar Profissional
+                    </button>
+                </div>
             </header>
 
             {loading ? (
-                <div className="professionals-loading">
-                    <Users size={64} style={{ opacity: 0.2 }} />
-                    <p>Carregando profissionais...</p>
+                <div style={{ padding: '10rem 0', textAlign: 'center' }}>
+                    <Users size={64} style={{ opacity: 0.1, margin: '0 auto 1rem' }} />
+                    <p style={{ fontWeight: 600, opacity: 0.5 }}>Buscando membros da equipe...</p>
                 </div>
             ) : professionals.length === 0 ? (
-                <div className="professionals-empty">
-                    <Users size={80} style={{ opacity: 0.1 }} />
-                    <h3>Nenhum profissional cadastrado</h3>
-                    <p>Adicione profissionais à sua equipe para começar</p>
+                <div style={{ padding: '8rem 0', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '2px dashed rgba(255,255,255,0.05)' }}>
+                    <Users size={80} style={{ opacity: 0.05, margin: '0 auto 2rem' }} />
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--white)', marginBottom: '1rem' }}>Sua Equipe ainda está vazia</h3>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Comece adicionando seu primeiro especialista para gerenciar atendimentos.</p>
                     <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
                         <Plus size={20} /> Adicionar Primeiro Profissional
                     </button>
                 </div>
             ) : (
-                <div className="professionals-grid">
-                    {professionals.map(professional => (
-                        <div
-                            key={professional.id}
-                            className="professional-card"
-                            onClick={() => openDetailsModal(professional)}
-                        >
-                            <div className="professional-card-header">
-                                {professional.photo_url ? (
-                                    <img
-                                        src={professional.photo_url.startsWith('http') ? professional.photo_url : `${API_URL}${professional.photo_url}`}
-                                        alt={professional.name}
-                                        className="professional-photo"
-                                    />
-                                ) : (
-                                    <div className="professional-photo-placeholder">
-                                        {getInitials(professional.name)}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="professional-card-body">
-                                <h3>{professional.name}</h3>
-                                {professional.specialty && (
-                                    <span className="specialty-badge">{professional.specialty}</span>
-                                )}
-                                <div className="professional-info">
-                                    <div className="info-row">
-                                        <Percent size={14} color="var(--gold-500)" />
-                                        <span>Comissão: {professional.commission_percentage}%</span>
-                                    </div>
-                                    {professional.email && (
-                                        <div className="info-row">
-                                            <Mail size={14} />
-                                            <span>{professional.email}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                <div className="data-card-luxury">
+                    {viewMode === 'list' ? (
+                        <div style={{ overflowX: 'auto' }}>
+                            <table className="table-luxury table-compact">
+                                <thead>
+                                    <tr>
+                                        <th>Profissional</th>
+                                        <th>Especialidade</th>
+                                        <th>E-mail</th>
+                                        <th>Comissão</th>
+                                        <th>Status</th>
+                                        <th style={{ textAlign: 'right' }}>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {professionals.map(prof => (
+                                        <tr key={prof.id} onClick={() => openDetailsModal(prof)}>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    {prof.photo_url ? (
+                                                        <img src={prof.photo_url.startsWith('http') ? prof.photo_url : `${API_URL}${prof.photo_url}`} alt="" style={{ width: 24, height: 24, borderRadius: '50%' }} />
+                                                    ) : (
+                                                        <div className="indicator-icon-wrapper" style={{ width: 24, height: 24, fontSize: '0.6rem' }}>{getInitials(prof.name)}</div>
+                                                    )}
+                                                    <span style={{ fontWeight: 700 }}>{prof.name}</span>
+                                                </div>
+                                            </td>
+                                            <td>{prof.specialty || '---'}</td>
+                                            <td>{prof.email || '---'}</td>
+                                            <td>{prof.commission_percentage}%</td>
+                                            <td>{prof.active ? <span style={{ color: 'var(--success)', fontWeight: 800, fontSize: '0.65rem' }}>ATIVO</span> : <span style={{ color: 'var(--text-muted)' }}>INATIVO</span>}</td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                <button className="btn-action-luxury"><Edit size={14} /></button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-                    ))}
+                    ) : (
+                        <div className="data-grid-cards">
+                            {professionals.map(prof => (
+                                <div key={prof.id} className="data-card-item" onClick={() => openDetailsModal(prof)}>
+                                    <div className="card-actions-dropdown">
+                                        <button className="btn-icon"><Edit size={14} color="var(--primary)" /></button>
+                                    </div>
+                                    <div className="data-card-header-flex">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            {prof.photo_url ? (
+                                                <img
+                                                    src={prof.photo_url.startsWith('http') ? prof.photo_url : `${API_URL}${prof.photo_url}`}
+                                                    alt={prof.name}
+                                                    style={{ width: 48, height: 48, borderRadius: '12px', objectFit: 'cover' }}
+                                                />
+                                            ) : (
+                                                <div className="indicator-icon-wrapper" style={{ width: 48, height: 48, fontSize: '1.2rem', fontWeight: 800 }}>
+                                                    {getInitials(prof.name)}
+                                                </div>
+                                            )}
+                                            <div>
+                                                <h3 className="data-card-title">{prof.name}</h3>
+                                                {prof.specialty && <span className="label" style={{ display: 'block', marginTop: '0.25rem' }}>{prof.specialty}</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="data-card-body" style={{ marginTop: '1rem' }}>
+                                        <p>
+                                            <span className="label">Comissão</span>
+                                            <span style={{ fontWeight: 600, color: 'var(--gold-500)' }}>{prof.commission_percentage}% ({prof.commission_type === 'gross' ? 'Bruto' : 'Líquido'})</span>
+                                        </p>
+                                        <p>
+                                            <span className="label">E-mail</span>
+                                            <span style={{ fontWeight: 600 }}>{prof.email || '---'}</span>
+                                        </p>
+                                    </div>
+                                    <div className="data-card-footer">
+                                        <span className="label">Telefone</span>
+                                        <strong>{prof.phone || '---'}</strong>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

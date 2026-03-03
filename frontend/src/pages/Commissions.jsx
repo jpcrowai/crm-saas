@@ -17,6 +17,7 @@ import {
     FileText,
     CheckCircle2
 } from 'lucide-react';
+import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
 
 const Commissions = () => {
@@ -34,6 +35,11 @@ const Commissions = () => {
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [professionalDetails, setProfessionalDetails] = useState(null);
     const toast = useToast();
+    const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_Commissions') || 'grid');
+
+    useEffect(() => {
+        localStorage.setItem('viewMode_Commissions', viewMode);
+    }, [viewMode]);
 
     useEffect(() => {
         loadData();
@@ -146,76 +152,117 @@ const Commissions = () => {
                         </div>
                     </div>
 
-                    <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Activity size={20} color="var(--gold-500)" />
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--white)' }}>Resumo por Profissional</h2>
+                    <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <Activity size={20} color="var(--gold-500)" />
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--white)' }}>Resumo por Profissional</h2>
+                        </div>
+                        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
                     </div>
 
                     {/* PROFESSIONAL CARDS GRID */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
-                        {ranking.map((row) => (
-                            <div
-                                key={row.professional_id}
-                                className="data-card-luxury list-row-hover"
-                                style={{
-                                    padding: '1.5rem',
-                                    border: '1px solid rgba(255,255,255,0.05)',
-                                    background: 'var(--navy-800)',
-                                    cursor: 'pointer'
-                                }}
-                                onClick={() => handleViewDetails(row)}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <div className="indicator-icon-wrapper" style={{ width: 48, height: 48, background: 'var(--grad-gold)', color: 'var(--navy-950)' }}>
-                                            <User size={24} />
-                                        </div>
-                                        <div>
-                                            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)', margin: 0 }}>{row.professional_name}</h3>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--gold-400)', fontWeight: 600 }}>Especialista</span>
-                                        </div>
-                                    </div>
-                                    <button className="btn-action-luxury" style={{ background: 'rgba(255,255,255,0.05)', border: 'none' }}>
-                                        <ArrowUpRight size={18} color="var(--gold-400)" />
-                                    </button>
-                                </div>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px' }}>
-                                        <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Serviços</label>
-                                        <p style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white)', margin: 0 }}>{row.services_count}</p>
-                                    </div>
-                                    <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.1)' }}>
-                                        <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--gold-400)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>A Receber</label>
-                                        <p style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--gold-500)', margin: 0 }}>{formatCurrency(row.total_commission)}</p>
-                                    </div>
-                                </div>
-
-                                <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
-                                        <Clock size={14} />
-                                        <span>Atualizado agora</span>
-                                    </div>
-                                    <button
-                                        style={{ color: 'var(--gold-400)', fontSize: '0.85rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleViewDetails(row);
-                                        }}
-                                    >
-                                        Ver Detalhes
-                                    </button>
-                                </div>
+                    {viewMode === 'list' ? (
+                        <div className="data-card-luxury" style={{ padding: 0, overflow: 'hidden', marginBottom: '4rem' }}>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table className="table-luxury table-compact">
+                                    <thead>
+                                        <tr>
+                                            <th>Profissional</th>
+                                            <th style={{ textAlign: 'center' }}>Serviços</th>
+                                            <th style={{ textAlign: 'right' }}>A Receber</th>
+                                            <th style={{ textAlign: 'right' }}>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {ranking.map(row => (
+                                            <tr key={row.professional_id} onClick={() => handleViewDetails(row)} style={{ cursor: 'pointer' }}>
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <div className="indicator-icon-wrapper" style={{ width: 24, height: 24, fontSize: '0.6rem' }}>
+                                                            <User size={12} />
+                                                        </div>
+                                                        <span style={{ fontWeight: 700 }}>{row.professional_name}</span>
+                                                    </div>
+                                                </td>
+                                                <td style={{ textAlign: 'center', fontWeight: 700 }}>{row.services_count}</td>
+                                                <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--gold-500)' }}>
+                                                    {formatCurrency(row.total_commission)}
+                                                </td>
+                                                <td style={{ textAlign: 'right' }}>
+                                                    <button className="btn-action-luxury"><ChevronRight size={14} /></button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        ))}
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
+                            {ranking.map((row) => (
+                                <div
+                                    key={row.professional_id}
+                                    className="data-card-luxury list-row-hover"
+                                    style={{
+                                        padding: '1.5rem',
+                                        border: '1px solid rgba(255,255,255,0.05)',
+                                        background: 'var(--navy-800)',
+                                        cursor: 'pointer'
+                                    }}
+                                    onClick={() => handleViewDetails(row)}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div className="indicator-icon-wrapper" style={{ width: 48, height: 48, background: 'var(--grad-gold)', color: 'var(--navy-950)' }}>
+                                                <User size={24} />
+                                            </div>
+                                            <div>
+                                                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)', margin: 0 }}>{row.professional_name}</h3>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--gold-400)', fontWeight: 600 }}>Especialista</span>
+                                            </div>
+                                        </div>
+                                        <button className="btn-action-luxury" style={{ background: 'rgba(255,255,255,0.05)', border: 'none' }}>
+                                            <ArrowUpRight size={18} color="var(--gold-400)" />
+                                        </button>
+                                    </div>
 
-                        {ranking.length === 0 && (
-                            <div style={{ gridColumn: '1 / -1', padding: '5rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '2px dashed rgba(255,255,255,0.05)' }}>
-                                <Users size={48} style={{ opacity: 0.1, margin: '0 auto 1.5rem' }} />
-                                <p style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Nenhum dado de comissão encontrado para este período.</p>
-                            </div>
-                        )}
-                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Serviços</label>
+                                            <p style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white)', margin: 0 }}>{row.services_count}</p>
+                                        </div>
+                                        <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.1)' }}>
+                                            <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--gold-400)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>A Receber</label>
+                                            <p style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--gold-500)', margin: 0 }}>{formatCurrency(row.total_commission)}</p>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
+                                            <Clock size={14} />
+                                            <span>Atualizado agora</span>
+                                        </div>
+                                        <button
+                                            style={{ color: 'var(--gold-400)', fontSize: '0.85rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleViewDetails(row);
+                                            }}
+                                        >
+                                            Ver Detalhes
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {ranking.length === 0 && (
+                        <div style={{ gridColumn: '1 / -1', padding: '5rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '2px dashed rgba(255,255,255,0.05)' }}>
+                            <Users size={48} style={{ opacity: 0.1, margin: '0 auto 1.5rem' }} />
+                            <p style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Nenhum dado de comissão encontrado para este período.</p>
+                        </div>
+                    )}
 
                     {/* INFO FOOTER */}
                     <div className="data-card-luxury" style={{ background: 'var(--grad-navy)', padding: '2rem', border: '1px solid rgba(255,255,255,0.1)' }}>

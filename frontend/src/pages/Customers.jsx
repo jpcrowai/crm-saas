@@ -3,6 +3,7 @@ import { getCustomers, createCustomer, deleteCustomer } from '../services/api';
 import { useDataCache } from '../hooks/useDataCache';
 import { useOptimistic } from '../hooks/useOptimistic';
 import { Plus, Search, Trash2, FileText, Briefcase, XCircle } from 'lucide-react';
+import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
 
 const Customers = () => {
@@ -11,6 +12,11 @@ const Customers = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', document: '' });
+    const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_Customers') || 'grid');
+
+    React.useEffect(() => {
+        localStorage.setItem('viewMode_Customers', viewMode);
+    }, [viewMode]);
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -59,7 +65,7 @@ const Customers = () => {
             </header>
 
             <div className="data-card-luxury">
-                <div className="luxury-filter-bar">
+                <div className="luxury-filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                     <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
                         <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold-500)' }} />
                         <input
@@ -70,6 +76,7 @@ const Customers = () => {
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
                 </div>
 
                 {loading && customers.length === 0 ? (
@@ -79,51 +86,93 @@ const Customers = () => {
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
-                        <table className="table-luxury">
-                            <thead>
-                                <tr>
-                                    <th>Cliente</th>
-                                    <th>Contato</th>
-                                    <th>Documento</th>
-                                    <th>Status</th>
-                                    <th style={{ textAlign: 'right' }}>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        {viewMode === 'list' ? (
+                            <table className="table-luxury table-compact">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Contato</th>
+                                        <th>Documento</th>
+                                        <th>Status</th>
+                                        <th style={{ textAlign: 'right' }}>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filtered.map(c => (
+                                        <tr key={c.id} style={{ opacity: c._pending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <div className="indicator-icon-wrapper" style={{ width: 36, height: 36, background: 'var(--navy-900)', color: 'white', fontSize: '0.8rem', fontWeight: 800 }}>
+                                                        {(c.name || 'C').charAt(0)}
+                                                    </div>
+                                                    <span style={{ fontWeight: 700, color: 'var(--white)' }}>
+                                                        {c.name}
+                                                        {c._pending && <span style={{ fontSize: '0.65rem', marginLeft: '0.5rem', color: 'var(--text-muted)', fontWeight: 400 }}>salvando...</span>}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style={{ fontSize: '0.85rem' }}>
+                                                    <p style={{ fontWeight: 600 }}>{c.email}</p>
+                                                    <p style={{ color: 'var(--text-muted)' }}>{c.phone}</p>
+                                                </div>
+                                            </td>
+                                            <td style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--navy-700)' }}>{c.document || '---'}</td>
+                                            <td>
+                                                <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.3rem 0.6rem', borderRadius: '4px', background: '#ecfdf5', color: '#047857' }}>Ativo</span>
+                                            </td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => handleDelete(c.id, c.name)} title="Remover" disabled={c._pending}>
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <div className="data-grid-cards">
                                 {filtered.map(c => (
-                                    <tr key={c.id} style={{ opacity: c._pending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-                                        <td>
+                                    <div key={c.id} className="data-card-item" style={{ opacity: c._pending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
+                                        <div className="card-actions-dropdown">
+                                            <button className="btn-icon" onClick={() => handleDelete(c.id, c.name)} title="Remover" disabled={c._pending}>
+                                                <Trash2 size={16} color="var(--error)" />
+                                            </button>
+                                        </div>
+                                        <div className="data-card-header-flex">
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                <div className="indicator-icon-wrapper" style={{ width: 36, height: 36, background: 'var(--navy-900)', color: 'white', fontSize: '0.8rem', fontWeight: 800 }}>
+                                                <div className="indicator-icon-wrapper" style={{ width: 48, height: 48, background: 'var(--navy-900)', color: 'white', fontSize: '1.2rem', fontWeight: 800 }}>
                                                     {(c.name || 'C').charAt(0)}
                                                 </div>
-                                                <span style={{ fontWeight: 700, color: 'var(--white)' }}>
-                                                    {c.name}
-                                                    {c._pending && <span style={{ fontSize: '0.65rem', marginLeft: '0.5rem', color: 'var(--text-muted)', fontWeight: 400 }}>salvando...</span>}
-                                                </span>
+                                                <div>
+                                                    <h3 className="data-card-title">
+                                                        {c.name}
+                                                        {c._pending && <span style={{ fontSize: '0.65rem', marginLeft: '0.5rem', color: 'var(--text-muted)', fontWeight: 400 }}>salvando...</span>}
+                                                    </h3>
+                                                    <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(5, 150, 105, 0.2)', color: '#10b981', display: 'inline-block', marginTop: '0.5rem' }}>Ativo</span>
+                                                </div>
                                             </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ fontSize: '0.85rem' }}>
-                                                <p style={{ fontWeight: 600 }}>{c.email}</p>
-                                                <p style={{ color: 'var(--text-muted)' }}>{c.phone}</p>
-                                            </div>
-                                        </td>
-                                        <td style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--navy-700)' }}>{c.document || '---'}</td>
-                                        <td>
-                                            <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.3rem 0.6rem', borderRadius: '4px', background: '#ecfdf5', color: '#047857' }}>Ativo</span>
-                                        </td>
-                                        <td style={{ textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => handleDelete(c.id, c.name)} title="Remover" disabled={c._pending}>
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                        </div>
+                                        <div className="data-card-body" style={{ marginTop: '1rem' }}>
+                                            <p>
+                                                <span className="label">E-mail</span>
+                                                <span style={{ fontWeight: 600 }}>{c.email || 'Não informado'}</span>
+                                            </p>
+                                            <p>
+                                                <span className="label">Telefone</span>
+                                                <span style={{ fontWeight: 600 }}>{c.phone || 'Não informado'}</span>
+                                            </p>
+                                            <p>
+                                                <span className="label">Documento</span>
+                                                <span style={{ fontWeight: 600 }}>{c.document || 'Não informado'}</span>
+                                            </p>
+                                        </div>
+                                    </div>
                                 ))}
-                            </tbody>
-                        </table>
+                            </div>
+                        )}
                         {filtered.length === 0 && (
                             <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                                 <Briefcase size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />

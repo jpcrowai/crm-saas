@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getPlans, createPlan, updatePlan, getItems } from '../services/api';
-import { Plus, Package, XCircle, CheckCircle2, Edit3, Save, Trash2 } from 'lucide-react';
+import { Plus, Package, XCircle, CheckCircle2, Edit3, Save, Trash2, List } from 'lucide-react';
+import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
 
 const Plans = () => {
@@ -9,6 +10,11 @@ const Plans = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_Plans') || 'grid');
+
+    useEffect(() => {
+        localStorage.setItem('viewMode_Plans', viewMode);
+    }, [viewMode]);
 
     // State for the form (shared for create and edit)
     const [formData, setFormData] = useState({
@@ -170,44 +176,88 @@ const Plans = () => {
                     <h1>Planos de Assinatura</h1>
                     <p>Configure pacotes de serviços e recorrência para seus clientes</p>
                 </div>
-                <button className="btn-primary" onClick={() => { setEditingPlan(null); resetForm(); setShowModal(true); }}>
-                    <Plus size={20} /> Criar Novo Plano
-                </button>
+                <div className="page-header-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+                    <button className="btn-primary" onClick={() => { setEditingPlan(null); resetForm(); setShowModal(true); }}>
+                        <Plus size={20} /> Criar Novo Plano
+                    </button>
+                </div>
             </header>
 
-            <div className="indicator-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                {plans.map(plan => (
-                    <div key={plan.id} className="data-card-luxury" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <div className="modal-header-luxury" style={{ padding: '1.5rem', borderBottom: 'none' }}>
-                            <h3 style={{ color: 'var(--text-gold)', margin: 0, fontSize: '1.1rem' }}>{plan.name}</h3>
-                        </div>
-                        <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <p style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--navy-900)', display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                                    <span style={{ fontSize: '1rem', fontWeight: 600 }}>R$</span> {(plan.price || 0).toLocaleString('pt-BR')}
-                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>/{plan.periodicity === 'monthly' ? 'mês' : 'ano'}</span>
-                                </p>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>{plan.description}</p>
-                            </div>
-
-                            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
-                                <label style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '0.75rem' }}>Incluso no Pacote</label>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                    {plan.items.map((item, idx) => (
-                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--navy-800)' }}>
-                                            <CheckCircle2 size={14} color="var(--success)" /> {item.name} ({item.quantity}x)
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <button className="btn-secondary" style={{ width: '100%', marginTop: 'auto' }} onClick={() => handleEdit(plan)}>
-                                <Edit3 size={16} /> Detalhes do Plano
-                            </button>
-                        </div>
+            {viewMode === 'list' ? (
+                <div className="data-card-luxury" style={{ padding: 0, overflow: 'hidden' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table className="table-luxury table-compact">
+                            <thead>
+                                <tr>
+                                    <th>Nome do Plano</th>
+                                    <th>Ciclo</th>
+                                    <th style={{ textAlign: 'right' }}>Preço</th>
+                                    <th>Serviços Inclusos</th>
+                                    <th style={{ textAlign: 'right' }}>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {plans.map(plan => (
+                                    <tr key={plan.id}>
+                                        <td style={{ fontWeight: 700, color: 'var(--white)' }}>{plan.name}</td>
+                                        <td style={{ textTransform: 'capitalize' }}>{plan.periodicity === 'monthly' ? 'Mensal' : 'Anual'}</td>
+                                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--success)' }}>
+                                            R$ {(plan.price || 0).toLocaleString('pt-BR')}
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                                                {plan.items.map((it, idx) => (
+                                                    <span key={idx} style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.05)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                                        {it.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button className="btn-action-luxury" onClick={() => handleEdit(plan)}><Edit3 size={14} /></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                ))}
-            </div>
+                </div>
+            ) : (
+                <div className="indicator-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+                    {plans.map(plan => (
+                        <div key={plan.id} className="data-card-luxury" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                            <div className="modal-header-luxury" style={{ padding: '1.5rem', borderBottom: 'none' }}>
+                                <h3 style={{ color: 'var(--text-gold)', margin: 0, fontSize: '1.1rem' }}>{plan.name}</h3>
+                            </div>
+                            <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <p style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--navy-900)', display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
+                                        <span style={{ fontSize: '1rem', fontWeight: 600 }}>R$</span> {(plan.price || 0).toLocaleString('pt-BR')}
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>/{plan.periodicity === 'monthly' ? 'mês' : 'ano'}</span>
+                                    </p>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>{plan.description}</p>
+                                </div>
+
+                                <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '0.75rem' }}>Incluso no Pacote</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        {plan.items.map((item, idx) => (
+                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--navy-800)' }}>
+                                                <CheckCircle2 size={14} color="var(--success)" /> {item.name} ({item.quantity}x)
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button className="btn-secondary" style={{ width: '100%', marginTop: 'auto' }} onClick={() => handleEdit(plan)}>
+                                    <Edit3 size={16} /> Detalhes do Plano
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {showModal && (
                 <div className="modal-overlay">

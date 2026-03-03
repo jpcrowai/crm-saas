@@ -3,7 +3,8 @@ import { getItems, createItem, deleteItem, updateItem, exportItems, importItems 
 import { useDataCache } from '../hooks/useDataCache';
 import { useOptimistic } from '../hooks/useOptimistic';
 import { showToast } from '../components/Toast';
-import { Plus, Search, ShoppingBag, Package, Trash2, DollarSign, XCircle, Settings, Upload, Download, Tag, Edit3 } from 'lucide-react';
+import { Plus, Search, ShoppingBag, Package, Trash2, DollarSign, XCircle, Settings, Upload, Download, Tag, Edit3, MoreVertical } from 'lucide-react';
+import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
 
 const generateSku = () => 'ITEM-' + Math.random().toString(36).substr(2, 6).toUpperCase();
@@ -15,6 +16,12 @@ const ProductCatalog = () => {
     const [showForm, setShowForm] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [newItem, setNewItem] = useState({ sku: '', name: '', description: '', price: 0, category: 'Service' });
+    const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_ProductCatalog') || 'grid');
+
+    // Persist view mode
+    React.useEffect(() => {
+        localStorage.setItem('viewMode_ProductCatalog', viewMode);
+    }, [viewMode]);
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -110,7 +117,7 @@ const ProductCatalog = () => {
             </header>
 
             <div className="data-card-luxury">
-                <div className="luxury-filter-bar">
+                <div className="luxury-filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                     <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
                         <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold-500)' }} />
                         <input
@@ -121,49 +128,85 @@ const ProductCatalog = () => {
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
-                    <table className="table-luxury">
-                        <thead>
-                            <tr>
-                                <th>Código/Nome</th>
-                                <th style={{ width: '40%' }}>Descrição do Item</th>
-                                <th>Categoria</th>
-                                <th style={{ textAlign: 'right' }}>Valor Unitário</th>
-                                <th style={{ textAlign: 'right' }}>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    {viewMode === 'list' ? (
+                        <table className="table-luxury table-compact">
+                            <thead>
+                                <tr>
+                                    <th>Código/Nome</th>
+                                    <th style={{ width: '40%' }}>Descrição do Item</th>
+                                    <th>Categoria</th>
+                                    <th style={{ textAlign: 'right' }}>Valor Unitário</th>
+                                    <th style={{ textAlign: 'right' }}>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map(i => (
+                                    <tr key={i.id}>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--navy-900)', color: 'white', fontSize: '0.7rem' }}>
+                                                    {i.sku || 'N/A'}
+                                                </div>
+                                                <span style={{ fontWeight: 700, color: 'var(--navy-900)' }}>{i.name}</span>
+                                            </div>
+                                        </td>
+                                        <td><p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>{i.description}</p></td>
+                                        <td>
+                                            <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.3rem 0.6rem', borderRadius: '4px', background: '#f1f5f9', color: '#64748b' }}>{i.category}</span>
+                                        </td>
+                                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--navy-950)' }}>
+                                            R$ {(i.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                <button className="btn-action-luxury" onClick={() => handleEdit(i)}><Edit3 size={16} /></button>
+                                                <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => handleDelete(i.id)}><Trash2 size={16} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className="data-grid-cards">
                             {filtered.map(i => (
-                                <tr key={i.id}>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--navy-900)', color: 'white', fontSize: '0.7rem' }}>
+                                <div key={i.id} className="data-card-item">
+                                    <div className="card-actions-dropdown">
+                                        <button className="btn-icon" onClick={() => handleEdit(i)} title="Editar"><Edit3 size={16} color="var(--navy-600)" /></button>
+                                        <button className="btn-icon" onClick={() => handleDelete(i.id)} title="Excluir"><Trash2 size={16} color="var(--error)" /></button>
+                                    </div>
+                                    <div className="data-card-header-flex">
+                                        <div>
+                                            <div style={{ display: 'inline-flex', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', fontSize: '0.65rem', marginBottom: '0.5rem' }}>
                                                 {i.sku || 'N/A'}
                                             </div>
-                                            <span style={{ fontWeight: 700, color: 'var(--navy-900)' }}>{i.name}</span>
+                                            <h3 className="data-card-title">{i.name}</h3>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(212, 175, 55, 0.2)', color: 'var(--gold-500)', display: 'inline-block', marginTop: '0.5rem' }}>
+                                                {i.category}
+                                            </span>
                                         </div>
-                                    </td>
-                                    <td><p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>{i.description}</p></td>
-                                    <td>
-                                        <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.3rem 0.6rem', borderRadius: '4px', background: '#f1f5f9', color: '#64748b' }}>{i.category}</span>
-                                    </td>
-                                    <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--navy-950)' }}>
-                                        R$ {(i.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            <button className="btn-action-luxury" onClick={() => handleEdit(i)}><Edit3 size={16} /></button>
-                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => handleDelete(i.id)}><Trash2 size={16} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                    </div>
+                                    <div className="data-card-body">
+                                        <p style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                                            {i.description || 'Sem descrição'}
+                                        </p>
+                                    </div>
+                                    <div className="data-card-footer">
+                                        <span className="label">Valor Nominal</span>
+                                        <strong style={{ fontSize: '1.2rem', color: 'var(--gold-500)' }}>
+                                            R$ {(i.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </strong>
+                                    </div>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+                    )}
                     {filtered.length === 0 && (
-                        <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-muted)', width: '100%' }}>
                             <Package size={64} style={{ opacity: 0.1, margin: '0 auto 1.5rem' }} />
                             <p style={{ fontWeight: 600 }}>Nenhum item disponível no seu catálogo para esta visualização.</p>
                         </div>

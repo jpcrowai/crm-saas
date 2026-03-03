@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getSubscriptions, getPlans, getCustomers, createSubscription, updateSubscriptionStatus, uploadSubscriptionContract, API_URL, getProfessionals } from '../services/api';
 import { Plus, Search, CreditCard, User, Package, Calendar, MoreVertical, XCircle, CheckCircle2, AlertCircle, FileText, Settings, Upload } from 'lucide-react';
+import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
 
 const Subscriptions = () => {
@@ -12,6 +13,11 @@ const Subscriptions = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [newSub, setNewSub] = useState({ customer_id: '', plan_id: '', professional_id: '' });
     const [manageSub, setManageSub] = useState(null);
+    const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_Subscriptions') || 'grid');
+
+    useEffect(() => {
+        localStorage.setItem('viewMode_Subscriptions', viewMode);
+    }, [viewMode]);
 
     useEffect(() => { loadData(); }, []);
 
@@ -145,7 +151,7 @@ const Subscriptions = () => {
             </header>
 
             <div className="data-card-luxury">
-                <div className="luxury-filter-bar">
+                <div className="luxury-filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                     <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
                         <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold-500)' }} />
                         <input
@@ -156,63 +162,114 @@ const Subscriptions = () => {
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
-                    <table className="table-luxury">
-                        <thead>
-                            <tr>
-                                <th>Titular da Conta</th>
-                                <th>Plano Contratado</th>
-                                <th>Profissional</th>
-                                <th>Status</th>
-                                <th>Vencimento</th>
-                                <th style={{ textAlign: 'right' }}>Valor Mensal</th>
-                                <th style={{ textAlign: 'right' }}>Gestão</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    {viewMode === 'list' ? (
+                        <table className="table-luxury table-compact">
+                            <thead>
+                                <tr>
+                                    <th>Titular da Conta</th>
+                                    <th>Plano Contratado</th>
+                                    <th>Profissional</th>
+                                    <th>Status</th>
+                                    <th>Vencimento</th>
+                                    <th style={{ textAlign: 'right' }}>Valor Mensal</th>
+                                    <th style={{ textAlign: 'right' }}>Gestão</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map(s => (
+                                    <tr key={s.id}>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--navy-900)', color: 'white', fontSize: '0.75rem', fontWeight: 800 }}>
+                                                    {s.customer_name?.charAt(0)}
+                                                </div>
+                                                <span style={{ fontWeight: 700, color: 'var(--white)' }}>{s.customer_name}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <Package size={14} color="var(--gold-600)" />
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.plan_name}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <User size={14} color="var(--primary)" />
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.professional_name || 'Não definido'}</span>
+                                            </div>
+                                        </td>
+                                        <td>{getStatusBadge(s.status)}</td>
+                                        <td style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>
+                                            {s.next_billing ? new Date(s.next_billing).toLocaleDateString('pt-BR') : '---'}
+                                        </td>
+                                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--navy-950)' }}>
+                                            R$ {(s.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                <button className="btn-action-luxury" title="Ver Contrato PDF" onClick={() => handleDownloadContract(s.id)}>
+                                                    <FileText size={16} />
+                                                </button>
+                                                <button className="btn-action-luxury" title="Configurações" onClick={() => setManageSub(s)}><Settings size={16} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className="data-grid-cards">
                             {filtered.map(s => (
-                                <tr key={s.id}>
-                                    <td>
+                                <div key={s.id} className="data-card-item">
+                                    <div className="card-actions-dropdown">
+                                        <button className="btn-icon" title="Ver Contrato PDF" onClick={() => handleDownloadContract(s.id)}>
+                                            <FileText size={16} color="var(--navy-600)" />
+                                        </button>
+                                        <button className="btn-icon" title="Configurações" onClick={() => setManageSub(s)}>
+                                            <Settings size={16} color="var(--primary)" />
+                                        </button>
+                                    </div>
+                                    <div className="data-card-header-flex">
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--navy-900)', color: 'white', fontSize: '0.75rem', fontWeight: 800 }}>
+                                            <div className="indicator-icon-wrapper" style={{ width: 48, height: 48, background: 'var(--navy-900)', color: 'white', fontSize: '1.2rem', fontWeight: 800 }}>
                                                 {s.customer_name?.charAt(0)}
                                             </div>
-                                            <span style={{ fontWeight: 700, color: 'var(--white)' }}>{s.customer_name}</span>
+                                            <div>
+                                                <h3 className="data-card-title">{s.customer_name}</h3>
+                                                <div style={{ marginTop: '0.5rem' }}>
+                                                    {getStatusBadge(s.status)}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <Package size={14} color="var(--gold-600)" />
-                                            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.plan_name}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <User size={14} color="var(--primary)" />
-                                            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.professional_name || 'Não definido'}</span>
-                                        </div>
-                                    </td>
-                                    <td>{getStatusBadge(s.status)}</td>
-                                    <td style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>
-                                        {s.next_billing ? new Date(s.next_billing).toLocaleDateString('pt-BR') : '---'}
-                                    </td>
-                                    <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--navy-950)' }}>
-                                        R$ {(s.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            <button className="btn-action-luxury" title="Ver Contrato PDF" onClick={() => handleDownloadContract(s.id)}>
-                                                <FileText size={16} />
-                                            </button>
-                                            <button className="btn-action-luxury" title="Configurações" onClick={() => setManageSub(s)}><Settings size={16} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                    </div>
+                                    <div className="data-card-body" style={{ marginTop: '1rem' }}>
+                                        <p>
+                                            <span className="label">Plano</span>
+                                            <span style={{ fontWeight: 600 }}>{s.plan_name}</span>
+                                        </p>
+                                        <p>
+                                            <span className="label">Profissional</span>
+                                            <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{s.professional_name || 'Venda Direta'}</span>
+                                        </p>
+                                        <p>
+                                            <span className="label">Próximo Venc.</span>
+                                            <span style={{ fontWeight: 600 }}>{s.next_billing ? new Date(s.next_billing).toLocaleDateString('pt-BR') : '---'}</span>
+                                        </p>
+                                    </div>
+                                    <div className="data-card-footer">
+                                        <span className="label">Valor Total</span>
+                                        <strong style={{ fontSize: '1.25rem', color: 'var(--gold-500)' }}>
+                                            R$ {(s.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </strong>
+                                    </div>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+                    )}
                     {filtered.length === 0 && (
                         <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                             <CreditCard size={64} style={{ opacity: 0.1, margin: '0 auto 1.5rem' }} />

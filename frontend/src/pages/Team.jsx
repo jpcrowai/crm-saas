@@ -4,6 +4,7 @@ import { useDataCache } from '../hooks/useDataCache';
 import { useOptimistic } from '../hooks/useOptimistic';
 import { showToast } from '../components/Toast';
 import { Plus, User, Shield, Mail, Trash2, XCircle, Users, Settings, Briefcase, Edit, Lock } from 'lucide-react';
+import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
 
 const AVAILABLE_MODULES = [
@@ -34,6 +35,11 @@ const Team = () => {
     const [formData, setFormData] = useState({
         name: '', email: '', role: 'vendedor', password: '', modules_allowed: []
     });
+    const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_Team') || 'grid');
+
+    React.useEffect(() => {
+        localStorage.setItem('viewMode_Team', viewMode);
+    }, [viewMode]);
 
     const openCreateForm = () => {
         setEditingMember(null);
@@ -125,58 +131,103 @@ const Team = () => {
             </header>
 
             <div className="data-card-luxury">
-                <div className="data-card-header">
+                <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)' }}>Membros Ativos ({team.length})</h3>
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
                 </div>
                 <div style={{ overflowX: 'auto' }}>
-                    <table className="table-luxury">
-                        <thead>
-                            <tr>
-                                <th>Nome e Perfil</th>
-                                <th>E-mail Corporativo</th>
-                                <th>Nível de Acesso</th>
-                                <th>Módulos Permitidos</th>
-                                <th style={{ textAlign: 'right' }}>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    {viewMode === 'list' ? (
+                        <table className="table-luxury table-compact">
+                            <thead>
+                                <tr>
+                                    <th>Nome e Perfil</th>
+                                    <th>E-mail Corporativo</th>
+                                    <th>Nível de Acesso</th>
+                                    <th>Módulos Permitidos</th>
+                                    <th style={{ textAlign: 'right' }}>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {team.map(member => (
+                                    <tr key={member.id}>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div className="indicator-icon-wrapper" style={{ width: 36, height: 36, background: 'var(--navy-900)', color: 'white', fontSize: '0.8rem', fontWeight: 800 }}>
+                                                    {(member.name || 'U').charAt(0)}
+                                                </div>
+                                                <span style={{ fontWeight: 700, color: 'var(--white)' }}>{member.name}</span>
+                                            </div>
+                                        </td>
+                                        <td><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>{member.email}</span></td>
+                                        <td>{getRoleBadge(member.role)}</td>
+                                        <td>
+                                            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                {member.role === 'admin'
+                                                    ? 'Todos os módulos'
+                                                    : `${(member.modules_allowed || []).length} módulo(s)`}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                <button className="btn-action-luxury" onClick={() => openEditForm(member)} title="Editar Permissões">
+                                                    <Edit size={16} color="var(--primary)" />
+                                                </button>
+                                                <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => optimistic(
+                                                    prev => (prev || []).filter(m => m.id !== member.id),
+                                                    () => deleteTeamMember(member.id),
+                                                    { errorMessage: 'Erro ao remover membro. Revertido.' }
+                                                )} title="Remover Acesso">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className="data-grid-cards">
                             {team.map(member => (
-                                <tr key={member.id}>
-                                    <td>
+                                <div key={member.id} className="data-card-item">
+                                    <div className="card-actions-dropdown">
+                                        <button className="btn-icon" onClick={() => openEditForm(member)} title="Editar"><Edit size={16} color="var(--navy-600)" /></button>
+                                        <button className="btn-icon" onClick={() => optimistic(
+                                            prev => (prev || []).filter(m => m.id !== member.id),
+                                            () => deleteTeamMember(member.id),
+                                            { errorMessage: 'Erro ao remover membro. Revertido.' }
+                                        )} title="Excluir"><Trash2 size={16} color="var(--error)" /></button>
+                                    </div>
+                                    <div className="data-card-header-flex">
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div className="indicator-icon-wrapper" style={{ width: 36, height: 36, background: 'var(--navy-900)', color: 'white', fontSize: '0.8rem', fontWeight: 800 }}>
+                                            <div className="indicator-icon-wrapper" style={{ width: 48, height: 48, background: 'var(--navy-900)', color: 'white', fontSize: '1.2rem', fontWeight: 800 }}>
                                                 {(member.name || 'U').charAt(0)}
                                             </div>
-                                            <span style={{ fontWeight: 700, color: 'var(--white)' }}>{member.name}</span>
+                                            <div>
+                                                <h3 className="data-card-title">{member.name}</h3>
+                                                <div style={{ marginTop: '0.5rem' }}>
+                                                    {getRoleBadge(member.role)}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </td>
-                                    <td><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>{member.email}</span></td>
-                                    <td>{getRoleBadge(member.role)}</td>
-                                    <td>
-                                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                    </div>
+                                    <div className="data-card-body" style={{ marginTop: '1rem' }}>
+                                        <p>
+                                            <span className="label">E-mail Corporativo</span>
+                                            <span style={{ fontWeight: 600 }}>{member.email}</span>
+                                        </p>
+                                    </div>
+                                    <div className="data-card-footer">
+                                        <span className="label">Módulo(s) Acessíveis</span>
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--gold-500)', fontWeight: 600 }}>
                                             {member.role === 'admin'
-                                                ? 'Todos os módulos'
-                                                : `${(member.modules_allowed || []).length} módulo(s)`}
+                                                ? 'Todos liberados'
+                                                : `${(member.modules_allowed || []).length} selecionado(s)`}
                                         </span>
-                                    </td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            <button className="btn-action-luxury" onClick={() => openEditForm(member)} title="Editar Permissões">
-                                                <Edit size={16} color="var(--primary)" />
-                                            </button>
-                                            <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => optimistic(
-                                                prev => (prev || []).filter(m => m.id !== member.id),
-                                                () => deleteTeamMember(member.id),
-                                                { errorMessage: 'Erro ao remover membro. Revertido.' }
-                                            )} title="Remover Acesso">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                    </div>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+                    )}
                     {team.length === 0 && (
                         <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                             <Users size={64} style={{ opacity: 0.1, margin: '0 auto 1.5rem' }} />

@@ -150,6 +150,9 @@ class DashboardSummary(BaseModel):
     stats: DashboardStats
     total_expenses: float
     customer_ranking: List[Dict[str, Any]]
+    active_subscriptions: int = 0
+    past_due_subscriptions: int = 0
+    total_customers: int = 0
 
 class TenantAdminStats(BaseModel):
     nome: str

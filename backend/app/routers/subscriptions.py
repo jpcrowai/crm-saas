@@ -73,6 +73,13 @@ class SubscriptionSchema(BaseModel):
     class Config:
         from_attributes = True
 
+class SubscriptionUpdateSchema(BaseModel):
+    status: Optional[str] = None
+    plano_id: Optional[str] = None
+    professional_id: Optional[str] = None
+    valor_total: Optional[float] = None
+    data_fim: Optional[str] = None # next_billing_date as ISO string
+
 # --- Helpers ---
 
 def generate_contract_pdf(db: Session, tenant_id: uuid.UUID, sub_data: Dict[str, Any], plan: SQLPlan) -> str:
@@ -94,27 +101,27 @@ def generate_contract_pdf(db: Session, tenant_id: uuid.UUID, sub_data: Dict[str,
     pdf.rect(0, 38, 210, 2, 'F')
 
     pdf.set_y(12)
-    pdf.set_font("Arial", "B", 20)
+    pdf.set_font("helvetica", "B", 20)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(0, 10, "CONTRATO DE ADESÃO", 0, 1, "R")
     
     pdf.ln(25)
     pdf.set_text_color(15, 23, 42)
-    pdf.set_font("Arial", "B", 12)
+    pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 10, "1. PARTES CONTRATANTES", 0, 1)
     
     # Simple Content
-    pdf.set_font("Arial", "", 10)
+    pdf.set_font("helvetica", "", 10)
     pdf.multi_cell(0, 5, f"CONTRATADA: {nome_empresa}\nCNPJ: {tenant.document or '---'}\n\nCONTRATANTE: {customer_name}\nDOC: {customer_doc}")
     
     pdf.ln(10)
-    pdf.set_font("Arial", "B", 12)
+    pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 10, "2. OBJETO E VALORES", 0, 1)
-    pdf.set_font("Arial", "", 10)
+    pdf.set_font("helvetica", "", 10)
     pdf.multi_cell(0, 5, f"Plano: {plan.name}\nValor: R$ {sub_data['valor_total']:.2f} / {sub_data['periodicidade']}\nInício: {sub_data['data_inicio']}")
 
     # PDF Output & Upload
-    pdf_content = pdf.output(dest='S')
+    pdf_content = pdf.output()
     filename = f"contrato_{sub_data['id']}.pdf"
     
     try:
@@ -266,6 +273,43 @@ async def create_subscription(sub_in: SubscriptionSchema, current_user: TokenDat
     db.commit()
     return {"id": str(sub_id), "contract_url": pdf_url}
 
+@router.put("/subscriptions/{sub_id}")
+async def update_subscription(
+    sub_id: str, 
+    data: SubscriptionUpdateSchema, 
+    current_user: TokenData = Depends(get_current_tenant_user), 
+    db: Session = Depends(get_db)
+):
+    sub = db.query(SQLSubscription).filter(
+        SQLSubscription.id == sub_id, 
+        SQLSubscription.tenant_id == current_user.tenant_id
+    ).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Assinatura não encontrada")
+    
+    if data.status is not None:
+        sub.status = data.status
+    if data.plano_id is not None:
+        sub.plan_id = data.plano_id
+    if data.professional_id is not None:
+        sub.professional_id = data.professional_id
+    if data.valor_total is not None:
+        sub.price = data.valor_total
+    if data.data_fim is not None:
+        try:
+            sub.next_billing_date = datetime.fromisoformat(data.data_fim).date()
+        except:
+             # Try simple YYYY-MM-DD
+             from datetime import date
+             try:
+                 parts = [int(x) for x in data.data_fim.split("-")]
+                 sub.next_billing_date = date(parts[0], parts[1], parts[2])
+             except:
+                 pass
+
+    db.commit()
+    return {"status": "success", "sub_id": str(sub.id)}
+
 @router.put("/subscriptions/{sub_id}/sign")
 async def sign_subscription(sub_id: str, current_user: TokenData = Depends(get_current_tenant_user), db: Session = Depends(get_db)):
     sub = db.query(SQLSubscription).filter(SQLSubscription.id == sub_id, SQLSubscription.tenant_id == current_user.tenant_id).first()
@@ -281,16 +325,39 @@ async def get_contract_file(
     current_user: TokenData = Depends(get_current_tenant_user), 
     db: Session = Depends(get_db)
 ):
-    # current_user is already handled by get_current_tenant_user which supports token in query
-    sub = db.query(SQLSubscription).filter(SQLSubscription.id == sub_id, SQLSubscription.tenant_id == current_user.tenant_id).first()
-    if not sub or not sub.contract_url:
-        raise HTTPException(status_code=404, detail="Contrato não encontrado")
+    sub = db.query(SQLSubscription).filter(
+        SQLSubscription.id == sub_id, 
+        SQLSubscription.tenant_id == current_user.tenant_id
+    ).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Assinatura não encontrada")
     
+    # Proactive generation if missing
+    if not sub.contract_url:
+        plan = db.query(SQLPlan).filter(SQLPlan.id == sub.plan_id).first()
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plano não encontrado para gerar contrato")
+        
+        gen_data = {
+            "id": str(sub.id),
+            "customer_id": str(sub.customer_id),
+            "valor_total": float(sub.price),
+            "periodicidade": sub.periodicity,
+            "data_inicio": sub.start_date.isoformat() if sub.start_date else datetime.now().date().isoformat()
+        }
+        
+        pdf_url = generate_contract_pdf(db, current_user.tenant_id, gen_data, plan)
+        if pdf_url:
+            sub.contract_url = pdf_url
+            db.commit()
+        else:
+            raise HTTPException(status_code=500, detail="Não foi possível gerar o PDF agora.")
+
     if sub.contract_url.startswith("http"):
         from fastapi.responses import RedirectResponse
         return RedirectResponse(sub.contract_url)
     
     if not os.path.exists(sub.contract_url):
-        raise HTTPException(status_code=404, detail="Arquivo físico do contrato não encontrado")
+        raise HTTPException(status_code=404, detail="A localização do contrato expirou ou é inválida.")
         
     return FileResponse(sub.contract_url)

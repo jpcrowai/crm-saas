@@ -58,7 +58,10 @@ def upload_file(
     response = supabase.storage.from_(BUCKET_NAME).upload(
         file_path,
         content,
-        file_options={"content-type": _get_content_type(filename)}
+        file_options={
+            "content-type": _get_content_type(filename),
+            "upsert": True
+        }
     )
     
     # Get public URL

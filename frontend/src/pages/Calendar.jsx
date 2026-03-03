@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAppointments, createAppointment, getCustomers, getServices, getCustomerPlans, completeAppointment } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Video, MapPin, Clock, User, XCircle, Calendar as CalendarIcon, CheckCircle2, CheckCircle } from 'lucide-react';
+import { Plus, Video, MapPin, Clock, User, XCircle, Calendar as CalendarIcon, CheckCircle2, CheckCircle, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import '../styles/tenant-luxury.css';
 
 const AppointmentsCalendar = () => {
@@ -152,12 +152,13 @@ const AppointmentsCalendar = () => {
 
         const tempId = 'temp_' + Date.now();
         const selectedCustomer = customers.find(c => c.id === newAppt.customer_id);
+        const appointmentDateObj = new Date(newAppt.appointment_date);
         const optimisticAppt = {
             id: tempId,
             title: newAppt.title,
             description: newAppt.description,
-            start_time: newAppt.appointment_date,
-            end_time: new Date(new Date(newAppt.appointment_date).getTime() + (newAppt.service_duration_minutes * 60000)).toISOString(),
+            start_time: appointmentDateObj.toISOString(),
+            end_time: new Date(appointmentDateObj.getTime() + (newAppt.service_duration_minutes * 60000)).toISOString(),
             service_duration_minutes: newAppt.service_duration_minutes,
             service_value: newAppt.service_value,
             customer_name: selectedCustomer ? selectedCustomer.name : 'Cliente',
@@ -172,7 +173,11 @@ const AppointmentsCalendar = () => {
         setShowModal(false);
 
         try {
-            await createAppointment(newAppt);
+            await createAppointment({
+                ...newAppt,
+                appointment_date: appointmentDateObj.toISOString(),
+                start_time: appointmentDateObj.toISOString()
+            });
             loadData();
             setNewAppt({
                 customer_id: '',
@@ -225,15 +230,27 @@ const AppointmentsCalendar = () => {
         return apptTime < new Date();
     };
 
+    // Helper to get YYYY-MM-DD for comparison (Timezone Safe)
+    const getISODate = (d) => {
+        if (!d) return null;
+        const dateObj = new Date(d);
+        if (isNaN(dateObj.getTime())) return null;
+        return dateObj.toISOString().split('T')[0];
+    };
+
+    const targetDateStr = getISODate(date);
+
     const getWeekDays = (currentDate) => {
         const days = [];
-        const startOfWeek = new Date(currentDate);
-        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay()); // Sunday
+        const d = new Date(currentDate);
+        const day = d.getDay();
+        const diff = d.getDate() - day; // Adjust to Sunday
+        const startOfWeek = new Date(d.setDate(diff));
 
         for (let i = 0; i < 7; i++) {
-            const day = new Date(startOfWeek);
-            day.setDate(startOfWeek.getDate() + i);
-            days.push(day);
+            const nextDay = new Date(startOfWeek);
+            nextDay.setDate(startOfWeek.getDate() + i);
+            days.push(nextDay);
         }
         return days;
     };
@@ -248,7 +265,7 @@ const AppointmentsCalendar = () => {
 
         // 1 hour = 60px. Baseline is 08:00
         const top = ((startHour - 8) * 60) + startMinutes;
-        const height = duration; // 1 min = 1px
+        const height = duration || 60; // default 1h
         return { top, height };
     };
 
@@ -283,73 +300,226 @@ const AppointmentsCalendar = () => {
     const visibleProfessionals = professionals.filter(p => selectedPros.includes(p.id));
 
     return (
-        <div className="tenant-page-container" style={{ padding: '1.5rem 2.5rem' }}>
-            <div className="calendar-day-view-full">
-                {/* CALENDAR TOP BAR */}
-                <div className="calendar-top-bar">
-                    <div className="calendar-nav-group">
-                        <button className="btn-nav-week" onClick={handlePrevWeek}>&lt;</button>
+        <div className="tenant-page-container custom-calendar-root" style={{ padding: '0', margin: '0', maxWidth: '100%', width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+            <style>
+                {`
+                .custom-calendar-root {
+                    padding: 1.5rem !important;
+                }
+                .calendar-wrapper { display: flex; flex-direction: column; flex: 1; overflow: hidden; background: var(--navy-900); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+                .calendar-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 1rem; flex-wrap: wrap; }
+                .cal-header-nav-group { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+                .cal-actions-group { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; flex-grow: 1; justify-content: flex-end; }
+                .pro-tabs { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.25rem; scrollbar-width: none; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+                .pro-tabs::-webkit-scrollbar { display: none; }
+                
+                .btn-nav-week { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid rgba(212,175,55,0.4); background: rgba(212,175,55,0.05); color: var(--gold-500); cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+                .btn-nav-week:hover { background: var(--gold-500); color: #000; transform: scale(1.05); }
+                
+                .cal-action-buttons-group { display: flex; gap: 0.75rem; flex-shrink: 0; }
 
-                        <div className="pro-filter-dropdown">
-                            <div className="month-selector" onClick={() => setShowDatePicker(!showDatePicker)}>
-                                <CalendarIcon size={20} className="pro-color-0" />
+                .calendar-week-strip { display: flex; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); overflow-x: auto; scrollbar-width: none; gap: 0.5rem; }
+                .week-strip-day { flex: 1; min-width: 45px; display: flex; flexDirection: column; align-items: center; justify-content: center; gap: 4px; border-radius: 12px; transition: all 0.2s ease; cursor: pointer; padding: 0.75rem 0.5rem; }
+                .week-strip-day.active { background: var(--gold-500); color: #000; font-weight: 800; transform: scale(1.05); }
+                
+                .calendar-grid-container { flex: 1; display: flex; overflow-y: auto; background: var(--navy-950); position: relative; }
+                .time-axis { width: 60px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.05); background: var(--navy-900); }
+                .unified-grid-area { flex: 1; position: relative; min-width: 300px; }
+                
+                @media (max-width: 900px) {
+                    .custom-calendar-root {
+                        padding: 0.5rem !important;
+                        height: calc(100vh - 75px) !important;
+                    }
+                    .calendar-header { 
+                        flex-direction: column; 
+                        align-items: center; 
+                        gap: 1.25rem; 
+                        padding: 1rem 0.5rem 0.5rem 0.5rem; 
+                        background: transparent;
+                        border: none;
+                    }
+                    
+                    /* Cabeçalho de Navegação Mobile Fiel ao Print */
+                    .cal-header-nav-group { 
+                        width: 100%; 
+                        justify-content: center; 
+                        gap: 1.5rem;
+                        background: transparent;
+                        padding: 0;
+                        border: none;
+                        display: flex;
+                        align-items: center;
+                    }
+                    
+                    .btn-nav-week { 
+                        width: 44px !important; 
+                        height: 44px !important; 
+                        border-radius: 50% !important; 
+                        border: 1px solid var(--gold-500) !important; 
+                        background: rgba(212,175,55,0.05) !important; 
+                        color: var(--gold-500) !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+
+                    .mobile-date-label {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 2px;
+                    }
+                    .mobile-date-label .month-text {
+                        font-family: 'Inter', sans-serif;
+                        font-size: 1.25rem;
+                        font-weight: 600;
+                        color: #fff;
+                        text-transform: lowercase; /* Como no print: março de 2026 */
+                    }
+                    .mobile-date-label .week-range {
+                        font-size: 1rem;
+                        color: #fff;
+                        font-weight: 500;
+                    }
+
+                    .cal-actions-group { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+                    .pro-tabs { width: 100%; padding: 0.25rem; border: none; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+                    .cal-action-buttons-group { width: 100%; display: flex; gap: 0.5rem; }
+                    .cal-action-buttons-group > button { flex: 1; justify-content: center; }
+                    /* Make the text visible inside the buttons on mobile */
+                    .responsive-btn-text { display: inline-block !important; font-size: 0.8rem; }
+
+                    .calendar-week-strip {
+                        padding: 0.5rem 0.25rem;
+                        gap: 0.25rem;
+                        border-top: 1px solid rgba(255,255,255,0.05);
+                        border-bottom: 1px solid rgba(255,255,255,0.05);
+                        overflow-x: hidden;
+                    }
+                    
+                    .week-strip-day {
+                        min-width: 0;
+                        padding: 0.5rem 0.25rem;
+                    }
+
+                    .calendar-grid-container {
+                        padding-bottom: 100px; /* garante espaço para a navbar inferior */
+                        overflow-x: hidden;
+                    }
+                    
+                    .unified-grid-area {
+                        min-width: 0 !important; /* avoid horizontal scroll */
+                        width: 100%;
+                    }
+                    
+                    .time-axis {
+                        width: 45px;
+                    }
+                }
+                `}
+            </style>
+
+            <div className="calendar-wrapper">
+                {/* CALENDAR HEADER */}
+                <div className="calendar-header">
+                    <div className="cal-header-nav-group">
+                        <button className="btn-nav-week" onClick={handlePrevWeek}>
+                            <ChevronLeft size={24} />
+                        </button>
+
+                        <div onClick={() => setShowDatePicker(!showDatePicker)} className="mobile-date-label" style={{ cursor: 'pointer' }}>
+                            <div className="month-text">
                                 {date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                            </div>
+                            <div className="week-range">
+                                {weekDays[0].toLocaleDateString('pt-BR', { day: '2-digit' })} a {weekDays[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                             </div>
 
                             {showDatePicker && (
-                                <div className="filter-dropdown-content" style={{ right: 'auto', left: 0, width: 'auto', padding: '0.5rem' }}>
-                                    <input
-                                        type="date"
-                                        className="input-premium"
-                                        value={date.toISOString().split('T')[0]}
-                                        onChange={(e) => {
-                                            setDate(new Date(e.target.value + 'T12:00:00'));
-                                            setShowDatePicker(false);
-                                        }}
-                                    />
+                                <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'var(--navy-900)', border: '1px solid var(--gold-500)', padding: '0.75rem', borderRadius: '12px', marginTop: '0.5rem' }}>
+                                    <input type="date" className="input-premium" value={date.toISOString().split('T')[0]} onChange={(e) => { setDate(new Date(e.target.value + 'T12:00:00')); setShowDatePicker(false); }} />
                                 </div>
                             )}
                         </div>
 
-                        <button className="btn-nav-week" onClick={handleNextWeek}>&gt;</button>
+                        <button className="btn-nav-week" onClick={handleNextWeek}>
+                            <ChevronRight size={24} />
+                        </button>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                        <div className="pro-filter-dropdown">
-                            <button className="btn-filter-luxury" onClick={() => setShowProFilter(!showProFilter)}>
-                                <User size={18} /> Profissionais ({selectedPros.length})
+                    <div className="cal-actions-group">
+                        <div className="pro-tabs">
+                            <button
+                                className={`btn-tab-luxury ${selectedPros.length === professionals.length ? 'active' : ''}`}
+                                onClick={toggleAllPros}
+                                style={{
+                                    whiteSpace: 'nowrap',
+                                    padding: '0.4rem 1rem',
+                                    borderRadius: '10px',
+                                    border: '1px solid var(--gold-500)',
+                                    background: selectedPros.length === professionals.length ? 'var(--gold-500)' : 'transparent',
+                                    color: selectedPros.length === professionals.length ? '#000' : 'var(--gold-500)',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 900,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {selectedPros.length === professionals.length ? 'LIMPAR' : 'TODOS'}
                             </button>
-
-                            {showProFilter && (
-                                <div className="filter-dropdown-content">
-                                    <div className="filter-item" onClick={toggleAllPros}>
-                                        <input type="checkbox" checked={selectedPros.length === professionals.length} readOnly />
-                                        <span style={{ fontWeight: 800 }}>Selecionar Todos</span>
-                                    </div>
-                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0.5rem 0' }}></div>
-                                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                        {professionals.map((pro, idx) => (
-                                            <div key={pro.id} className="filter-item" onClick={() => togglePro(pro.id)}>
-                                                <input type="checkbox" checked={selectedPros.includes(pro.id)} readOnly />
-                                                <div className={`pro-color-dot pro-color-${idx % 8}`} style={{ background: 'currentColor' }}></div>
-                                                <span>{pro.name}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                            {professionals.map(pro => {
+                                const isSelected = selectedPros.includes(pro.id);
+                                return (
+                                    <button
+                                        key={pro.id}
+                                        onClick={() => togglePro(pro.id)}
+                                        style={{
+                                            whiteSpace: 'nowrap',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            padding: '0.4rem 1rem',
+                                            borderRadius: '10px',
+                                            background: isSelected ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.03)',
+                                            border: isSelected ? '1px solid var(--gold-500)' : '1px solid rgba(255,255,255,0.05)',
+                                            color: isSelected ? '#fff' : 'rgba(255,255,255,0.5)',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: isSelected ? 'var(--gold-500)' : 'currentColor' }}></div>
+                                        {pro.name.split(' ')[0].toUpperCase()}
+                                    </button>
+                                );
+                            })}
                         </div>
 
-                        <button className="btn-primary" onClick={() => setShowModal(true)} style={{ padding: '0.75rem 1.5rem' }}>
-                            <Plus size={20} /> Agendar
-                        </button>
+                        <div className="cal-action-buttons-group">
+                            {connectionInfo.connected ? (
+                                <button className="btn-secondary" style={{ padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', gap: '6px' }} disabled title="Google Conectado">
+                                    <CheckCircle2 size={16} color="var(--success)" />
+                                    <span className="responsive-btn-text">Conectado</span>
+                                </button>
+                            ) : (
+                                <button className="btn-secondary" style={{ padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setShowGoogleConfig(true)}>
+                                    <CalendarIcon size={16} />
+                                    <span className="responsive-btn-text">Vincular</span>
+                                </button>
+                            )}
+
+                            <button className="btn-primary" onClick={() => setShowModal(true)} style={{ padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                                <Plus size={16} />
+                                <span className="responsive-btn-text">Agendar</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {/* WEEK STRIP */}
-                <div className="calendar-week-strip" style={{ padding: '0.5rem 2.5rem' }}>
+                <div className="calendar-week-strip">
                     {weekDays.map((d, i) => {
-                        const isActive = d.toDateString() === date.toDateString();
+                        const isActive = getISODate(d) === targetDateStr;
                         const names = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
                         return (
                             <div
@@ -357,95 +527,96 @@ const AppointmentsCalendar = () => {
                                 className={`week-strip-day ${isActive ? 'active' : ''}`}
                                 onClick={() => setDate(d)}
                             >
-                                <span className="day-name">{names[d.getDay()]}</span>
-                                <span className="day-number">{d.getDate()}</span>
+                                <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>{names[d.getDay()]}</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 900 }}>{d.getDate()}</span>
                             </div>
                         );
                     })}
                 </div>
 
                 {/* GRID CONTAINER */}
-                <div className="calendar-grid-container" style={{ flex: 1, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="calendar-grid-container">
                     {/* TIME AXIS */}
-                    <div className="time-axis" style={{ height: 'fit-content' }}>
-                        <div style={{ height: '80px' }}></div> {/* Spacer for Pro Header */}
+                    <div className="time-axis">
                         {hours.map(h => (
-                            <div key={h} className="time-slot-label">
-                                {String(h).padStart(2, '0')}:00
+                            <div key={h} style={{ height: '60px', padding: '10px 5px', fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'right', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                {h.toString().padStart(2, '0')}:00
                             </div>
                         ))}
                     </div>
 
-                    {/* PROFESSIONAL COLUMNS */}
-                    <div className="professional-columns-container">
-                        {visibleProfessionals.length === 0 ? (
-                            <div style={{ flex: 1, padding: '4rem', textAlign: 'center', opacity: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                <User size={48} style={{ marginBottom: '1rem' }} />
-                                <p>Selecione profissionais para visualizar a agenda.</p>
-                            </div>
-                        ) : visibleProfessionals.map((pro, idx) => {
-                            const proColorIdx = professionals.findIndex(p => p.id === pro.id) % 8;
-                            const proAppts = dayAppointments.filter(a =>
-                                a.professional_id === pro.id || a.professional_name === pro.name
-                            );
+                    {/* UNIFIED APPOINTMENTS AREA */}
+                    <div className="unified-grid-area" onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const y = e.clientY - rect.top;
+                        const hour = Math.floor(y / 60) + 8;
+                        const mins = Math.floor((y % 60));
+                        const selectedDate = new Date(date);
+                        selectedDate.setHours(hour, mins, 0, 0);
+                        setNewAppt({ ...newAppt, appointment_date: selectedDate.toISOString().slice(0, 16) });
+                        setShowModal(true);
+                    }}>
+                        {/* Background Hour Lines */}
+                        {hours.map(h => (
+                            <div key={h} style={{ position: 'absolute', top: `${(h - 8) * 60}px`, left: 0, right: 0, height: '60px', borderBottom: '1px solid rgba(255,255,255,0.03)', pointerEvents: 'none' }}></div>
+                        ))}
 
-                            return (
-                                <div key={pro.id} className="pro-column" style={{ minWidth: visibleProfessionals.length > 4 ? '180px' : '220px' }}>
-                                    <div className={`pro-column-header pro-color-${proColorIdx} pro-header-colored`}>
-                                        {pro.photo_url ? (
-                                            <img
-                                                src={pro.photo_url.startsWith('http') ? pro.photo_url : `${import.meta.env.VITE_API_URL || ''}${pro.photo_url}`}
-                                                className={`pro-avatar pro-avatar-colored pro-color-${proColorIdx}`}
-                                                alt=""
-                                            />
-                                        ) : (
-                                            <div className={`pro-avatar pro-avatar-colored pro-color-${proColorIdx}`} style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
-                                                {pro.name.charAt(0)}
-                                            </div>
-                                        )}
-                                        <span className="pro-name">{pro.name.split(' ')[0]}</span>
+                        {/* Half-hour Lines (Subtle) */}
+                        {/* {hours.map(h => (
+                            <div key={`half-${h}`} style={{ position: 'absolute', top: `${(h - 8) * 60 + 50}px`, left: 0, right: 0, height: '1px', borderTop: '1px dashed rgba(255,255,255,0.02)' }}></div>
+                        ))} */}
+
+                        {/* All Appointments for the selected day/professionals */}
+                        {appointments
+                            .filter(a => selectedPros.includes(a.professional_id))
+                            .filter(a => getISODate(a.start_time || a.appointment_date) === targetDateStr)
+                            .map((appt, idx) => {
+                                const { top, height } = getApptPosition(appt.start_time || appt.appointment_date, appt.service_duration_minutes || 30);
+                                const proIdx = professionals.findIndex(p => p.id === appt.professional_id || p.name === appt.professional_name) % 5;
+                                const isPast = isPastAppointment(appt);
+
+                                return (
+                                    <div
+                                        key={appt.id}
+                                        className={`appointment-block pro-bg-${proIdx}`}
+                                        style={{
+                                            position: 'absolute',
+                                            top: `${top}px`,
+                                            maxHeight: '100%',
+                                            height: `${height}px`,
+                                            left: '4px',
+                                            right: '4px',
+                                            padding: '8px 12px',
+                                            borderRadius: '10px',
+                                            zIndex: 10,
+                                            opacity: isPast ? 0.6 : 1,
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            justifyContent: 'center',
+                                            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                                            borderLeft: '4px solid rgba(255,255,255,0.4)',
+                                            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                            overflow: 'hidden'
+                                        }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDate(new Date(appt.start_time || appt.appointment_date));
+                                            setShowDayModal(true);
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
+                                            <span style={{ fontWeight: 900, fontSize: '0.8rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{appt.customer_name}</span>
+                                            <span style={{ fontSize: '0.6rem', fontWeight: 700, opacity: 0.9, background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px' }}>
+                                                {new Date(appt.start_time || appt.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                                            {appt.professional_name?.split(' ')[0]} • {appt.title}
+                                        </div>
                                     </div>
-
-                                    <div className="appointments-grid-area" onClick={() => {
-                                        setNewAppt({ ...newAppt, professional_id: pro.id });
-                                        setShowModal(true);
-                                    }}>
-                                        {hours.map(h => (
-                                            <div key={h} className="grid-hour-line" style={{ top: `${(h - 8) * 60}px` }}></div>
-                                        ))}
-
-                                        {proAppts.map(appt => {
-                                            const { top, height } = getApptPosition(appt.start_time || appt.appointment_date, appt.service_duration_minutes || 30);
-                                            const isPast = isPastAppointment(appt);
-
-                                            return (
-                                                <div
-                                                    key={appt.id}
-                                                    className={`appointment-block pro-bg-${proColorIdx}`}
-                                                    style={{
-                                                        top: `${top}px`,
-                                                        height: `${height}px`,
-                                                        opacity: isPast ? 0.6 : 1,
-                                                        borderColor: appt.status === 'completed' ? '#10b981' : 'inherit'
-                                                    }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDate(new Date(appt.start_time || appt.appointment_date));
-                                                        setShowDayModal(true);
-                                                    }}
-                                                >
-                                                    <span className="appt-customer">{appt.customer_name}</span>
-                                                    <span className="appt-time">
-                                                        {new Date(appt.start_time || appt.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                        {` - ${appt.title}`}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
                     </div>
                 </div>
             </div>
@@ -455,7 +626,7 @@ const AppointmentsCalendar = () => {
                     <div className="card modal-content-luxury" style={{ maxWidth: '600px', width: '100%', padding: '0', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         <div className="modal-header-luxury">
                             <h2>{date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</h2>
-                            <button onClick={() => setShowDayModal(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
+                            <button onClick={() => setShowDayModal(false)} className="btn-icon" style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
                         </div>
                         <div style={{ padding: '2rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -545,7 +716,7 @@ const AppointmentsCalendar = () => {
                     <div className="card modal-content-luxury" style={{ maxWidth: '650px', width: '100%', padding: '0', overflow: 'hidden' }}>
                         <div className="modal-header-luxury">
                             <h2>Agendar Compromisso</h2>
-                            <button onClick={() => setShowModal(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
+                            <button onClick={() => setShowModal(false)} className="btn-icon" style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
                         </div>
                         <form onSubmit={handleCreate} style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             <div className="form-group">
@@ -627,7 +798,7 @@ const AppointmentsCalendar = () => {
                     <div className="card modal-content-luxury" style={{ maxWidth: '500px', width: '100%', padding: '0', overflow: 'hidden' }}>
                         <div className="modal-header-luxury">
                             <h2>Configurar Google Agenda</h2>
-                            <button onClick={() => setShowGoogleConfig(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
+                            <button onClick={() => setShowGoogleConfig(false)} className="btn-icon" style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
                         </div>
                         <form onSubmit={handleSaveGoogleConfig} style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>

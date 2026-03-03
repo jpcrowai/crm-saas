@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDataCache } from '../hooks/useDataCache';
 import { getFinanceEntries, createFinanceEntry, updateFinanceEntryStatus, deleteFinanceEntry, exportFinanceEntries } from '../services/api';
-import { Plus, Search, DollarSign, Download, Settings, Trash2, CheckCircle2, ArrowUpCircle, ArrowDownCircle, XCircle, Activity, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Plus, Search, DollarSign, Download, Settings, Trash2, CheckCircle2, ArrowUpCircle, ArrowDownCircle, XCircle, Activity, TrendingUp, AlertTriangle, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import FinanceWizard from '../components/FinanceWizard';
 import KpiCarousel from '../components/KpiCarousel';

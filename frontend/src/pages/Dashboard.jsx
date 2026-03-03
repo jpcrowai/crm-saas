@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { getTenantStats, createLead, fetcher, getReports } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, DollarSign, TrendingUp, Users, Plus, Activity, CreditCard, Shield, Upload, ArrowRight, XCircle, Target, Briefcase } from 'lucide-react';
+import { User, Mail, DollarSign, TrendingUp, Users, Plus, Activity, CreditCard, Shield, Upload, ArrowRight, XCircle, Target, Briefcase, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
 import KpiCarousel from '../components/KpiCarousel';
 import TabbedDashboard from '../components/TabbedDashboard';
@@ -108,78 +108,60 @@ const ClientDashboard = () => {
   ];
 
   // KPI CARDS DEFINITIONS
-  const generalKpis = stats ? [
+  const generalKpis = summary ? [
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--navy-600)' }}>
       <div className="indicator-icon-wrapper" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'white' }}><Users size={28} /></div>
+      <div className="indicator-data">
+        <label>Base de Clientes</label>
+        <p>{summary.total_customers}</p>
+      </div>
+    </div>,
+    <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)' }}><CheckCircle2 size={28} /></div>
+      <div className="indicator-data">
+        <label>Assinaturas Ativas</label>
+        <p>{summary.active_subscriptions}</p>
+      </div>
+    </div>,
+    <div className="indicator-card-luxury" style={{ borderTopColor: summary.past_due_subscriptions > 0 ? 'var(--error)' : 'var(--success)' }}>
+      <div className="indicator-icon-wrapper" style={{ background: summary.past_due_subscriptions > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.05)', color: summary.past_due_subscriptions > 0 ? 'var(--error)' : 'white' }}>
+        <AlertCircle size={28} />
+      </div>
+      <div className="indicator-data">
+        <label>Atrasos Detectados</label>
+        <p>{summary.past_due_subscriptions}</p>
+      </div>
+    </div>
+  ] : [
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
+    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>
+  ];
+
+  const salesKpis = stats ? [
+    <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--gold-500)' }}>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--gold-500)' }}><Target size={28} /></div>
       <div className="indicator-data">
         <label>Total de Leads</label>
         <p>{stats.total_leads}</p>
       </div>
     </div>,
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--primary)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)' }}><DollarSign size={28} /></div>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)' }}><TrendingUp size={28} /></div>
       <div className="indicator-data">
-        <label>Receita Bruta</label>
-        <p>R$ {stats.total_revenue.toLocaleString('pt-BR')}</p>
-      </div>
-    </div>,
-    <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}><TrendingUp size={28} /></div>
-      <div className="indicator-data">
-        <label>Taxa de Conversão</label>
+        <label>Taxa Conversão</label>
         <p>{stats.conversion_rate}%</p>
       </div>
-    </div>
-  ] : [
-    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
-    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
-    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>
-  ];
-
-  const financeKpis = reportData ? [
-    <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--primary)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)' }}><Target size={28} /></div>
-      <div className="indicator-data">
-        <label>ROI Médio / Lead</label>
-        <p>R$ {(reportData.total_revenue / (reportData.total_leads || 1)).toFixed(2)}</p>
-      </div>
     </div>,
     <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}><TrendingUp size={28} /></div>
+      <div className="indicator-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}><DollarSign size={28} /></div>
       <div className="indicator-data">
-        <label>Receita Líquida</label>
-        <p>R$ {(reportData.total_revenue - reportData.total_expenses).toLocaleString('pt-BR')}</p>
-      </div>
-    </div>,
-    <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--error)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}><CreditCard size={28} /></div>
-      <div className="indicator-data">
-        <label>Despesas Totais</label>
-        <p>R$ {reportData.total_expenses.toLocaleString('pt-BR')}</p>
+        <label>LTV Estimado</label>
+        <p>R$ {(stats.total_revenue / (summary?.total_customers || 1)).toLocaleString('pt-BR')}</p>
       </div>
     </div>
   ] : [
     <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
-    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
-    <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>
-  ];
-
-  const consultoriaKpis = reportData ? [
-    <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--gold-500)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: 'var(--gold-50)', color: 'var(--gold-600)' }}><Briefcase size={28} /></div>
-      <div className="indicator-data">
-        <label>Projetos Ativos</label>
-        <p>{reportData.customer_ranking?.length || 0}</p>
-      </div>
-    </div>,
-    <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--navy-700)' }}>
-      <div className="indicator-icon-wrapper" style={{ background: '#f1f5f9', color: 'var(--navy-800)' }}><Activity size={28} /></div>
-      <div className="indicator-data">
-        <label>Performance Média</label>
-        <p>88%</p>
-      </div>
-    </div>
-  ] : [
     <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>,
     <div className="indicator-card-luxury skeleton" style={{ height: '140px' }}></div>
   ];
@@ -198,25 +180,57 @@ const ClientDashboard = () => {
           <div className="grid-profile">
             <div className="data-card-luxury">
               <div className="data-card-header">
-                <h3>Atividade Comercial</h3>
+                <h3>Resumo de Operações</h3>
               </div>
-              <div style={{ padding: '1.5rem' }}>
-                <div style={{ height: '300px', width: '100%' }}>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '0.75rem' }} stroke="rgba(255,255,255,0.4)" />
-                      <YAxis axisLine={false} tickLine={false} style={{ fontSize: '0.75rem' }} stroke="rgba(255,255,255,0.4)" />
-                      <Tooltip cursor={{ fill: 'rgba(212, 175, 55, 0.05)' }} contentStyle={{ borderRadius: '12px', background: 'var(--navy-900)', border: '1px solid rgba(255,255,255,0.1)' }} />
-                      <Bar dataKey="leads" fill="var(--gold-500)" radius={[4, 4, 0, 0]} barSize={30} />
-                    </BarChart>
-                  </ResponsiveContainer>
+              <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div>
+                    <h4 style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.25rem' }}>Ticket Médio</h4>
+                    <p style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--gold-400)' }}>
+                      R$ {(stats?.total_revenue / (summary?.total_customers || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <TrendingUp color="var(--gold-500)" opacity={0.5} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div style={{ padding: '1rem', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+                    <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 800, color: '#60a5fa', display: 'block', marginBottom: '0.5rem' }}>Novos Leads</label>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 900 }}>{stats?.total_leads || 0}</span>
+                  </div>
+                  <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+                    <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 800, color: '#34d399', display: 'block', marginBottom: '0.5rem' }}>Conversões</label>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 900 }}>{stats?.converted_leads || 0}</span>
+                  </div>
+                </div>
+
+                <div className="luxury-alert-box" style={{
+                  background: summary?.past_due_subscriptions > 0 ? 'rgba(239, 68, 68, 0.05)' : 'rgba(255,255,255,0.02)',
+                  border: summary?.past_due_subscriptions > 0 ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(255,255,255,0.05)',
+                  padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '1rem'
+                }}>
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '10px',
+                    background: summary?.past_due_subscriptions > 0 ? 'var(--error)' : 'rgba(255,255,255,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <AlertCircle size={20} color="white" />
+                  </div>
+                  <div>
+                    <h5 style={{ fontSize: '0.85rem', fontWeight: 700 }}>Saúde da Carteira</h5>
+                    <p style={{ fontSize: '0.75rem', opacity: 0.6 }}>
+                      {summary?.past_due_subscriptions > 0
+                        ? `Atenção: ${summary.past_due_subscriptions} assinaturas estão inadimplentes.`
+                        : 'Todas as assinaturas estão em dia no momento.'}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
+
             <div className="data-card-luxury">
               <div className="data-card-header">
-                <h3>Últimas Movimentações</h3>
+                <h3>Últimos Leads Capturados</h3>
               </div>
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {stats ? stats.recent_leads.slice(0, 5).map((lead) => (
@@ -242,14 +256,75 @@ const ClientDashboard = () => {
       )
     },
     {
-      label: 'Financeiro',
+      label: 'Vendas e Metas',
       content: (
         <div className="tab-fade-in">
-          <KpiCarousel items={financeKpis} />
+          <KpiCarousel items={salesKpis} />
           <div className="grid-profile">
             <div className="data-card-luxury">
               <div className="data-card-header">
-                <h3>Fluxo de Caixa</h3>
+                <h3>Funil de Vendas (Leads)</h3>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <div style={{ height: '300px', width: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '0.75rem' }} stroke="rgba(255,255,255,0.4)" />
+                      <YAxis axisLine={false} tickLine={false} style={{ fontSize: '0.75rem' }} stroke="rgba(255,255,255,0.4)" />
+                      <Tooltip cursor={{ fill: 'rgba(212, 175, 55, 0.05)' }} contentStyle={{ borderRadius: '12px', background: 'var(--navy-900)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                      <Bar dataKey="leads" fill="var(--gold-500)" radius={[4, 4, 0, 0]} barSize={30} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+            <div className="data-card-luxury">
+              <div className="data-card-header">
+                <h3>Ranking de Faturamento/Cliente</h3>
+              </div>
+              <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {summary?.customer_ranking?.slice(0, 5).map((c, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: idx === 0 ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255,255,255,0.03)', borderRadius: '10px', border: idx === 0 ? '1px solid var(--gold-500)' : '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: idx === 0 ? 'var(--grad-gold)' : 'rgba(255,255,255,0.1)', color: idx === 0 ? 'var(--navy-950)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
+                      {idx + 1}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 700 }}>{c.customer_name}</p>
+                    </div>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 800, color: idx === 0 ? 'var(--gold-400)' : 'white' }}>R$ {c.total_revenue.toLocaleString('pt-BR')}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      label: 'Financeiro',
+      content: (
+        <div className="tab-fade-in">
+          <KpiCarousel items={[
+            <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--success)' }}>
+              <div className="indicator-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}><TrendingUp size={28} /></div>
+              <div className="indicator-data">
+                <label>Receita Líquida</label>
+                <p>R$ {(stats?.total_revenue - summary?.total_expenses).toLocaleString('pt-BR')}</p>
+              </div>
+            </div>,
+            <div className="indicator-card-luxury" style={{ borderTopColor: 'var(--error)' }}>
+              <div className="indicator-icon-wrapper" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}><CreditCard size={28} /></div>
+              <div className="indicator-data">
+                <label>Despesas Pagas</label>
+                <p>R$ {summary?.total_expenses?.toLocaleString('pt-BR')}</p>
+              </div>
+            </div>
+          ]} />
+          <div className="grid-profile">
+            <div className="data-card-luxury">
+              <div className="data-card-header">
+                <h3>Composição Financeira</h3>
               </div>
               <div style={{ padding: '1.5rem', height: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -263,39 +338,10 @@ const ClientDashboard = () => {
                 </ResponsiveContainer>
               </div>
             </div>
-            <div className="data-card-luxury">
-              <div className="data-card-header">
-                <h3>Ranking VIP</h3>
-              </div>
-              <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {reportData ? reportData.customer_ranking?.slice(0, 5).map((c, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: idx === 0 ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255,255,255,0.03)', borderRadius: '10px', border: idx === 0 ? '1px solid var(--gold-500)' : '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: idx === 0 ? 'var(--grad-gold)' : 'rgba(255,255,255,0.1)', color: idx === 0 ? 'var(--navy-950)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
-                      {idx + 1}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: '0.85rem', fontWeight: 700 }}>{c.customer_name}</p>
-                    </div>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 800, color: idx === 0 ? 'var(--gold-400)' : 'white' }}>R$ {c.total_revenue.toLocaleString('pt-BR')}</p>
-                  </div>
-                )) : (
-                  [1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton" style={{ height: '50px', borderRadius: '10px' }}></div>)
-                )}
-              </div>
+            <div className="data-card-luxury" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+              <Activity size={48} style={{ margin: '0 auto 1.5rem', opacity: 0.2 }} />
+              <p style={{ opacity: 0.5 }}>Insights avançados de fluxo de caixa estarão disponíveis em breve.</p>
             </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      label: 'Consultoria',
-      content: (
-        <div className="tab-fade-in">
-          <KpiCarousel items={consultoriaKpis} />
-          <div className="data-card-luxury" style={{ padding: '4rem 2rem', textAlign: 'center', background: 'var(--grad-premium)', color: 'white' }}>
-            <Briefcase size={48} style={{ margin: '0 auto 1.5rem', opacity: 0.5, color: 'var(--gold-400)' }} />
-            <h3>Insights de Consultoria</h3>
-            <p style={{ opacity: 0.7, maxWidth: '500px', margin: '0 auto' }}>Acompanhe aqui a evolução estratégica dos seus projetos e métricas de entrega.</p>
           </div>
         </div>
       )
@@ -331,7 +377,7 @@ const ClientDashboard = () => {
           <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '0', overflow: 'hidden' }}>
             <div className="modal-header-luxury">
               <h2>Capturar Prospect</h2>
-              <button onClick={() => setShowLeadForm(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
+              <button onClick={() => setShowLeadForm(false)} className="btn-icon" style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
             </div>
             <form onSubmit={handleAddLead} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div className="form-group">

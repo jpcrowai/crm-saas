@@ -17,7 +17,8 @@ from app.models.sql_models import (
     Niche as SQLNiche,
     PipelineStage as SQLPipelineStage,
     User as SQLUser,
-    FinanceEntry as SQLFinanceEntry
+    FinanceEntry as SQLFinanceEntry,
+    Subscription as SQLSubscription
 )
 
 router = APIRouter(prefix="/tenant", tags=["tenant_data"])
@@ -289,14 +290,27 @@ async def get_dashboard_summary(
         recent_leads=recent_leads
     )
 
-    # 2. Expenses 
+    # 2. Subscriptions Metrics
+    active_subs = db.query(SQLSubscription).filter(
+        SQLSubscription.tenant_id == tenant_id,
+        SQLSubscription.status == "active"
+    ).count()
+    
+    past_due_subs = db.query(SQLSubscription).filter(
+        SQLSubscription.tenant_id == tenant_id,
+        SQLSubscription.status == "past_due"
+    ).count()
+
+    total_customers = db.query(SQLCustomer).filter(SQLCustomer.tenant_id == tenant_id).count()
+
+    # 3. Expenses 
     expenses_paid = db.query(func.sum(SQLFinanceEntry.amount)).filter(
         SQLFinanceEntry.tenant_id == tenant_id,
         SQLFinanceEntry.status == "pago",
         SQLFinanceEntry.type == "despesa"
     ).scalar() or 0.0
 
-    # 3. Ranking
+    # 4. Ranking
     ranking_raw = db.query(
         SQLCustomer.name,
         func.sum(SQLFinanceEntry.amount).label('total')
@@ -313,7 +327,10 @@ async def get_dashboard_summary(
     return {
         "stats": stats,
         "total_expenses": float(expenses_paid),
-        "customer_ranking": ranking
+        "customer_ranking": ranking,
+        "active_subscriptions": active_subs,
+        "past_due_subscriptions": past_due_subs,
+        "total_customers": total_customers
     }
 
 @router.get("/admin-stats", response_model=TenantAdminStats)

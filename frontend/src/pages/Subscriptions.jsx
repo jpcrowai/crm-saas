@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getSubscriptions, getPlans, getCustomers, createSubscription, updateSubscriptionStatus, uploadSubscriptionContract, API_URL, getProfessionals } from '../services/api';
+import { getSubscriptions, getPlans, getCustomers, createSubscription, updateSubscription, updateSubscriptionStatus, uploadSubscriptionContract, API_URL, getProfessionals } from '../services/api';
 import { Plus, Search, CreditCard, User, Package, Calendar, MoreVertical, XCircle, CheckCircle2, AlertCircle, FileText, Settings, Upload } from 'lucide-react';
 import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
@@ -13,6 +13,7 @@ const Subscriptions = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [newSub, setNewSub] = useState({ customer_id: '', plan_id: '', professional_id: '' });
     const [manageSub, setManageSub] = useState(null);
+    const [editData, setEditData] = useState({ plano_id: '', professional_id: '', valor_total: 0, status: '', data_fim: '' });
     const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_Subscriptions') || 'grid');
 
     useEffect(() => {
@@ -20,6 +21,17 @@ const Subscriptions = () => {
     }, [viewMode]);
 
     useEffect(() => { loadData(); }, []);
+
+    const handleManage = (sub) => {
+        setManageSub(sub);
+        setEditData({
+            plano_id: sub.plano_id,
+            professional_id: sub.professional_id || '',
+            valor_total: sub.price || 0,
+            status: sub.status,
+            data_fim: sub.next_billing ? sub.next_billing.split('T')[0] : ''
+        });
+    };
 
     const loadData = async () => {
         try {
@@ -29,7 +41,6 @@ const Subscriptions = () => {
             const cData = Array.isArray(cRes.data) ? cRes.data : [];
             const proData = Array.isArray(proRes.data) ? proRes.data : [];
 
-            // Map names for the UI
             const mappedSubs = sData.map(s => {
                 const customer = cData.find(c => c.id === s.customer_id);
                 const plan = pData.find(p => p.id === s.plano_id);
@@ -37,7 +48,8 @@ const Subscriptions = () => {
                     ...s,
                     customer_name: customer?.name || customer?.nome || 'Cliente Desconhecido',
                     plan_name: plan?.nome || plan?.name || 'Plano Descontinuado',
-                    price: s.valor_total || plan?.valor_base || plan?.price || 0
+                    price: s.valor_total || plan?.valor_base || plan?.price || 0,
+                    contract_url: s.contrato_pdf || s.contract_url || s.contrato_url || null
                 };
             });
 
@@ -53,15 +65,18 @@ const Subscriptions = () => {
         }
     };
 
-    const handleDownloadContract = async (id) => {
+    const handleDownloadContract = async (sub) => {
         try {
-            // Standard approach: open in new tab for direct Supabase URL or use our API stream
+            if (sub.contract_url && sub.contract_url.startsWith('http')) {
+                window.open(sub.contract_url, '_blank');
+                return;
+            }
             const token = localStorage.getItem('token');
-            const downloadUrl = `${API_URL}/tenant/subscriptions/${id}/contract?token=${token}`;
+            const downloadUrl = `${API_URL}/tenant/subscriptions/${sub.id}/contract?token=${token}`;
             window.open(downloadUrl, '_blank');
         } catch (error) {
             console.error("Erro ao baixar contrato:", error);
-            alert("Erro ao acessar contrato. Verifique se ele foi gerado corretamente.");
+            alert("Erro ao acessar contrato.");
         }
     };
 
@@ -104,6 +119,17 @@ const Subscriptions = () => {
         }
     };
 
+    const handleUpdateSubscription = async () => {
+        try {
+            await updateSubscription(manageSub.id, editData);
+            setManageSub(null);
+            loadData();
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao atualizar assinatura.");
+        }
+    };
+
     const handleUpdateStatus = async (id, status) => {
         try {
             await updateSubscriptionStatus(id, status);
@@ -115,18 +141,34 @@ const Subscriptions = () => {
         }
     };
 
+    const handleUploadContract = async (id, file) => {
+        try {
+            await uploadSubscriptionContract(id, file);
+            alert("Contrato enviado com sucesso!");
+            loadData();
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao enviar contrato.");
+        }
+    };
+
     const getStatusBadge = (status) => {
         const styles = {
-            active: { bg: '#dcfce7', color: '#166534', icon: <CheckCircle2 size={12} /> },
-            past_due: { bg: '#fee2e2', color: '#991b1b', icon: <AlertCircle size={12} /> },
-            canceled: { bg: '#f1f5f9', color: '#64748b', icon: <XCircle size={12} /> }
+            'Ativa': { bg: 'rgba(34, 197, 94, 0.1)', color: '#4ade80', icon: <CheckCircle2 size={12} /> },
+            'active': { bg: 'rgba(34, 197, 94, 0.1)', color: '#4ade80', icon: <CheckCircle2 size={12} /> },
+            'Atrasada': { bg: 'rgba(239, 68, 68, 0.1)', color: '#f87171', icon: <AlertCircle size={12} /> },
+            'past_due': { bg: 'rgba(239, 68, 68, 0.1)', color: '#f87171', icon: <AlertCircle size={12} /> },
+            'Cancelada': { bg: 'rgba(255, 255, 255, 0.05)', color: 'rgba(255, 255, 255, 0.4)', icon: <XCircle size={12} /> },
+            'canceled': { bg: 'rgba(255, 255, 255, 0.05)', color: 'rgba(255, 255, 255, 0.4)', icon: <XCircle size={12} /> },
+            'Pendente Assinatura': { bg: 'rgba(212, 175, 55, 0.1)', color: 'var(--gold-400)', icon: <FileText size={12} /> }
         };
-        const s = styles[status] || styles.canceled;
+        const s = styles[status] || { bg: 'rgba(255, 255, 255, 0.05)', color: 'rgba(255, 255, 255, 0.4)', icon: <AlertCircle size={12} /> };
         return (
             <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
                 fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
-                padding: '0.35rem 0.65rem', borderRadius: '6px', background: s.bg, color: s.color
+                padding: '0.35rem 0.65rem', borderRadius: '6px', background: s.bg, color: s.color,
+                border: `1px solid ${s.color}20`
             }}>
                 {s.icon} {status}
             </span>
@@ -181,40 +223,65 @@ const Subscriptions = () => {
                             </thead>
                             <tbody>
                                 {filtered.map(s => (
-                                    <tr key={s.id}>
+                                    <tr key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--navy-900)', color: 'white', fontSize: '0.75rem', fontWeight: 800 }}>
+                                                <div className="indicator-icon-wrapper" style={{
+                                                    width: 38,
+                                                    height: 38,
+                                                    background: 'rgba(212, 175, 55, 0.1)',
+                                                    color: 'var(--gold-500)',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 800,
+                                                    border: '1px solid rgba(212, 175, 55, 0.2)',
+                                                    borderRadius: '10px'
+                                                }}>
                                                     {s.customer_name?.charAt(0)}
                                                 </div>
-                                                <span style={{ fontWeight: 700, color: 'var(--white)' }}>{s.customer_name}</span>
+                                                <span style={{ fontWeight: 700, color: 'white' }}>{s.customer_name}</span>
                                             </div>
                                         </td>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Package size={14} color="var(--gold-600)" />
-                                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.plan_name}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                <div style={{ padding: '4px', borderRadius: '4px', background: 'rgba(212, 175, 55, 0.1)' }}>
+                                                    <Package size={14} color="var(--gold-400)" />
+                                                </div>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{s.plan_name}</span>
                                             </div>
                                         </td>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <User size={14} color="var(--primary)" />
-                                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.professional_name || 'Não definido'}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                <div style={{ padding: '4px', borderRadius: '4px', background: 'rgba(59, 130, 246, 0.1)' }}>
+                                                    <User size={14} color="#60a5fa" />
+                                                </div>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>{s.professional_name || 'Não definido'}</span>
                                             </div>
                                         </td>
                                         <td>{getStatusBadge(s.status)}</td>
-                                        <td style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>
+                                        <td style={{ fontSize: '0.85rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>
                                             {s.next_billing ? new Date(s.next_billing).toLocaleDateString('pt-BR') : '---'}
                                         </td>
-                                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--navy-950)' }}>
+                                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--gold-500)', fontSize: '1.1rem' }}>
                                             R$ {(s.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td style={{ textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                <button className="btn-action-luxury" title="Ver Contrato PDF" onClick={() => handleDownloadContract(s.id)}>
-                                                    <FileText size={16} />
+                                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                                <button
+                                                    className="btn-icon"
+                                                    title="Ver Contrato PDF"
+                                                    onClick={() => handleDownloadContract(s)}
+                                                    style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '8px' }}
+                                                >
+                                                    <FileText size={16} color="var(--gold-500)" />
                                                 </button>
-                                                <button className="btn-action-luxury" title="Configurações" onClick={() => setManageSub(s)}><Settings size={16} /></button>
+                                                <button
+                                                    className="btn-icon"
+                                                    title="Configurações"
+                                                    onClick={() => handleManage(s)}
+                                                    style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '8px' }}
+                                                >
+                                                    <Settings size={16} color="var(--gold-500)" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -224,45 +291,85 @@ const Subscriptions = () => {
                     ) : (
                         <div className="data-grid-cards">
                             {filtered.map(s => (
-                                <div key={s.id} className="data-card-item">
-                                    <div className="card-actions-dropdown">
-                                        <button className="btn-icon" title="Ver Contrato PDF" onClick={() => handleDownloadContract(s.id)}>
-                                            <FileText size={16} color="var(--navy-600)" />
+                                <div key={s.id} className="data-card-item" style={{ padding: '2rem', position: 'relative' }}>
+                                    <div className="card-actions-dropdown" style={{
+                                        position: 'absolute',
+                                        top: '1.25rem',
+                                        right: '1.25rem',
+                                        display: 'flex',
+                                        gap: '0.5rem',
+                                        zIndex: 10
+                                    }}>
+                                        <button
+                                            className="btn-icon"
+                                            title="Ver Contrato PDF"
+                                            onClick={() => handleDownloadContract(s)}
+                                            style={{
+                                                background: 'rgba(255,255,255,0.05)',
+                                                borderRadius: '10px',
+                                                padding: '8px',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                backdropFilter: 'blur(4px)'
+                                            }}
+                                        >
+                                            <FileText size={16} color="var(--gold-500)" />
                                         </button>
-                                        <button className="btn-icon" title="Configurações" onClick={() => setManageSub(s)}>
-                                            <Settings size={16} color="var(--primary)" />
+                                        <button
+                                            className="btn-icon"
+                                            title="Configurações"
+                                            onClick={() => handleManage(s)}
+                                            style={{
+                                                background: 'rgba(255,255,255,0.05)',
+                                                borderRadius: '10px',
+                                                padding: '8px',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                backdropFilter: 'blur(4px)'
+                                            }}
+                                        >
+                                            <Settings size={16} color="var(--gold-500)" />
                                         </button>
                                     </div>
                                     <div className="data-card-header-flex">
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div className="indicator-icon-wrapper" style={{ width: 48, height: 48, background: 'var(--navy-900)', color: 'white', fontSize: '1.2rem', fontWeight: 800 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                            <div className="indicator-icon-wrapper" style={{
+                                                width: 54,
+                                                height: 54,
+                                                background: 'rgba(212, 175, 55, 0.1)',
+                                                color: 'var(--gold-500)',
+                                                fontSize: '1.3rem',
+                                                fontWeight: 800,
+                                                border: '1px solid rgba(212, 175, 55, 0.2)',
+                                                borderRadius: '14px'
+                                            }}>
                                                 {s.customer_name?.charAt(0)}
                                             </div>
                                             <div>
-                                                <h3 className="data-card-title">{s.customer_name}</h3>
-                                                <div style={{ marginTop: '0.5rem' }}>
+                                                <h3 className="data-card-title" style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{s.customer_name}</h3>
+                                                <div>
                                                     {getStatusBadge(s.status)}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="data-card-body" style={{ marginTop: '1rem' }}>
-                                        <p>
-                                            <span className="label">Plano</span>
-                                            <span style={{ fontWeight: 600 }}>{s.plan_name}</span>
-                                        </p>
-                                        <p>
-                                            <span className="label">Profissional</span>
-                                            <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{s.professional_name || 'Venda Direta'}</span>
-                                        </p>
-                                        <p>
-                                            <span className="label">Próximo Venc.</span>
-                                            <span style={{ fontWeight: 600 }}>{s.next_billing ? new Date(s.next_billing).toLocaleDateString('pt-BR') : '---'}</span>
-                                        </p>
+                                    <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span className="label" style={{ opacity: 0.5, fontSize: '0.75rem' }}>Plano Contratado</span>
+                                            <span style={{ fontWeight: 700, color: 'white' }}>{s.plan_name}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span className="label" style={{ opacity: 0.5, fontSize: '0.75rem' }}>Profissional</span>
+                                            <span style={{ fontWeight: 700, color: '#60a5fa' }}>{s.professional_name || 'Venda Direta'}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span className="label" style={{ opacity: 0.5, fontSize: '0.75rem' }}>Próximo Faturamento</span>
+                                            <span style={{ fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>
+                                                {s.next_billing ? new Date(s.next_billing).toLocaleDateString('pt-BR') : '---'}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="data-card-footer">
-                                        <span className="label">Valor Total</span>
-                                        <strong style={{ fontSize: '1.25rem', color: 'var(--gold-500)' }}>
+                                    <div className="data-card-footer" style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <span className="label" style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem', color: 'var(--gold-500)' }}>Valor da Recorrência</span>
+                                        <strong style={{ fontSize: '1.5rem', color: 'var(--gold-500)', fontWeight: 900 }}>
                                             R$ {(s.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </strong>
                                     </div>
@@ -338,49 +445,89 @@ const Subscriptions = () => {
 
             {manageSub && (
                 <div className="modal-overlay">
-                    <div className="card" style={{ width: '400px', padding: '0', overflow: 'hidden' }}>
+                    <div className="card" style={{ width: '480px', padding: '0', overflow: 'hidden' }}>
                         <div className="modal-header-luxury">
-                            <h2>Gerenciar Assinatura</h2>
+                            <h2>Editar Assinatura</h2>
                             <button onClick={() => setManageSub(null)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
                         </div>
                         <div style={{ padding: '2rem' }}>
                             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--white)' }}>{manageSub.plan_name}</h3>
-                                <p style={{ color: 'var(--text-muted)' }}>{manageSub.customer_name}</p>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--white)' }}>{manageSub.customer_name}</h3>
+                                <p style={{ color: 'var(--text-muted)' }}>Mantenha os dados da assinatura sempre atualizados</p>
                             </div>
 
-                            <h4 className="form-section-title">Alterar Status</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <button className="btn-secondary" onClick={() => handleUpdateStatus(manageSub.id, 'active')} style={manageSub.status === 'active' ? { borderColor: 'var(--success)', color: 'var(--success)', background: '#f0fdf4' } : {}}>
-                                    <CheckCircle2 size={16} /> Ativa
-                                </button>
-                                <button className="btn-secondary" onClick={() => handleUpdateStatus(manageSub.id, 'past_due')} style={manageSub.status === 'past_due' ? { borderColor: 'var(--error)', color: 'var(--error)', background: '#fef2f2' } : {}}>
-                                    <AlertCircle size={16} /> Atrasada
-                                </button>
-                                <button className="btn-secondary" onClick={() => handleUpdateStatus(manageSub.id, 'canceled')} style={{ gridColumn: 'span 2', borderColor: manageSub.status === 'canceled' ? 'var(--text-muted)' : '', opacity: manageSub.status === 'canceled' ? 0.7 : 1 }}>
-                                    <XCircle size={16} /> Cancelar Assinatura
-                                </button>
+                            <div className="form-grid-luxury" style={{ gap: '1rem' }}>
+                                <div className="form-group-luxury">
+                                    <label>Plano Associado</label>
+                                    <select
+                                        value={editData.plano_id}
+                                        onChange={(e) => setEditData({ ...editData, plano_id: e.target.value })}
+                                    >
+                                        {plans.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="form-group-luxury">
+                                    <label>Profissional Responsável</label>
+                                    <select
+                                        value={editData.professional_id}
+                                        onChange={(e) => setEditData({ ...editData, professional_id: e.target.value })}
+                                    >
+                                        <option value="">Nenhum</option>
+                                        {professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="form-group-luxury">
+                                    <label>Valor da Mensalidade (R$)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editData.valor_total}
+                                        onChange={(e) => setEditData({ ...editData, valor_total: parseFloat(e.target.value) })}
+                                    />
+                                </div>
+
+                                <div className="form-group-luxury">
+                                    <label>Próxima Cobrança</label>
+                                    <input
+                                        type="date"
+                                        value={editData.data_fim}
+                                        onChange={(e) => setEditData({ ...editData, data_fim: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="form-group-luxury" style={{ gridColumn: 'span 2' }}>
+                                    <label>Status</label>
+                                    <select
+                                        value={editData.status}
+                                        onChange={(e) => setEditData({ ...editData, status: e.target.value })}
+                                    >
+                                        <option value="active">Ativa</option>
+                                        <option value="past_due">Atrasada</option>
+                                        <option value="canceled">Cancelada</option>
+                                        <option value="Pendente Assinatura">Pendente Assinatura</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                                <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setManageSub(null)}>Cancelar</button>
+                                <button className="btn-primary" style={{ flex: 1.5 }} onClick={handleUpdateSubscription}>Salvar Alterações</button>
+                            </div>
+
+                            <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem' }}>
+                                <h4 className="form-section-title" style={{ marginBottom: '1rem' }}>Documentação</h4>
+                                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', justifyContent: 'center', padding: '0.5rem', border: '1px dashed var(--gold-500)', borderRadius: '8px', color: 'var(--gold-500)', fontWeight: 600 }}>
+                                        <Upload size={16} /> Fazer Upload do Contrato Assinado
+                                        <input type="file" hidden accept=".pdf" onChange={(e) => {
+                                            if (e.target.files[0]) handleUploadContract(manageSub.id, e.target.files[0]);
+                                        }} />
+                                    </label>
+                                </div>
                             </div>
                         </div>
-
-                        <h4 className="form-section-title" style={{ marginTop: '1.5rem' }}>Contrato Assinado</h4>
-                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-soft)' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', justifyContent: 'center', padding: '0.5rem', border: '1px dashed var(--primary)', borderRadius: '6px', color: 'var(--primary)', fontWeight: 600 }}>
-                                <Upload size={16} /> Fazer Upload do PDF
-                                <input type="file" hidden accept=".pdf" onChange={(e) => {
-                                    if (e.target.files[0]) handleUploadContract(manageSub.id, e.target.files[0]);
-                                }} />
-                            </label>
-                            {manageSub.contrato_assinado_url && (
-                                <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--success)', textAlign: 'center', fontWeight: 600 }}>
-                                    ✓ Contrato assinado em arquivo
-                                </p>
-                            )}
-                        </div>
-
-                        <footer style={{ marginTop: '2rem', textAlign: 'center' }}>
-                            <button className="btn-secondary" style={{ width: '100%' }} onClick={() => setManageSub(null)}>Fechar</button>
-                        </footer>
                     </div>
                 </div>
             )}

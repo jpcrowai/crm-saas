@@ -145,26 +145,55 @@ const ProductCatalog = () => {
                             </thead>
                             <tbody>
                                 {filtered.map(i => (
-                                    <tr key={i.id}>
+                                    <tr key={i.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--navy-900)', color: 'white', fontSize: '0.7rem' }}>
+                                                <div className="indicator-icon-wrapper" style={{
+                                                    width: 38,
+                                                    height: 38,
+                                                    background: 'rgba(212, 175, 55, 0.1)',
+                                                    color: 'var(--gold-500)',
+                                                    fontSize: '0.65rem',
+                                                    border: '1px solid rgba(212, 175, 55, 0.2)',
+                                                    borderRadius: '8px'
+                                                }}>
                                                     {i.sku || 'N/A'}
                                                 </div>
-                                                <span style={{ fontWeight: 700, color: 'var(--navy-900)' }}>{i.name}</span>
+                                                <span style={{ fontWeight: 700, color: 'white' }}>{i.name}</span>
                                             </div>
                                         </td>
-                                        <td><p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>{i.description}</p></td>
+                                        <td><p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', lineHeight: '1.4' }}>{i.description || 'Sem descrição'}</p></td>
                                         <td>
-                                            <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.3rem 0.6rem', borderRadius: '4px', background: '#f1f5f9', color: '#64748b' }}>{i.category}</span>
+                                            <span style={{
+                                                fontSize: '0.65rem',
+                                                fontWeight: 800,
+                                                textTransform: 'uppercase',
+                                                padding: '0.3rem 0.6rem',
+                                                borderRadius: '4px',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                color: 'rgba(255,255,255,0.6)',
+                                                border: '1px solid rgba(255,255,255,0.1)'
+                                            }}>{i.category}</span>
                                         </td>
-                                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--navy-950)' }}>
+                                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--gold-500)', fontSize: '1.1rem' }}>
                                             R$ {(i.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td style={{ textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                <button className="btn-action-luxury" onClick={() => handleEdit(i)}><Edit3 size={16} /></button>
-                                                <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => handleDelete(i.id)}><Trash2 size={16} /></button>
+                                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                                <button
+                                                    className="btn-icon"
+                                                    onClick={() => handleEdit(i)}
+                                                    style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '8px' }}
+                                                >
+                                                    <Edit3 size={16} color="var(--gold-500)" />
+                                                </button>
+                                                <button
+                                                    className="btn-icon"
+                                                    style={{ background: 'rgba(220, 38, 38, 0.1)', borderRadius: '8px', padding: '8px' }}
+                                                    onClick={() => handleDelete(i.id)}
+                                                >
+                                                    <Trash2 size={16} color="#ef4444" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -175,9 +204,42 @@ const ProductCatalog = () => {
                         <div className="data-grid-cards">
                             {filtered.map(i => (
                                 <div key={i.id} className="data-card-item">
-                                    <div className="card-actions-dropdown">
-                                        <button className="btn-icon" onClick={() => handleEdit(i)} title="Editar"><Edit3 size={16} color="var(--navy-600)" /></button>
-                                        <button className="btn-icon" onClick={() => handleDelete(i.id)} title="Excluir"><Trash2 size={16} color="var(--error)" /></button>
+                                    <div className="card-actions-dropdown" style={{
+                                        position: 'absolute',
+                                        top: '1rem',
+                                        right: '1rem',
+                                        display: 'flex',
+                                        gap: '0.5rem',
+                                        zIndex: 10
+                                    }}>
+                                        <button
+                                            className="btn-icon"
+                                            onClick={() => handleEdit(i)}
+                                            title="Editar"
+                                            style={{
+                                                background: 'rgba(255,255,255,0.05)',
+                                                borderRadius: '10px',
+                                                padding: '8px',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                backdropFilter: 'blur(4px)'
+                                            }}
+                                        >
+                                            <Edit3 size={16} color="var(--gold-500)" />
+                                        </button>
+                                        <button
+                                            className="btn-icon"
+                                            onClick={() => handleDelete(i.id)}
+                                            title="Excluir"
+                                            style={{
+                                                background: 'rgba(220, 38, 38, 0.1)',
+                                                borderRadius: '10px',
+                                                padding: '8px',
+                                                border: '1px solid rgba(220, 38, 38, 0.2)',
+                                                backdropFilter: 'blur(4px)'
+                                            }}
+                                        >
+                                            <Trash2 size={16} color="#ef4444" />
+                                        </button>
                                     </div>
                                     <div className="data-card-header-flex">
                                         <div>

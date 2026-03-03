@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getLeads, updateLead, getNicheConfig } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { DollarSign, MoreHorizontal, Settings, Trophy, User, MapPin, Layers, Plus, XCircle } from 'lucide-react';
+import { DollarSign, MoreHorizontal, Settings, Trophy, User, MapPin, Layers, Plus, XCircle, X } from 'lucide-react';
 import FinanceWizard from '../components/FinanceWizard';
 import LeadDetailsModal from '../components/LeadDetailsModal';
 import '../styles/tenant-luxury.css';
@@ -248,23 +248,49 @@ const Pipeline = () => {
             )}
             {/* PIPELINE CONFIG MODAL */}
             {showPipelineConfig && (
-                <div className="modal-overlay">
-                    <div className="card" style={{ width: '500px', padding: '0', overflow: 'hidden' }}>
-                        <div className="modal-header-luxury">
-                            <h2>Configurar Fluxo de Vendas</h2>
-                            <button onClick={() => setShowPipelineConfig(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle size={22} /></button>
+                <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className="card" style={{
+                        width: '100%',
+                        maxWidth: '500px',
+                        padding: '0',
+                        overflow: 'hidden',
+                        maxHeight: '90vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        margin: 'auto'
+                    }}>
+                        <div className="modal-header-luxury" style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '1.5rem 2rem'
+                        }}>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Configurar Fluxo</h2>
+                            <button onClick={() => setShowPipelineConfig(false)} className="btn-icon" style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: 'none', cursor: 'pointer' }}>
+                                <X size={24} />
+                            </button>
                         </div>
-                        <div style={{ padding: '2rem' }}>
+                        <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                                 Defina as etapas do seu funil comercial.
                             </p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem', maxHeight: '300px', overflowY: 'auto' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
                                 {tempStages.map((stage, idx) => (
-                                    <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: '#f8fafc', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border-soft)' }}>
+                                    <div key={idx} style={{
+                                        display: 'flex',
+                                        gap: '0.75rem',
+                                        alignItems: 'center',
+                                        background: '#f8fafc',
+                                        padding: '0.75rem 1rem',
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--border-soft)',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                                    }}>
                                         <Layers size={14} color="var(--gold-500)" />
                                         <input
                                             className="input-premium"
-                                            style={{ flex: 1, padding: '0.4rem', border: 'none', background: 'transparent' }}
+                                            placeholder="Nome da etapa"
+                                            style={{ flex: 1, padding: '0.4rem', border: 'none', background: 'transparent', fontWeight: 600 }}
                                             value={stage}
                                             onChange={(e) => {
                                                 const newStages = [...tempStages];
@@ -272,22 +298,25 @@ const Pipeline = () => {
                                                 setTempStages(newStages);
                                             }}
                                         />
-                                        <button onClick={() => setTempStages(tempStages.filter((_, i) => i !== idx))} style={{ color: 'var(--error)', padding: '0.4rem' }}>
-                                            <XCircle size={16} />
+                                        <button
+                                            onClick={() => setTempStages(tempStages.filter((_, i) => i !== idx))}
+                                            style={{ color: 'var(--error)', padding: '0.4rem', border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.7 }}
+                                        >
+                                            <X size={20} />
                                         </button>
                                     </div>
                                 ))}
                             </div>
                             <button
                                 className="btn-secondary"
-                                style={{ width: '100%', marginBottom: '2rem', borderStyle: 'dashed' }}
+                                style={{ width: '100%', marginBottom: '2rem', borderStyle: 'dashed', justifyContent: 'center' }}
                                 onClick={() => setTempStages([...tempStages, "Nova Etapa"])}
                             >
                                 <Plus size={18} /> Adicionar Etapa
                             </button>
-                            <footer style={{ display: 'flex', gap: '1rem' }}>
-                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowPipelineConfig(false)}>Cancelar</button>
-                                <button type="button" className="btn-primary" style={{ flex: 2 }} onClick={handleSavePipelineConfig}>Salvar Estrutura</button>
+                            <footer style={{ display: 'flex', gap: '1rem', marginTop: 'auto' }}>
+                                <button type="button" className="btn-secondary" style={{ flex: 1, padding: '0.75rem' }} onClick={() => setShowPipelineConfig(false)}>Cancelar</button>
+                                <button type="button" className="btn-primary" style={{ flex: 1.5, padding: '0.75rem' }} onClick={handleSavePipelineConfig}>Salvar</button>
                             </footer>
                         </div>
                     </div>

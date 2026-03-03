@@ -236,6 +236,8 @@ export const createFinance = (data) => {
   return api.post('/tenant/finances', data);
 };
 
+export const createFinanceEntry = createFinance; // Alias for FinanceExtrato.jsx
+
 export const updateFinanceStatus = (id, payload) => {
   return api.put(`/tenant/finances/${id}`, payload);
 };
@@ -341,7 +343,8 @@ export const createPlan = (data) => api.post('/tenant/plans', data);
 export const updatePlan = (id, data) => api.put(`/tenant/plans/${id}`, data);
 export const getSubscriptions = () => api.get('/tenant/subscriptions');
 export const createSubscription = (data) => api.post('/tenant/subscriptions', data);
-export const updateSubscriptionStatus = (id, status) => api.put(`/tenant/subscriptions/${id}`, { status });
+export const updateSubscription = (id, data) => api.put(`/tenant/subscriptions/${id}`, data);
+export const updateSubscriptionStatus = (id, status) => updateSubscription(id, { status });
 export const uploadSubscriptionContract = (id, file) => {
   const formData = new FormData();
   formData.append('file', file);

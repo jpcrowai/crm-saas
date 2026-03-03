@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, master, tenant_users
 from fastapi.staticfiles import StaticFiles
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from app.database import engine, Base
 import app.models.sql_models as sql_models
 

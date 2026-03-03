@@ -199,23 +199,37 @@ const Plans = () => {
                             </thead>
                             <tbody>
                                 {plans.map(plan => (
-                                    <tr key={plan.id}>
-                                        <td style={{ fontWeight: 700, color: 'var(--white)' }}>{plan.name}</td>
-                                        <td style={{ textTransform: 'capitalize' }}>{plan.periodicity === 'monthly' ? 'Mensal' : 'Anual'}</td>
-                                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--success)' }}>
-                                            R$ {(plan.price || 0).toLocaleString('pt-BR')}
+                                    <tr key={plan.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <td style={{ fontWeight: 700, color: 'white' }}>{plan.name}</td>
+                                        <td style={{ textTransform: 'capitalize', color: 'rgba(255,255,255,0.6)' }}>{plan.periodicity === 'monthly' ? 'Mensal' : 'Anual'}</td>
+                                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--gold-500)', fontSize: '1.1rem' }}>
+                                            R$ {(plan.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                                                 {plan.items.map((it, idx) => (
-                                                    <span key={idx} style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.05)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                                    <span key={idx} style={{
+                                                        fontSize: '0.65rem',
+                                                        background: 'rgba(212, 175, 55, 0.1)',
+                                                        color: 'var(--gold-400)',
+                                                        border: '1px solid rgba(212, 175, 55, 0.2)',
+                                                        padding: '0.2rem 0.5rem',
+                                                        borderRadius: '6px',
+                                                        fontWeight: 700
+                                                    }}>
                                                         {it.name}
                                                     </span>
                                                 ))}
                                             </div>
                                         </td>
                                         <td style={{ textAlign: 'right' }}>
-                                            <button className="btn-action-luxury" onClick={() => handleEdit(plan)}><Edit3 size={14} /></button>
+                                            <button
+                                                className="btn-icon"
+                                                onClick={() => handleEdit(plan)}
+                                                style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '8px' }}
+                                            >
+                                                <Edit3 size={16} color="var(--gold-500)" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -226,34 +240,96 @@ const Plans = () => {
             ) : (
                 <div className="indicator-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
                     {plans.map(plan => (
-                        <div key={plan.id} className="data-card-luxury" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                            <div className="modal-header-luxury" style={{ padding: '1.5rem', borderBottom: 'none' }}>
-                                <h3 style={{ color: 'var(--text-gold)', margin: 0, fontSize: '1.1rem' }}>{plan.name}</h3>
-                            </div>
-                            <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ marginBottom: '1.5rem' }}>
-                                    <p style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--navy-900)', display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                                        <span style={{ fontSize: '1rem', fontWeight: 600 }}>R$</span> {(plan.price || 0).toLocaleString('pt-BR')}
-                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>/{plan.periodicity === 'monthly' ? 'mês' : 'ano'}</span>
-                                    </p>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>{plan.description}</p>
-                                </div>
-
-                                <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
-                                    <label style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '0.75rem' }}>Incluso no Pacote</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        {plan.items.map((item, idx) => (
-                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--navy-800)' }}>
-                                                <CheckCircle2 size={14} color="var(--success)" /> {item.name} ({item.quantity}x)
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <button className="btn-secondary" style={{ width: '100%', marginTop: 'auto' }} onClick={() => handleEdit(plan)}>
-                                    <Edit3 size={16} /> Detalhes do Plano
+                        <div key={plan.id} className="data-card-item" style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: '100%',
+                            position: 'relative',
+                            padding: '2rem'
+                        }}>
+                            <div className="card-actions-dropdown" style={{
+                                position: 'absolute',
+                                top: '1.25rem',
+                                right: '1.25rem',
+                                zIndex: 10
+                            }}>
+                                <button
+                                    className="btn-icon"
+                                    onClick={() => handleEdit(plan)}
+                                    style={{
+                                        background: 'rgba(255,255,255,0.05)',
+                                        borderRadius: '10px',
+                                        padding: '10px',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        backdropFilter: 'blur(4px)'
+                                    }}
+                                >
+                                    <Edit3 size={18} color="var(--gold-500)" />
                                 </button>
                             </div>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                                    <div style={{ pading: '0.5rem', borderRadius: '8px', background: 'rgba(212, 175, 55, 0.1)', color: 'var(--gold-500)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px' }}>
+                                        <Package size={18} />
+                                    </div>
+                                    <h3 style={{ color: 'white', margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>{plan.name}</h3>
+                                </div>
+                                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', lineHeight: '1.5', minHeight: '3em' }}>{plan.description || 'Sem descrição definida para este plano.'}</p>
+                            </div>
+
+                            <div style={{ marginBottom: '2rem' }}>
+                                <p style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--gold-500)', display: 'flex', alignItems: 'baseline', gap: '0.4rem', margin: 0 }}>
+                                    <span style={{ fontSize: '1.2rem', fontWeight: 700 }}>R$</span>
+                                    {(plan.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                                        /{plan.periodicity === 'monthly' ? 'mês' : 'ano'}
+                                    </span>
+                                </p>
+                            </div>
+
+                            <div style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                borderRadius: '16px',
+                                padding: '1.25rem',
+                                marginBottom: '1.5rem',
+                                border: '1px solid rgba(255,255,255,0.05)',
+                                flex: 1
+                            }}>
+                                <label style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: 900,
+                                    textTransform: 'uppercase',
+                                    color: 'var(--gold-500)',
+                                    display: 'block',
+                                    marginBottom: '1rem',
+                                    letterSpacing: '0.05em'
+                                }}>Serviços Inclusos</label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {plan.items.map((item, idx) => (
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)' }}>
+                                            <CheckCircle2 size={16} color="var(--gold-500)" style={{ opacity: 0.8 }} />
+                                            <span>{item.name}</span>
+                                            <span style={{
+                                                marginLeft: 'auto',
+                                                fontSize: '0.7rem',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                padding: '0.2rem 0.5rem',
+                                                borderRadius: '6px',
+                                                color: 'white',
+                                                fontWeight: 700
+                                            }}>{item.quantity}x</span>
+                                        </div>
+                                    ))}
+                                    {plan.items.length === 0 && (
+                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Nenhum serviço vinculado</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <button className="btn-primary-premium" style={{ width: '100%', padding: '1rem' }} onClick={() => handleEdit(plan)}>
+                                <Edit3 size={18} /> Configurar Plano
+                            </button>
                         </div>
                     ))}
                 </div>

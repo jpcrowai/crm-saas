@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
+import CommandPalette from '../components/CommandPalette'
 import { useAuth } from '../context/AuthContext'
-import { AlertTriangle, LayoutDashboard, Briefcase, Calendar as CalendarIcon, DollarSign, Settings, Activity, Package, Building, Layers, FileText, Users } from 'lucide-react'
+import { AlertTriangle, LayoutDashboard, Briefcase, Calendar as CalendarIcon, DollarSign, Settings, Activity, Package, Building, Layers, FileText, Users, Search } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { Link, useLocation } from 'react-router-dom'
 
@@ -10,8 +11,24 @@ const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false)
   const [activeGroup, setActiveGroup] = useState(null)
   const [activeNavItem, setActiveNavItem] = useState(null)
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
   const { user } = useAuth()
   const location = useLocation()
+
+  // Shortcut for Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsPaletteOpen(prev => !prev);
+      }
+      if (e.key === 'Escape') {
+        setIsPaletteOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Sync active nav item with current route
   useEffect(() => {
@@ -57,6 +74,11 @@ const MainLayout = () => {
       }}
     >
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+
+      <CommandPalette
+        isOpen={isPaletteOpen}
+        onClose={() => setIsPaletteOpen(false)}
+      />
 
       <Toaster
         position="top-right"
@@ -297,6 +319,15 @@ const MainLayout = () => {
               >
                 <Settings size={24} />
               </Link>
+
+              {/* Command Palette Mobile Button */}
+              <button
+                className="mobile-nav-item"
+                onClick={() => setIsPaletteOpen(true)}
+                style={{ background: 'var(--grad-gold)', color: 'var(--navy-950)', borderRadius: '50%', transform: 'scale(1.1)', margin: '0 5px' }}
+              >
+                <Search size={24} />
+              </button>
 
             </div>
           </nav>

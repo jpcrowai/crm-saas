@@ -6,6 +6,7 @@ import { User, Mail, DollarSign, TrendingUp, Users, Plus, Activity, CreditCard, 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
 import KpiCarousel from '../components/KpiCarousel';
 import TabbedDashboard from '../components/TabbedDashboard';
+import Skeleton, { KpiSkeleton, TableSkeleton } from '../components/Skeleton';
 import '../styles/tenant-luxury.css';
 import '../components/KpiCarousel.css';
 import '../components/TabbedDashboard.css';
@@ -14,10 +15,20 @@ const MasterAdminView = () => {
   const { data: stats, error } = useSWR('/tenant/admin-stats', fetcher);
 
   if (!stats) return (
-    <div className="tenant-page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-      <div className="loading-container">
-        <Activity className="animate-pulse" size={48} color="var(--gold-400)" />
-        <p style={{ marginTop: '1rem', fontWeight: 600 }}>Acessando ambiente...</p>
+    <div className="tenant-page-container">
+      <header className="page-header-row">
+        <div className="page-title-group">
+          <Skeleton width="200px" height="32px" className="mb-2" />
+          <Skeleton width="300px" height="16px" />
+        </div>
+      </header>
+      <div className="indicator-grid">
+        <KpiSkeleton />
+        <KpiSkeleton />
+        <KpiSkeleton />
+      </div>
+      <div className="data-card-luxury" style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Skeleton width="80%" height="200px" />
       </div>
     </div>
   );
@@ -233,21 +244,31 @@ const ClientDashboard = () => {
                 <h3>Últimos Leads Capturados</h3>
               </div>
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {stats ? stats.recent_leads.slice(0, 5).map((lead) => (
-                  <div key={lead.id} className="list-row-hover" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--grad-gold)', color: 'var(--navy-950)', fontSize: '0.75rem', fontWeight: 800 }}>
-                      {lead.name.charAt(0).toUpperCase()}
+                {stats ? (
+                  stats.recent_leads?.length > 0 ? (
+                    stats.recent_leads.slice(0, 5).map((lead) => (
+                      <div key={lead.id} className="list-row-hover" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div className="indicator-icon-wrapper" style={{ width: 32, height: 32, background: 'var(--grad-gold)', color: 'var(--navy-950)', fontSize: '0.75rem', fontWeight: 800 }}>
+                          {lead.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--white)' }}>{lead.name}</p>
+                          <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.8)' }}>{lead.email}</p>
+                        </div>
+                        <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.35rem 0.6rem', borderRadius: '6px', background: lead.funil_stage === 'converted' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.1)', color: lead.funil_stage === 'converted' ? '#34d399' : '#cbd5e1' }}>
+                          {lead.funil_stage?.toUpperCase()}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>
+                      <Users size={32} style={{ margin: '0 auto 1rem', display: 'block' }} />
+                      <p style={{ fontSize: '0.85rem' }}>Nenhum lead capturado recentemente.</p>
+                      <button className="btn-secondary" style={{ marginTop: '1rem', width: 'auto', display: 'inline-flex' }} onClick={() => setShowLeadForm(true)}>Criar meu primeiro lead</button>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--white)' }}>{lead.name}</p>
-                      <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.8)' }}>{lead.email}</p>
-                    </div>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.35rem 0.6rem', borderRadius: '6px', background: lead.funil_stage === 'converted' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.1)', color: lead.funil_stage === 'converted' ? '#34d399' : '#cbd5e1' }}>
-                      {lead.funil_stage?.toUpperCase()}
-                    </span>
-                  </div>
-                )) : (
-                  [1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton" style={{ height: '50px', borderRadius: '10px' }}></div>)
+                  )
+                ) : (
+                  <TableSkeleton rows={5} />
                 )}
               </div>
             </div>

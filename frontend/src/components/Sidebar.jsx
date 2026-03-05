@@ -67,7 +67,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         highlight: true
       }] : []),
       { label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/', module: 'dashboard' },
-      { label: 'Monitor de IA', icon: <Activity size={20} />, path: '/bot-monitor', module: 'dashboard' },
+      { label: 'Monitor de IA', icon: <Activity size={20} />, path: '/bot-monitor', module: 'ai_agent' },
       {
         label: 'Vendas / CRM',
         icon: <Briefcase size={20} />,

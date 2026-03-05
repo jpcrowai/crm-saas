@@ -348,6 +348,7 @@ const Pipeline = () => {
                         </div>
                     </div>
                 </div>
+            )}
             {showLeadForm && (
                 <div className="modal-overlay">
                     <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '0', overflow: 'hidden' }}>

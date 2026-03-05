@@ -86,61 +86,12 @@ const MasterAdminView = () => {
 };
 
 const ClientDashboard = () => {
-  const [showLeadForm, setShowLeadForm] = useState(false);
-  const [isSavingLead, setIsSavingLead] = useState(false);
-  const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', value: 0 });
   const { user } = useAuth();
 
   const { data: summary, isValidating } = useSWR('/tenant/dashboard-summary', fetcher, {
     revalidateOnFocus: true,
     dedupingInterval: 5000
   });
-
-  const handleAddLead = async (e) => {
-    e.preventDefault();
-    console.log('Iniciando captura de lead:', newLead);
-    setIsSavingLead(true);
-
-    const leadToAdd = {
-      ...newLead,
-      id: Date.now(),
-      funil_stage: 'new',
-      created_at: new Date().toISOString(),
-      name: newLead.name || newLead.nome,
-      value: parseFloat(newLead.value) || 0
-    };
-
-    // Optimistic update
-    mutate('/tenant/dashboard-summary', (current) => {
-      if (!current || !current.stats) return current;
-      return {
-        ...current,
-        stats: {
-          ...current.stats,
-          total_leads: (current.stats.total_leads || 0) + 1,
-          recent_leads: [leadToAdd, ...(current.stats.recent_leads || [])].slice(0, 5)
-        }
-      };
-    }, false);
-
-    try {
-      const response = await createLead({
-        ...newLead,
-        value: parseFloat(newLead.value) || 0
-      });
-      console.log('Lead criado com sucesso:', response.data);
-      toast.success('Lead capturado com sucesso!');
-      setShowLeadForm(false);
-      setNewLead({ name: '', email: '', phone: '', value: 0 });
-      mutate('/tenant/dashboard-summary');
-    } catch (error) {
-      console.error('Erro ao capturar lead:', error);
-      toast.error('Erro ao salvar lead. Verifique a conexão.');
-      mutate('/tenant/dashboard-summary'); // Rollback
-    } finally {
-      setIsSavingLead(false);
-    }
-  };
 
   const stats = summary?.stats;
   const reportData = summary ? {
@@ -220,9 +171,10 @@ const ClientDashboard = () => {
   ] : [];
 
   // TABS DEFINITION
-  const dashboardTabs = [
+  const allDashboardTabs = [
     {
       label: 'Inteligência IA',
+      module: 'ai_agent',
       content: (
         <div className="tab-fade-in">
           <AIInsights />
@@ -231,6 +183,7 @@ const ClientDashboard = () => {
     },
     {
       label: 'Automações',
+      module: 'ai_agent',
       content: (
         <div className="tab-fade-in">
           <AutomationsManager />
@@ -423,6 +376,11 @@ const ClientDashboard = () => {
     }
   ];
 
+  const activeTabs = allDashboardTabs.filter(tab => {
+    if (!tab.module) return true;
+    return (user?.modulos_habilitados || []).includes(tab.module);
+  });
+
   return (
     <div className="tenant-page-container">
       <header className="page-header-row">
@@ -438,55 +396,11 @@ const ClientDashboard = () => {
           <p>Ecossistema de Inteligência {user?.nicho_nome ? `para ${user.nicho_nome}` : ''}</p>
         </div>
         <div className="page-header-actions">
-          <button className="btn-primary" onClick={() => setShowLeadForm(true)}>
-            <Plus size={20} /> Capturar Lead
-          </button>
         </div>
       </header>
 
-      <TabbedDashboard tabs={dashboardTabs} />
+      <TabbedDashboard tabs={activeTabs} />
 
-      {/* NEW LEAD MODAL */}
-      {showLeadForm && (
-        <div className="modal-overlay">
-          <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '0', overflow: 'hidden' }}>
-            <div className="modal-header-luxury">
-              <h2>Capturar Prospect</h2>
-              <button onClick={() => setShowLeadForm(false)} className="btn-icon" style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
-            </div>
-            <form onSubmit={handleAddLead} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="form-group">
-                <label>Nome Completo</label>
-                <input className="input-premium" placeholder="Ex: Lucas Silva" value={newLead.name} onChange={e => setNewLead({ ...newLead, name: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label>Email de Contato</label>
-                <input className="input-premium" type="email" placeholder="lucas@exemplo.com" value={newLead.email} onChange={e => setNewLead({ ...newLead, email: e.target.value })} required />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label>WhatsApp</label>
-                  <input className="input-premium" placeholder="(11) 9..." value={newLead.phone} onChange={e => setNewLead({ ...newLead, phone: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label>Valor Previsto</label>
-                  <input className="input-premium" type="number" placeholder="R$ 0,00" value={newLead.value} onChange={e => setNewLead({ ...newLead, value: e.target.value })} />
-                </div>
-              </div>
-              <footer style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
-                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowLeadForm(false)} disabled={isSavingLead}>Descartar</button>
-                <button type="submit" className="btn-primary" style={{ flex: 2 }} disabled={isSavingLead}>
-                  {isSavingLead ? (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Activity size={16} className="animate-pulse" /> Salvando...
-                    </span>
-                  ) : 'Salvar Lead'}
-                </button>
-              </footer>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

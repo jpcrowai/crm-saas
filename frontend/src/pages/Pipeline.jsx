@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getLeads, updateLead, getNicheConfig } from '../services/api';
+import { getLeads, updateLead, getNicheConfig, createLead } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { DollarSign, MoreHorizontal, Settings, Trophy, User, MapPin, Layers, Plus, XCircle, X } from 'lucide-react';
 import FinanceWizard from '../components/FinanceWizard';
@@ -21,6 +21,9 @@ const Pipeline = () => {
     const [methods, setMethods] = useState([]);
     const [showPipelineConfig, setShowPipelineConfig] = useState(false);
     const [tempStages, setTempStages] = useState([]);
+    const [showLeadForm, setShowLeadForm] = useState(false);
+    const [isSavingLead, setIsSavingLead] = useState(false);
+    const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', value: 0 });
 
     const { user } = useAuth();
 
@@ -61,6 +64,27 @@ const Pipeline = () => {
             alert("Funil atualizado com sucesso!");
         } catch (e) {
             alert("Erro ao salvar configuração do funil");
+        }
+    };
+
+    const handleAddLead = async (e) => {
+        e.preventDefault();
+        setIsSavingLead(true);
+        try {
+            await createLead({
+                ...newLead,
+                value: parseFloat(newLead.value) || 0
+            });
+            const { toast } = await import('react-hot-toast');
+            toast.success('Lead capturado com sucesso!');
+            setShowLeadForm(false);
+            setNewLead({ name: '', email: '', phone: '', value: 0 });
+            loadData();
+        } catch (error) {
+            const { toast } = await import('react-hot-toast');
+            toast.error('Erro ao salvar lead.');
+        } finally {
+            setIsSavingLead(false);
         }
     };
 
@@ -108,8 +132,11 @@ const Pipeline = () => {
                     <h1>Pipeline de Vendas</h1>
                     <p>Gestão visual do funil estratégico • {pipelineStages.length} estágios ativos</p>
                 </div>
-                <div className="page-header-actions">
-                    <button className="btn-primary" onClick={() => setShowPipelineConfig(true)}>
+                <div className="page-header-actions" style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button className="btn-primary" onClick={() => setShowLeadForm(true)}>
+                        <Plus size={18} /> Novo Lead
+                    </button>
+                    <button className="btn-secondary" onClick={() => setShowPipelineConfig(true)}>
                         <Layers size={18} /> Configurar
                     </button>
                 </div>
@@ -319,6 +346,41 @@ const Pipeline = () => {
                                 <button type="button" className="btn-primary" style={{ flex: 1.5, padding: '0.75rem' }} onClick={handleSavePipelineConfig}>Salvar</button>
                             </footer>
                         </div>
+                    </div>
+                </div>
+            {showLeadForm && (
+                <div className="modal-overlay">
+                    <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '0', overflow: 'hidden' }}>
+                        <div className="modal-header-luxury">
+                            <h2>Capturar Prospect</h2>
+                            <button onClick={() => setShowLeadForm(false)} className="btn-icon" style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleAddLead} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div className="form-group">
+                                <label>Nome Completo</label>
+                                <input className="input-premium" placeholder="Ex: Lucas Silva" value={newLead.name} onChange={e => setNewLead({ ...newLead, name: e.target.value })} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Email de Contato</label>
+                                <input className="input-premium" type="email" placeholder="lucas@exemplo.com" value={newLead.email} onChange={e => setNewLead({ ...newLead, email: e.target.value })} required />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>WhatsApp</label>
+                                    <input className="input-premium" placeholder="(11) 9..." value={newLead.phone} onChange={e => setNewLead({ ...newLead, phone: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Valor Previsto</label>
+                                    <input className="input-premium" type="number" placeholder="R$ 0,00" value={newLead.value} onChange={e => setNewLead({ ...newLead, value: e.target.value })} />
+                                </div>
+                            </div>
+                            <footer style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowLeadForm(false)} disabled={isSavingLead}>Descartar</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 2 }} disabled={isSavingLead}>
+                                    {isSavingLead ? 'Salvando...' : 'Salvar Lead'}
+                                </button>
+                            </footer>
+                        </form>
                     </div>
                 </div>
             )}

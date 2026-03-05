@@ -48,23 +48,48 @@ const CommandPalette = ({ isOpen, onClose }) => {
 
             setLoading(true);
             try {
-                // In a real scenario, we'd have a specific search endpoint
-                // For now, we'll filter local data or simulate
+                // Deep Link Parsing
+                const dateRegex = /^(\d{1,2})\/(\d{1,2})/;
+                const valueRegex = /^([<>])\s*(\d+)/;
+
+                const dateMatch = query.match(dateRegex);
+                const valueMatch = query.match(valueRegex);
+
                 const [leadsRes, custRes] = await Promise.all([getLeads(), getCustomers()]);
 
-                const filteredLeads = leadsRes.data.filter(l =>
-                    l.name.toLowerCase().includes(query.toLowerCase()) ||
-                    l.email?.toLowerCase().includes(query.toLowerCase())
-                ).slice(0, 3);
+                let filteredLeads = [];
+                let filteredCust = [];
+                let filteredActions = [];
 
-                const filteredCust = custRes.data.filter(c =>
-                    c.name.toLowerCase().includes(query.toLowerCase()) ||
-                    c.email?.toLowerCase().includes(query.toLowerCase())
-                ).slice(0, 3);
+                if (dateMatch) {
+                    const [_, day, month] = dateMatch;
+                    filteredActions = [{
+                        id: 'date-nav',
+                        label: `Ir para Agenda em ${day}/${month}`,
+                        icon: <CalendarIcon size={18} />,
+                        path: `/calendar?date=2025-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+                    }];
+                } else if (valueMatch) {
+                    const [_, operator, amount] = valueMatch;
+                    const val = parseFloat(amount);
+                    filteredLeads = leadsRes.data.filter(l =>
+                        operator === '>' ? parseFloat(l.value) >= val : parseFloat(l.value) <= val
+                    ).slice(0, 5);
+                } else {
+                    filteredLeads = leadsRes.data.filter(l =>
+                        l.name.toLowerCase().includes(query.toLowerCase()) ||
+                        l.email?.toLowerCase().includes(query.toLowerCase())
+                    ).slice(0, 3);
 
-                const filteredActions = staticActions.filter(a =>
-                    a.label.toLowerCase().includes(query.toLowerCase())
-                );
+                    filteredCust = custRes.data.filter(c =>
+                        c.name.toLowerCase().includes(query.toLowerCase()) ||
+                        c.email?.toLowerCase().includes(query.toLowerCase())
+                    ).slice(0, 3);
+
+                    filteredActions = staticActions.filter(a =>
+                        a.label.toLowerCase().includes(query.toLowerCase())
+                    );
+                }
 
                 setResults({
                     leads: filteredLeads,

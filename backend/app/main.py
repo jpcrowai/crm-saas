@@ -104,6 +104,12 @@ from app.routers import financial_reports
 app.include_router(financial_reports.router)
 from app.routers import commissions
 app.include_router(commissions.router)
+from app.routers import ai_insights
+app.include_router(ai_insights.router)
+from app.routers import bot
+app.include_router(bot.router)
+from app.routers import automations
+app.include_router(automations.router)
 
 @app.get("/")
 def root():

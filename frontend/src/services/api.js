@@ -119,6 +119,10 @@ export const deleteCustomer = (id) => {
   return api.delete(`/tenant/customers/${id}`);
 };
 
+export const upgradeCustomer = (id) => {
+  return api.put(`/tenant/customers/${id}/upgrade`);
+};
+
 export const exitTenant = () => {
   return api.post('/auth/exit-tenant');
 };
@@ -382,6 +386,8 @@ export const deleteSupplier = (id) => api.delete(`/tenant/suppliers/${id}`);
 
 export const savePipelineStages = (stages) => api.post('/tenant/pipeline-stages', { stages });
 
+// AI Insights
+export const getAIInsights = () => api.get('/tenant/ai/insights');
 
 export const uploadFile = (file) => {
   const formData = new FormData();

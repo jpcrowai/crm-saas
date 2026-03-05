@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from typing import List, Optional, Dict, Any
 import uuid
 import json
@@ -53,15 +53,20 @@ def sync_customer_from_lead(db: Session, tenant_id: uuid.UUID, lead: SQLLead):
         "name": lead.name,
         "email": lead.email,
         "phone": lead.phone,
-        "lead_id": lead.id
+        "lead_id": lead.id,
+        "customer_type": "lead"
     }
 
     if customer:
+        # Don't downgrade a 'cliente' back to 'lead' if it was already upgraded
+        if customer.customer_type == 'cliente':
+            cust_data.pop("customer_type")
+            
         for key, value in cust_data.items():
             setattr(customer, key, value)
     else:
-        customer = SQLCustomer(**cust_data)
-        db.add(customer)
+        new_customer = SQLCustomer(**cust_data)
+        db.add(new_customer)
     
     db.commit()
 
@@ -137,6 +142,7 @@ async def get_leads(
 @router.post("/leads", response_model=Lead)
 async def create_lead(
     lead_in: Dict[str, Any], 
+    background_tasks: BackgroundTasks,
     current_user: TokenData = Depends(get_current_tenant_user),
     db: Session = Depends(get_db)
 ):
@@ -170,6 +176,18 @@ async def create_lead(
     
     # Sync with customers
     sync_customer_from_lead(db, current_user.tenant_id, new_lead)
+    
+    # Trigger Automations (Background)
+    from app.services.automation_service import AutomationService
+    # Use background_tasks instead of create_task to avoid session closing issues
+    payload = {
+        "lead_id": str(new_lead.id),
+        "name": new_lead.name,
+        "email": new_lead.email,
+        "phone": new_lead.phone,
+        "value": float(new_lead.value)
+    }
+    background_tasks.add_task(AutomationService.trigger_automations, current_user.tenant_id, "lead_created", payload)
     
     return new_lead
 
@@ -580,11 +598,28 @@ async def delete_customer(
     current_user: TokenData = Depends(get_current_tenant_user),
     db: Session = Depends(get_db)
 ):
-    cust = db.query(SQLCustomer).filter(SQLCustomer.id == cust_id, SQLCustomer.tenant_id == current_user.tenant_id).first()
-    if not cust: raise HTTPException(status_code=404)
-    db.delete(cust)
+    customer = db.query(SQLCustomer).filter(SQLCustomer.id == cust_id, SQLCustomer.tenant_id == current_user.tenant_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    db.delete(customer)
     db.commit()
-    return {"message": "Deletado"}
+    return {"status": "success"}
+
+@router.put("/customers/{cust_id}/upgrade")
+async def upgrade_customer(
+    cust_id: str,
+    current_user: TokenData = Depends(get_current_tenant_user),
+    db: Session = Depends(get_db)
+):
+    customer = db.query(SQLCustomer).filter(SQLCustomer.id == cust_id, SQLCustomer.tenant_id == current_user.tenant_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    customer.customer_type = "cliente"
+    db.commit()
+    db.refresh(customer)
+    return customer
 
 @router.get("/reports")
 async def get_reports(

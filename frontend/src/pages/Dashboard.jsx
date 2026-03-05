@@ -3,10 +3,13 @@ import useSWR, { mutate } from 'swr';
 import { getTenantStats, createLead, fetcher, getReports } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, DollarSign, TrendingUp, Users, Plus, Activity, CreditCard, Shield, Upload, ArrowRight, XCircle, Target, Briefcase, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
 import KpiCarousel from '../components/KpiCarousel';
 import TabbedDashboard from '../components/TabbedDashboard';
 import Skeleton, { KpiSkeleton, TableSkeleton } from '../components/Skeleton';
+import AIInsights from '../components/AIInsights';
+import AutomationsManager from '../components/AutomationsManager';
 import '../styles/tenant-luxury.css';
 import '../components/KpiCarousel.css';
 import '../components/TabbedDashboard.css';
@@ -84,6 +87,7 @@ const MasterAdminView = () => {
 
 const ClientDashboard = () => {
   const [showLeadForm, setShowLeadForm] = useState(false);
+  const [isSavingLead, setIsSavingLead] = useState(false);
   const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', value: 0 });
   const { user } = useAuth();
 
@@ -92,6 +96,52 @@ const ClientDashboard = () => {
     dedupingInterval: 5000
   });
 
+  const handleAddLead = async (e) => {
+    e.preventDefault();
+    console.log('Iniciando captura de lead:', newLead);
+    setIsSavingLead(true);
+
+    const leadToAdd = {
+      ...newLead,
+      id: Date.now(),
+      funil_stage: 'new',
+      created_at: new Date().toISOString(),
+      name: newLead.name || newLead.nome,
+      value: parseFloat(newLead.value) || 0
+    };
+
+    // Optimistic update
+    mutate('/tenant/dashboard-summary', (current) => {
+      if (!current || !current.stats) return current;
+      return {
+        ...current,
+        stats: {
+          ...current.stats,
+          total_leads: (current.stats.total_leads || 0) + 1,
+          recent_leads: [leadToAdd, ...(current.stats.recent_leads || [])].slice(0, 5)
+        }
+      };
+    }, false);
+
+    try {
+      const response = await createLead({
+        ...newLead,
+        value: parseFloat(newLead.value) || 0
+      });
+      console.log('Lead criado com sucesso:', response.data);
+      toast.success('Lead capturado com sucesso!');
+      setShowLeadForm(false);
+      setNewLead({ name: '', email: '', phone: '', value: 0 });
+      mutate('/tenant/dashboard-summary');
+    } catch (error) {
+      console.error('Erro ao capturar lead:', error);
+      toast.error('Erro ao salvar lead. Verifique a conexão.');
+      mutate('/tenant/dashboard-summary'); // Rollback
+    } finally {
+      setIsSavingLead(false);
+    }
+  };
+
   const stats = summary?.stats;
   const reportData = summary ? {
     total_leads: summary.stats.total_leads,
@@ -99,19 +149,6 @@ const ClientDashboard = () => {
     total_expenses: summary.total_expenses,
     customer_ranking: summary.customer_ranking
   } : null;
-
-  const handleAddLead = async (e) => {
-    e.preventDefault();
-    try {
-      await createLead(newLead);
-      setShowLeadForm(false);
-      setNewLead({ name: '', email: '', phone: '', value: 0 });
-      // Clear cache and re-fetch to reflect new lead immediately
-      mutate('/tenant/dashboard-summary');
-    } catch (error) {
-      alert('Erro ao criar lead');
-    }
-  };
 
   const chartData = [
     { name: 'Seg', leads: 4 }, { name: 'Ter', leads: 3 }, { name: 'Qua', leads: 7 },
@@ -182,9 +219,26 @@ const ClientDashboard = () => {
     { name: 'Despesas', value: reportData.total_expenses, fill: 'var(--error)' }
   ] : [];
 
+  // TABS DEFINITION
   const dashboardTabs = [
     {
-      label: 'Geral',
+      label: 'Inteligência IA',
+      content: (
+        <div className="tab-fade-in">
+          <AIInsights />
+        </div>
+      )
+    },
+    {
+      label: 'Automações',
+      content: (
+        <div className="tab-fade-in">
+          <AutomationsManager />
+        </div>
+      )
+    },
+    {
+      label: 'Visão Geral',
       content: (
         <div className="tab-fade-in">
           <KpiCarousel items={generalKpis} />
@@ -420,8 +474,14 @@ const ClientDashboard = () => {
                 </div>
               </div>
               <footer style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
-                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowLeadForm(false)}>Descartar</button>
-                <button type="submit" className="btn-primary" style={{ flex: 2 }}>Salvar Lead</button>
+                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowLeadForm(false)} disabled={isSavingLead}>Descartar</button>
+                <button type="submit" className="btn-primary" style={{ flex: 2 }} disabled={isSavingLead}>
+                  {isSavingLead ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Activity size={16} className="animate-pulse" /> Salvando...
+                    </span>
+                  ) : 'Salvar Lead'}
+                </button>
               </footer>
             </form>
           </div>

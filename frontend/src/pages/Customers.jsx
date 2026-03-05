@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { getCustomers, createCustomer, deleteCustomer } from '../services/api';
+import { getCustomers, createCustomer, deleteCustomer, upgradeCustomer } from '../services/api';
 import { useDataCache } from '../hooks/useDataCache';
 import { useOptimistic } from '../hooks/useOptimistic';
-import { Plus, Search, Trash2, FileText, Briefcase, XCircle } from 'lucide-react';
+import { Plus, Search, Trash2, FileText, Briefcase, XCircle, CheckCircle2, UserCheck } from 'lucide-react';
 import ViewToggle from '../components/ViewToggle';
 import '../styles/tenant-luxury.css';
 
@@ -42,6 +42,15 @@ const Customers = () => {
             prev => prev.filter(c => c.id !== id),
             () => deleteCustomer(id),
             { errorMessage: `Erro ao remover "${name}". Ação foi revertida.` }
+        );
+    };
+
+    const handleUpgrade = async (id, name) => {
+        if (!window.confirm(`Tornar "${name}" um cliente efetivo?`)) return;
+        await optimistic(
+            prev => prev.map(c => c.id === id ? { ...c, customer_type: 'cliente' } : c),
+            () => upgradeCustomer(id),
+            { errorMessage: `Erro ao atualizar "${name}".` }
         );
     };
 
@@ -119,10 +128,34 @@ const Customers = () => {
                                             </td>
                                             <td style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--navy-700)' }}>{c.document || '---'}</td>
                                             <td>
-                                                <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.3rem 0.6rem', borderRadius: '4px', background: '#ecfdf5', color: '#047857' }}>Ativo</span>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <span style={{
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: 800,
+                                                        textTransform: 'uppercase',
+                                                        padding: '0.3rem 0.6rem',
+                                                        borderRadius: '4px',
+                                                        background: c.customer_type === 'lead' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                                        color: c.customer_type === 'lead' ? 'var(--gold-600)' : 'var(--success)',
+                                                        width: 'fit-content'
+                                                    }}>
+                                                        {c.customer_type === 'lead' ? 'Prospecção (Lead)' : 'Cliente Ativo'}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    {c.customer_type === 'lead' && (
+                                                        <button
+                                                            className="btn-action-luxury"
+                                                            style={{ color: 'var(--success)' }}
+                                                            onClick={() => handleUpgrade(c.id, c.name)}
+                                                            title="Tornar Cliente"
+                                                            disabled={c._pending}
+                                                        >
+                                                            <UserCheck size={16} />
+                                                        </button>
+                                                    )}
                                                     <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => handleDelete(c.id, c.name)} title="Remover" disabled={c._pending}>
                                                         <Trash2 size={16} />
                                                     </button>
@@ -151,7 +184,29 @@ const Customers = () => {
                                                         {c.name}
                                                         {c._pending && <span style={{ fontSize: '0.65rem', marginLeft: '0.5rem', color: 'var(--text-muted)', fontWeight: 400 }}>salvando...</span>}
                                                     </h3>
-                                                    <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(5, 150, 105, 0.2)', color: '#10b981', display: 'inline-block', marginTop: '0.5rem' }}>Ativo</span>
+                                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
+                                                        <span style={{
+                                                            fontSize: '0.65rem',
+                                                            fontWeight: 800,
+                                                            textTransform: 'uppercase',
+                                                            padding: '0.2rem 0.5rem',
+                                                            borderRadius: '4px',
+                                                            background: c.customer_type === 'lead' ? 'rgba(212, 175, 55, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                                            color: c.customer_type === 'lead' ? 'var(--gold-500)' : '#10b981'
+                                                        }}>
+                                                            {c.customer_type === 'lead' ? 'Lead' : 'Cliente'}
+                                                        </span>
+                                                        {c.customer_type === 'lead' && (
+                                                            <button
+                                                                className="btn-icon"
+                                                                style={{ padding: '2px', color: 'var(--success)' }}
+                                                                onClick={() => handleUpgrade(c.id, c.name)}
+                                                                title="Tornar Cliente"
+                                                            >
+                                                                <UserCheck size={14} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

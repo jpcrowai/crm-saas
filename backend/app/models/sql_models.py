@@ -146,6 +146,41 @@ class Lead(Base):
     responsible_user = Column(String) # Name or email from team
 
 
+class Automation(Base):
+    __tablename__ = "automations"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    trigger_type = Column(String, nullable=False) # lead_created, churn_risk, appointment_completed
+    action_type = Column(String, nullable=False) # webhook, internal_task, notification
+    action_config = Column(JSON) # { "url": "...", "headers": "..." }
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    tenant = relationship("Tenant")
+
+
+class BotSession(Base):
+    __tablename__ = "bot_sessions"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("public.leads_crm.id", ondelete="SET NULL"), nullable=True)
+    customer_name = Column(String)
+    status = Column(String, default="active") # active, completed, failed, paused
+    current_step = Column(String)
+    step_progress = Column(Integer, default=0) # 0-100
+    last_message = Column(Text)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    tenant = relationship("Tenant")
+    lead = relationship("Lead")
+
+
 class Customer(Base):
     __tablename__ = "customers"
     __table_args__ = {'schema': 'public'}
@@ -157,6 +192,7 @@ class Customer(Base):
     phone = Column(String)
     document = Column(String)
     address = Column(Text)
+    customer_type = Column(String, default="cliente") # cliente, lead
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -272,12 +308,14 @@ class FinanceEntry(Base):
     observations = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    appointment_id = Column(UUID(as_uuid=True), ForeignKey("public.appointments.id", ondelete="SET NULL"), nullable=True)
+    subscription_id = Column(UUID(as_uuid=True), ForeignKey("public.subscriptions.id", ondelete="SET NULL"), nullable=True)
 
     tenant = relationship("Tenant", back_populates="finance_entries")
     lead = relationship("Lead", back_populates="finance_entries")
     supplier = relationship("Supplier", back_populates="finance_entries")
     appointment = relationship("Appointment", back_populates="finance_entries")
-    appointment_id = Column(UUID(as_uuid=True), ForeignKey("public.appointments.id", ondelete="SET NULL"), nullable=True)
+    subscription = relationship("Subscription")
 
 
 class PipelineStage(Base):

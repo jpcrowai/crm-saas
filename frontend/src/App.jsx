@@ -20,6 +20,7 @@ import GoogleCallback from './pages/GoogleCallback'
 import Professionals from './pages/Professionals'
 import Commissions from './pages/Commissions'
 import Suppliers from './pages/Suppliers'
+import BotMonitor from './pages/BotMonitor'
 import PrivateRoute from './routes/PrivateRoute'
 import ModuleRoute from './routes/ModuleRoute'
 import { useAuth } from './context/AuthContext'
@@ -151,6 +152,11 @@ function App() {
             <ModuleRoute module="assinaturas">
               <Subscriptions />
             </ModuleRoute>
+          </PrivateRoute>
+        } />
+        <Route path="/bot-monitor" element={
+          <PrivateRoute>
+            <BotMonitor />
           </PrivateRoute>
         } />
         <Route path="/google-callback" element={

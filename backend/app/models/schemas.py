@@ -124,6 +124,7 @@ class CustomerBase(BaseModel):
     phone: Optional[str] = None
     document: Optional[str] = None
     address: Optional[str] = None
+    customer_type: str = "cliente" # cliente, lead
 
 class CustomerCreate(CustomerBase):
     lead_id: Optional[uuid.UUID] = None
@@ -133,6 +134,23 @@ class Customer(CustomerBase):
     tenant_id: uuid.UUID
     lead_id: Optional[uuid.UUID] = None
     created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class BotSessionBase(BaseModel):
+    customer_name: Optional[str] = None
+    status: str = "active"
+    current_step: Optional[str] = None
+    step_progress: int = 0
+    last_message: Optional[str] = None
+
+class BotSession(BotSessionBase):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    lead_id: Optional[uuid.UUID] = None
+    started_at: datetime
     updated_at: datetime
 
     class Config:

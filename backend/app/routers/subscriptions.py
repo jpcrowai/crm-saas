@@ -245,20 +245,9 @@ async def create_subscription(sub_in: SubscriptionSchema, current_user: TokenDat
     db.add(new_sub)
     db.flush()  # Flush so sub_id is available for commission FK
     
-    # Future finance entries
-    num_installments = 1 # Simple default
-    for i in range(num_installments):
-        due = start_date + timedelta(days=i*30)
-        db.add(SQLFinanceEntry(
-            tenant_id=current_user.tenant_id,
-            customer_id=sub_in.customer_id,
-            type="receita",
-            description=f"Mensalidade {plan.name} - {i+1}",
-            amount=sub_in.valor_total,
-            due_date=due,
-            status="pendente",
-            origin="assinatura"
-        ))
+    # Future finance entries (12 months ahead)
+    from app.services.billing_service import BillingService
+    BillingService.generate_future_entries(db, new_sub, months_ahead=12)
 
     # Calculate commission for the professional if one was linked
     if sub_in.professional_id:
@@ -308,6 +297,11 @@ async def update_subscription(
                  pass
 
     db.commit()
+    
+    # Sync Finance Entries if price or status changed
+    from app.services.billing_service import BillingService
+    BillingService.sync_subscription_finances(db, sub)
+    
     return {"status": "success", "sub_id": str(sub.id)}
 
 @router.put("/subscriptions/{sub_id}/sign")

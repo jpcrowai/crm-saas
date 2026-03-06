@@ -1,5 +1,5 @@
 import React from 'react'
-import { Search, User } from 'lucide-react'
+import { User } from 'lucide-react'
 import NotificationCenter from './NotificationCenter'
 import { useAuth } from '../context/AuthContext'
 
@@ -23,23 +23,6 @@ const TopHeader = ({ onSearchClick }) => {
             zIndex: 100,
             width: '100%'
         }}>
-            {/* Quick Search Shortcut Info (Desktop Only) */}
-            <div className="search-shortcut desktop-only" style={{
-                marginRight: 'auto',
-                fontSize: '0.75rem',
-                color: 'rgba(255,255,255,0.4)',
-                background: 'rgba(255,255,255,0.03)',
-                padding: '0.4rem 0.8rem',
-                borderRadius: '8px',
-                border: '1px solid rgba(255,255,255,0.05)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer'
-            }} onClick={onSearchClick}>
-                <Search size={14} />
-                <span>Pressione <kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '1px 4px', borderRadius: '4px' }}>Ctrl + K</kbd> para busca rápida</span>
-            </div>
 
             <NotificationCenter />
 

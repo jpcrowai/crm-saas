@@ -110,6 +110,8 @@ from app.routers import bot
 app.include_router(bot.router)
 from app.routers import automations
 app.include_router(automations.router)
+from app.routers import notifications
+app.include_router(notifications.router)
 
 @app.get("/")
 def root():

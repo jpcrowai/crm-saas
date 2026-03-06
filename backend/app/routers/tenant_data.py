@@ -18,7 +18,8 @@ from app.models.sql_models import (
     PipelineStage as SQLPipelineStage,
     User as SQLUser,
     FinanceEntry as SQLFinanceEntry,
-    Subscription as SQLSubscription
+    Subscription as SQLSubscription,
+    Notification as SQLNotification
 )
 
 router = APIRouter(prefix="/tenant", tags=["tenant_data"])
@@ -171,6 +172,17 @@ async def create_lead(
         user_name=current_user.email
     )
     db.add(history)
+    
+    # Create Notification
+    notification = SQLNotification(
+        tenant_id=current_user.tenant_id,
+        title="Nova Oportunidade",
+        message=f"Novo Lead: {new_lead.name} no valor de R$ {new_lead.value:,.2f}",
+        type="info",
+        link_url="/pipeline"
+    )
+    db.add(notification)
+    
     db.commit()
     db.refresh(new_lead)
     
@@ -229,6 +241,17 @@ async def update_lead(
             user_name=current_user.email
         )
         db.add(history)
+    
+    # Notification for major milestones
+    if lead.funil_stage != old_status and lead.funil_stage.lower() == "converted":
+        notification = SQLNotification(
+            tenant_id=current_user.tenant_id,
+            title="Venda Fechada! 🚀",
+            message=f"Parabéns! O lead {lead.name} foi convertido. Valor: R$ {lead.value:,.2f}",
+            type="success",
+            link_url="/customers"
+        )
+        db.add(notification)
     
     db.commit()
     db.refresh(lead)

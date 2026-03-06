@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
+import TopHeader from '../components/TopHeader'
 import CommandPalette from '../components/CommandPalette'
 import { useAuth } from '../context/AuthContext'
-import { AlertTriangle, LayoutDashboard, Briefcase, Calendar as CalendarIcon, DollarSign, Settings, Activity, Package, Building, Layers, FileText, Users, Search } from 'lucide-react'
+import { AlertTriangle, LayoutDashboard, Briefcase, Calendar as CalendarIcon, DollarSign, Settings, Activity, Package, Building, Layers, FileText, Users, Search, Plus } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { Link, useLocation } from 'react-router-dom'
 
@@ -103,9 +104,13 @@ const MainLayout = () => {
           flex: 1,
           background: 'var(--navy-950)',
           color: 'var(--white)',
-          position: 'relative'
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
+        <TopHeader onSearchClick={() => setIsPaletteOpen(true)} />
+
         {/* Payment Warning Banner */}
         {isOverdue && (
           <div style={{
@@ -118,7 +123,8 @@ const MainLayout = () => {
             gap: '0.75rem',
             fontSize: '0.95rem',
             fontWeight: 500,
-            boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
+            boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)',
+            zIndex: 90
           }}>
             <AlertTriangle size={20} />
             <span>
@@ -143,7 +149,7 @@ const MainLayout = () => {
           </div>
         )}
 
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, padding: window.innerWidth <= 768 ? '0' : '0' }}>
           <Outlet />
         </div>
       </main>

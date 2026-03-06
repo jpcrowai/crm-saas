@@ -397,4 +397,10 @@ export const uploadFile = (file) => {
   });
 };
 
+// Notifications Module
+export const getNotifications = () => api.get('/tenant/notifications/');
+export const getUnreadCount = () => api.get('/tenant/notifications/unread-count');
+export const markAsRead = (id) => api.post(`/tenant/notifications/${id}/read`);
+export const markAllAsRead = () => api.post('/tenant/notifications/read-all');
+
 export default api;

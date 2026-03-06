@@ -372,3 +372,19 @@ class ProfessionalPerformance(BaseModel):
 
     class Config:
         from_attributes = True
+
+class NotificationBase(BaseModel):
+    title: str
+    message: str
+    type: str = "info" # info, success, warning, error
+    link_url: Optional[str] = None
+
+class Notification(NotificationBase):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    user_id: Optional[uuid.UUID] = None
+    read: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

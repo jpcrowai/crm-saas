@@ -15,7 +15,8 @@ from app.models.sql_models import (
     Subscription as SQLSubscription,
     FinanceEntry as SQLFinanceEntry,
     FinanceCategory as SQLFinanceCategory,
-    Customer as SQLCustomer
+    Customer as SQLCustomer,
+    Notification as SQLNotification
 )
 from app.services.excel_service import read_sheet, write_sheet # Keep for legacy configs if needed
 from app.services.commission_service import calculate_commission
@@ -268,6 +269,16 @@ async def create_appointment(
     )
     db.add(new_appt)
     db.flush()
+
+    # Create Notification
+    notification = SQLNotification(
+        tenant_id=current_user.tenant_id,
+        title="Novo Agendamento",
+        message=f"Agendamento de {service.name} para {new_appt.customer_name} às {new_appt.start_time.strftime('%H:%M')}",
+        type="success",
+        link_url="/calendar"
+    )
+    db.add(notification)
 
     # 4. Create Finance Entry if not covered by plan
     if billing_status == "open":

@@ -9,7 +9,7 @@ import '../styles/sidebar.css';
 import { useAuth } from '../context/AuthContext';
 import { exitTenant, API_URL } from '../services/api';
 import logoFull from '../assets/branding/logo_full.png';
-import logoIcon from '../assets/branding/logo_icon.png';
+const logoIcon = '/icon-192.png';
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const [openGroups, setOpenGroups] = React.useState({});
@@ -159,12 +159,14 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             )
           ) : (
             <img
-              src={collapsed ? logoIcon : logoFull}
+              src={collapsed ? logoIcon : logoIcon}
               alt="CRMaster Logo"
               style={{
                 height: collapsed ? '36px' : '38px',
                 width: 'auto',
+                aspectRatio: '1/1',
                 objectFit: 'contain',
+                borderRadius: '8px',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
               }}

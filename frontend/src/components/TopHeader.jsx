@@ -55,22 +55,36 @@ const TopHeader = ({ onSearchClick }) => {
 
             <style>{`
                 .app-top-header {
-                    transition: all 0.3s ease;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 }
+                
                 @media (max-width: 768px) {
-                    .app-top-header {
-                        height: 60px !important;
-                        padding: 0 1rem !important;
-                        background: var(--navy-900) !important;
-                        position: fixed !important;
-                        top: 0 !important;
-                        left: 0 !important;
-                        flex-direction: row !important; /* Keep it horizontal */
-                        align-items: center !important;
-                        justify-content: flex-end !important;
+                    header.app-top-header {
+                        position: absolute;
+                        top: 0;
+                        right: 0;
+                        width: auto;
+                        height: auto;
+                        padding: 0 !important;
+                        background: transparent !important;
+                        border: none !important;
+                        z-index: 2000;
+                        pointer-events: none;
                     }
+
+                    .notification-center-container {
+                        position: fixed !important;
+                        top: max(10px, env(safe-area-inset-top)) !important;
+                        right: 15px !important;
+                        pointer-events: auto !important;
+                    }
+
+                    .app-top-header .user-profile-summary {
+                        display: none !important; 
+                    }
+
                     .main-content {
-                        padding-top: 60px !important;
+                        padding-top: 0 !important;
                     }
                 }
             `}</style>

@@ -269,6 +269,20 @@ const NotificationCenter = () => {
                 .notification-item.unread:hover {
                     background: rgba(212,175,55,0.08) !important;
                 }
+                @media (max-width: 768px) {
+                    .btn-icon {
+                        width: 32px !important;
+                        height: 32px !important;
+                    }
+                    .btn-icon svg {
+                        width: 16px !important;
+                        height: 16px !important;
+                    }
+                    .notification-dropdown {
+                        width: 90vw !important;
+                        right: -10px !important;
+                    }
+                }
             `}</style>
         </div>
     )

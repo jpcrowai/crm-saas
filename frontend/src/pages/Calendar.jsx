@@ -123,8 +123,8 @@ const AppointmentsCalendar = () => {
         return { top, height: duration || 60 };
     };
 
-    const proTabs = (
-        <div className="pro-tabs">
+    const proSelectorDesktop = (
+        <div className="pro-tabs desktop-only">
             <button
                 className={`btn-tab-luxury ${selectedPros.length === professionals.length ? 'active' : ''}`}
                 onClick={() => setSelectedPros(selectedPros.length === professionals.length ? [] : professionals.map(p => p.id))}
@@ -132,7 +132,8 @@ const AppointmentsCalendar = () => {
                     padding: '0.4rem 1rem', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 900,
                     background: selectedPros.length === professionals.length ? 'var(--gold-500)' : 'transparent',
                     color: selectedPros.length === professionals.length ? '#000' : 'var(--gold-500)',
-                    border: '1px solid var(--gold-500)'
+                    border: '1px solid var(--gold-500)',
+                    whiteSpace: 'nowrap'
                 }}
             >
                 {selectedPros.length === professionals.length ? 'LIMPAR' : 'TODOS'}
@@ -145,12 +146,44 @@ const AppointmentsCalendar = () => {
                         padding: '0.4rem 1rem', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 600,
                         background: selectedPros.includes(pro.id) ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.03)',
                         border: selectedPros.includes(pro.id) ? '1px solid var(--gold-500)' : '1px solid rgba(255,255,255,0.05)',
-                        color: selectedPros.includes(pro.id) ? '#fff' : 'rgba(255,255,255,0.5)'
+                        color: selectedPros.includes(pro.id) ? '#fff' : 'rgba(255,255,255,0.5)',
+                        whiteSpace: 'nowrap'
                     }}
                 >
                     {pro.name.split(' ')[0].toUpperCase()}
                 </button>
             ))}
+        </div>
+    );
+
+    const proSelectorMobile = (
+        <div className="pro-selector-mobile mobile-only" style={{ width: '100%', marginBottom: '0.5rem' }}>
+            <select
+                className="input-premium"
+                style={{
+                    background: 'var(--navy-800)',
+                    color: 'var(--gold-400)',
+                    border: '1px solid var(--gold-500)',
+                    borderRadius: '12px',
+                    padding: '0.4rem 0.8rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    width: '100%',
+                    appearance: 'none',
+                    textAlign: 'center'
+                }}
+                onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'all') setSelectedPros(professionals.map(p => p.id));
+                    else setSelectedPros([val]);
+                }}
+                value={selectedPros.length === professionals.length ? 'all' : selectedPros[0] || ''}
+            >
+                <option value="all">TODOS OS PROFISSIONAIS</option>
+                {professionals.map(pro => (
+                    <option key={pro.id} value={pro.id}>{pro.name.toUpperCase()}</option>
+                ))}
+            </select>
         </div>
     );
 
@@ -183,26 +216,42 @@ const AppointmentsCalendar = () => {
                 .calendar-grid-container { flex: 1; display: flex; overflow-y: auto; background: var(--navy-950); position: relative; }
                 .time-axis { width: 60px; border-right: 1px solid rgba(255,255,255,0.05); background: var(--navy-900); }
                 .unified-grid-area { flex: 1; position: relative; min-width: 300px; }
+                .pro-tabs { display: flex; gap: 0.5rem; }
+                .mobile-only { display: none; }
+                .desktop-only { display: flex; }
+
                 @media (max-width: 768px) {
-                    .calendar-header { flex-direction: column; }
-                    .pro-tabs { width: 100%; overflow-x: auto; }
+                    .mobile-only { display: block; }
+                    .desktop-only { display: none; }
+                    .calendar-header { padding: 0.75rem !important; gap: 0.5rem !important; }
+                    .calendar-week-strip { padding: 0.5rem !important; }
+                    .pro-selector-mobile { width: 100% !important; margin: 0.25rem 0 !important; }
+                    .calendar-header > div:first-child { margin-bottom: 0.25rem; }
+                    .week-strip-day { padding: 0.4rem 0.2rem !important; min-width: 40px; }
+                    .week-strip-day span:last-child { font-size: 1rem !important; }
                 }
             `}</style>
 
             <div className="calendar-wrapper">
                 <div className="calendar-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <button className="btn-icon" onClick={() => { const d = new Date(date); d.setDate(d.getDate() - 7); setDate(d); }}><ChevronLeft /></button>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</div>
-                            <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Semana de {weekDays[0].getDate()} a {weekDays[6].getDate()}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <button className="btn-icon" style={{ width: '32px', height: '32px' }} onClick={() => { const d = new Date(date); d.setDate(d.getDate() - 7); setDate(d); }}><ChevronLeft size={16} /></button>
+                            <div style={{ textAlign: 'center', minWidth: '100px' }}>
+                                <div style={{ fontWeight: 800, fontSize: '1rem' }}>{date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</div>
+                                <div style={{ fontSize: '0.65rem', opacity: 0.6 }}>{weekDays[0].getDate()} - {weekDays[6].getDate()}</div>
+                            </div>
+                            <button className="btn-icon" style={{ width: '32px', height: '32px' }} onClick={() => { const d = new Date(date); d.setDate(d.getDate() + 7); setDate(d); }}><ChevronRight size={16} /></button>
                         </div>
-                        <button className="btn-icon" onClick={() => { const d = new Date(date); d.setDate(d.getDate() + 7); setDate(d); }}><ChevronRight /></button>
+                        <button className="btn-primary" onClick={() => setShowModal(true)} style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', height: '32px' }}>
+                            <Plus size={16} /> <span className="desktop-only">AGENDAR</span>
+                        </button>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end', flex: 1 }}>
-                        {proTabs}
-                        <button className="btn-primary" onClick={() => setShowModal(true)}><Plus size={18} /> Agendar</button>
-                    </div>
+
+                    {proSelectorMobile}
+
+                    {/* Desktop Pro Selector (Hidden on Mobile) */}
+                    {proSelectorDesktop}
                 </div>
 
                 <div className="calendar-week-strip">
@@ -237,7 +286,73 @@ const AppointmentsCalendar = () => {
                     </div>
                 </div>
             </div>
-            {/* Modals omitted for brevity in this step, but would be here */}
+            {/* APPOINTMENT MODAL */}
+            {showModal && (
+                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="modal-content card-dark" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                        <div className="card-header-row">
+                            <h3 className="text-gold">Novo Agendamento</h3>
+                            <button className="btn-close-modal" onClick={() => setShowModal(false)}><X size={20} /></button>
+                        </div>
+
+                        <form onSubmit={handleCreate} className="form-grid" style={{ marginTop: '1rem' }}>
+                            <div>
+                                <label>Cliente</label>
+                                <select
+                                    className="input-premium"
+                                    required
+                                    value={newAppt.customer_id}
+                                    onChange={(e) => handleCustomerChange(e.target.value)}
+                                >
+                                    <option value="">Selecione um cliente...</option>
+                                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label>Profissional</label>
+                                <select
+                                    className="input-premium"
+                                    required
+                                    value={newAppt.professional_id}
+                                    onChange={(e) => setNewAppt({ ...newAppt, professional_id: e.target.value })}
+                                >
+                                    <option value="">Selecione um profissional...</option>
+                                    {professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label>Serviço</label>
+                                <select
+                                    className="input-premium"
+                                    required
+                                    value={newAppt.service_id}
+                                    onChange={(e) => handleServiceChange(e.target.value)}
+                                >
+                                    <option value="">Selecione um serviço...</option>
+                                    {services.map(s => <option key={s.id} value={s.id}>{s.name} - R$ {s.value}</option>)}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label>Data e Hora</label>
+                                <input
+                                    type="datetime-local"
+                                    className="input-premium"
+                                    required
+                                    value={newAppt.appointment_date}
+                                    onChange={(e) => setNewAppt({ ...newAppt, appointment_date: e.target.value })}
+                                />
+                            </div>
+
+                            <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+                                Confirmar Agendamento
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

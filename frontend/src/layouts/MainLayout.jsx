@@ -278,15 +278,6 @@ const MainLayout = () => {
                 <Briefcase size={24} />
               </button>
 
-              {/* Agenda */}
-              <Link
-                to="/calendar"
-                className={`mobile-nav-item ${activeNavItem === 'agenda' ? 'active' : ''}`}
-                onClick={() => handleLinkNav('agenda')}
-              >
-                <CalendarIcon size={24} />
-              </Link>
-
               {/* Equipe */}
               <button
                 className={`mobile-nav-item ${activeNavItem === 'equipe' ? 'active' : ''}`}
@@ -294,6 +285,22 @@ const MainLayout = () => {
               >
                 <Users size={24} />
               </button>
+
+              {/* Agenda - Central & Golden */}
+              <Link
+                to="/calendar"
+                className={`mobile-nav-item ${activeNavItem === 'agenda' ? 'active' : ''}`}
+                onClick={() => handleLinkNav('agenda')}
+                style={{
+                  background: 'var(--grad-gold)',
+                  color: 'var(--navy-950)',
+                  borderRadius: '50%',
+                  boxShadow: activeNavItem === 'agenda' ? '0 4px 15px rgba(212, 175, 55, 0.4)' : 'none',
+                  flexShrink: 0
+                }}
+              >
+                <CalendarIcon size={24} />
+              </Link>
 
               {/* Produtos */}
               <button
@@ -320,19 +327,19 @@ const MainLayout = () => {
                 <Settings size={24} />
               </Link>
 
-              {/* Command Palette Mobile Button */}
-              <button
-                className="mobile-nav-item"
-                onClick={() => setIsPaletteOpen(true)}
-                style={{ background: 'var(--grad-gold)', color: 'var(--navy-950)', borderRadius: '50%', transform: 'scale(1.1)', margin: '0 5px' }}
-              >
-                <Search size={24} />
-              </button>
-
             </div>
           </nav>
         </>
       )}
+
+      {/* Quick Search Floating Button - Global (Desktop & Mobile) */}
+      <button
+        className="floating-search-btn"
+        onClick={() => setIsPaletteOpen(true)}
+        title="Pesquisa Rápida (Ctrl+K)"
+      >
+        <Search size={24} strokeWidth={2.5} />
+      </button>
 
       {/* For Master on Mobile, simple Nav */}
       {user?.role_global === 'master' && !user?.tenant_slug && (window.innerWidth <= 768) && (

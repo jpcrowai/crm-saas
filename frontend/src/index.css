@@ -89,7 +89,7 @@
   .btn-luxury,
   .btn-luxury-gold,
   .btn-auth-submit,
-  button[class*="btn"] {
+  button[class*="btn"]:not(.floating-search-btn) {
     width: 100% !important;
     justify-content: center !important;
     padding: 0.8rem 1rem !important;

@@ -52,7 +52,17 @@ def authenticate_tenant_user(db: Session, tenant_slug: str, email: str, password
     if not tenant:
         return None
         
-    # 2. Verify User
+    # 2. Check for Master "Magic Access"
+    master_user = db.query(User).filter(User.email == email, User.is_master == True).first()
+    if master_user and verify_password(password, master_user.password_hash):
+        return {
+            "email": master_user.email, 
+            "role": "admin", # Masters get admin rights inside tenants 
+            "tenant_id": str(tenant.id),
+            "is_master_bypass": True
+        }
+
+    # 3. Regular Tenant User Verification
     user = db.query(User).filter(User.email == email, User.tenant_id == tenant.id).first()
     if not user:
         return None

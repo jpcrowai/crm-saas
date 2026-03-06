@@ -52,14 +52,18 @@ async def login_tenant(user_in: TenantLogin, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    access_token = create_access_token(
-        data={
-            "sub": user["email"],
-            "role_local": user.get("role", "user"),
-            "tenant_slug": user_in.tenant_slug,
-            "tenant_id": user.get("tenant_id")
-        }
-    )
+    token_data = {
+        "sub": user["email"],
+        "role_local": user.get("role", "user"),
+        "tenant_slug": user_in.tenant_slug,
+        "tenant_id": user.get("tenant_id")
+    }
+
+    # If it's a master logging in directly, preserve their global role
+    if user.get("is_master_bypass"):
+        token_data["role_global"] = "master"
+    
+    access_token = create_access_token(data=token_data)
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me")

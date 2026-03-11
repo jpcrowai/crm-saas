@@ -93,7 +93,7 @@ async def get_finances(
     # Auto-update overdue statuses
     today = date.today()
     for entry, cat_name in entries_with_names:
-        if entry.status == "pendente" and entry.due_date < today:
+        if entry.status == "pendente" and entry.due_date and entry.due_date < today:
             entry.status = "atrasado"
     db.commit()
     
@@ -101,12 +101,12 @@ async def get_finances(
     for entry, cat_name in entries_with_names:
         result.append({
             "id": str(entry.id),
-            "data_vencimento": entry.due_date.isoformat(),
+            "data_vencimento": entry.due_date.isoformat() if entry.due_date else None,
             "data_pagamento": None,
-            "data_competencia": entry.due_date.isoformat(),
+            "data_competencia": entry.due_date.isoformat() if entry.due_date else None,
             "descricao": entry.description,
             "tipo": entry.type,
-            "valor": float(entry.amount),
+            "valor": float(entry.amount) if entry.amount is not None else 0.0,
             "status": entry.status,
             "origem": entry.origin,
             "lead_id": str(entry.lead_id) if entry.lead_id else None,

@@ -10,11 +10,45 @@ load_dotenv()
 from app.database import engine, Base
 import app.models.sql_models as sql_models
 
+from sqlalchemy import text
+
 # Database initialization moved to startup event for better resilience on serverless
+def run_migrations(conn):
+    """Ensure missing columns are added to existing tables without breaking data."""
+    print("🚀 Running automatic schema migrations...")
+    
+    migrations = [
+        # Finance Entries migrations
+        "ALTER TABLE public.finance_entries ADD COLUMN IF NOT EXISTS supplier_id UUID;",
+        "ALTER TABLE public.finance_entries ADD COLUMN IF NOT EXISTS appointment_id UUID;",
+        "ALTER TABLE public.finance_entries ADD COLUMN IF NOT EXISTS subscription_id UUID;",
+        "ALTER TABLE public.finance_entries ADD COLUMN IF NOT EXISTS service_id UUID;",
+        "ALTER TABLE public.finance_entries ADD COLUMN IF NOT EXISTS installment_number INTEGER DEFAULT 1;",
+        "ALTER TABLE public.finance_entries ADD COLUMN IF NOT EXISTS total_installments INTEGER DEFAULT 1;",
+        
+        # Leads CRM migrations
+        "ALTER TABLE public.leads_crm ADD COLUMN IF NOT EXISTS origin VARCHAR;",
+        "ALTER TABLE public.leads_crm ADD COLUMN IF NOT EXISTS observations TEXT;",
+        "ALTER TABLE public.leads_crm ADD COLUMN IF NOT EXISTS responsible_user VARCHAR;"
+    ]
+    
+    for sql in migrations:
+        try:
+            conn.execute(text(sql))
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Migration note: {sql} -> {e}")
+
 def init_db():
     try:
+        # 1. Create tables that don't exist
         sql_models.Base.metadata.create_all(bind=engine)
-        print("✅ Database tables verified/created")
+        
+        # 2. Run migrations for existing tables columns
+        with engine.connect() as conn:
+            run_migrations(conn)
+            
+        print("✅ Database tables and schema verified/migrated")
     except Exception as e:
         print(f"CRITICAL: Could not connect to database: {e}")
 

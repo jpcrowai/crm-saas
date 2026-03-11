@@ -531,3 +531,15 @@ class ProfessionalPerformance(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     professional = relationship("Professional", back_populates="performance_metrics")
+
+
+class PushSubscription(Base):
+    __tablename__ = "push_subscriptions"
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("public.tenants.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False)
+    subscription_json = Column(JSON, nullable=False)
+    device_type = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

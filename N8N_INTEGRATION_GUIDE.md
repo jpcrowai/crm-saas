@@ -82,6 +82,34 @@ Quando a conversa terminar com sucesso ou quando o bot precisar "chamar um human
 
 ---
 
+## 4. Automações Master (Eventos do Sistema)
+
+Quando você cria um novo ambiente no Painel Master, o sistema agora dispara um webhook automático para o n8n. Isso permite que você automatize o envio de e-mails de boas-vindas com as credenciais de acesso.
+
+### Ação: Novo Ambiente Criado
+
+*   **URL de Destino:** Definida na variável de ambiente `N8N_MASTER_WEBHOOK_URL` no backend.
+*   **Método:** `POST`
+*   **Payload Recebido pelo n8n:**
+
+```json
+{
+  "event": "environment_created",
+  "company_name": "NOME_DA_EMPRESA",
+  "admin_email": "EMAIL_DO_ADMIN",
+  "admin_password": "SENHA_PROVISORIA",
+  "slug": "SLUG_DO_AMBIENTE",
+  "login_url": "URL_DE_LOGIN_DIRETO"
+}
+```
+
+**Fluxo Recomendado no n8n:**
+1.  **Webhook Trigger** (Recebe o payload acima).
+2.  **Gmail/Outlook Node** (Envia o e-mail para `admin_email` usando um template bonito).
+3.  *(Opcional)* **Slack/Discord Node** (Notifica sua equipe interna sobre a nova venda).
+
+---
+
 ## Dicas Adicionais
 
 1.  **Mapear o ID do Lead (`lead_id`):** Opcionalmente, se o bot já sabe o ID do Lead no seu CRM, você pode enviar o campo `"lead_id": "UU-ID..."` no JSON acima, isso garante um tracking ainda mais preciso na tela do usuário.

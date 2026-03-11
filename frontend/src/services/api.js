@@ -147,6 +147,10 @@ export const getReports = (params = {}) => {
   return api.get('/tenant/reports', { params });
 };
 
+export const subscribePush = (subscription) => {
+  return api.post('/tenant/notifications/push-subscribe', subscription);
+};
+
 export const getFinancialCustomerReport = (params = {}) => {
   return api.get('/tenant/financial-reports/customers', { params });
 };
@@ -195,6 +199,10 @@ export const inviteMember = createTeamMember; // Keep as alias
 
 export const getAppointments = () => {
   return api.get('/tenant/appointments/');
+};
+
+export const getCalendarBundle = () => {
+  return api.get('/tenant/appointments/bundle');
 };
 
 export const createAppointment = (data) => {

@@ -110,6 +110,106 @@ def get_credentials(tenant_slug: str):
         print(f"--- Debug: Error in get_credentials: {e} ---")
         return None, None
 
+@router.get("/bundle")
+async def get_calendar_bundle(
+    current_user: TokenData = Depends(get_current_tenant_user),
+    db: Session = Depends(get_db)
+):
+    """Retorna todos os dados necessários para a Agenda de uma só vez para otimizar a rede."""
+    from app.models.sql_models import (
+        Professional as SQLProfessional, 
+        Service as SQLService,
+        Customer as SQLCustomer
+    )
+    
+    # 1. Appointments
+    local_appts_models = db.query(SQLAppointment).filter(
+        SQLAppointment.tenant_id == current_user.tenant_id
+    ).all()
+    
+    # Google Appts logic
+    google_appts = []
+    service_google = None
+    try:
+        creds, service_google = get_credentials(current_user.tenant_slug)
+        if service_google:
+            now = datetime.utcnow().isoformat() + 'Z'
+            events_result = service_google.events().list(calendarId='primary', timeMin=now,
+                                                maxResults=100, singleEvents=True,
+                                                orderBy='startTime').execute()
+            for event in events_result.get('items', []):
+                start = event['start'].get('dateTime', event['start'].get('date'))
+                end = event['end'].get('dateTime', event['end'].get('date'))
+                google_appts.append({
+                    "id": f"google_{event['id']}",
+                    "title": event.get('summary', '(Sem Título)'),
+                    "start_time": start,
+                    "end_time": end,
+                    "description": event.get('description', ''),
+                    "status": 'scheduled',
+                    "customer_id": 'google_event'
+                })
+    except Exception as e:
+        print(f"Error fetching Google Calendar: {e}")
+
+    # Deduplicate
+    final_appts = []
+    seen_keys = set()
+    for g in google_appts:
+        key = (g["title"].strip().lower(), str(g["start_time"]))
+        seen_keys.add(key)
+        final_appts.append(g)
+
+    for l in local_appts_models:
+        l_start = l.start_time.isoformat() if hasattr(l.start_time, 'isoformat') else str(l.start_time)
+        key = (l.title.strip().lower(), l_start)
+        if key not in seen_keys:
+            # Manually convert to dict for the bundle
+            final_appts.append({
+                "id": str(l.id),
+                "title": l.title,
+                "start_time": l_start,
+                "end_time": l.end_time.isoformat() if l.end_time else None,
+                "description": l.description,
+                "status": l.status,
+                "customer_id": str(l.customer_id),
+                "professional_id": str(l.professional_id),
+                "professional_name": l.professional.name if l.professional else None
+            })
+
+    # 2. Customers
+    customers = db.query(SQLCustomer).filter(SQLCustomer.tenant_id == current_user.tenant_id).all()
+    customers_list = [{"id": str(c.id), "name": c.name} for c in customers]
+
+    # 3. Professionals
+    professionals = db.query(SQLProfessional).filter(SQLProfessional.tenant_id == current_user.tenant_id).all()
+    professionals_list = [{"id": str(p.id), "name": p.name} for p in professionals]
+
+    # 4. Services
+    services = db.query(SQLService).filter(SQLService.tenant_id == current_user.tenant_id).all()
+    services_list = [{"id": str(s.id), "name": s.name, "duration_minutes": s.duration_minutes, "value": float(s.value or 0)} for s in services]
+
+    # 5. Connection Info
+    conn_info = {"connected": False}
+    if service_google:
+        try:
+            calendar = service_google.calendars().get(calendarId='primary').execute()
+            conn_info = {
+                "connected": True,
+                "email": calendar.get("id"),
+                "summary": calendar.get("summary")
+            }
+        except:
+            pass
+
+    return {
+        "appointments": final_appts,
+        "customers": customers_list,
+        "professionals": professionals_list,
+        "services": services_list,
+        "connectionInfo": conn_info
+    }
+
 @router.get("/", response_model=List[AppointmentSchema])
 async def get_appointments(
     current_user: TokenData = Depends(get_current_tenant_user),

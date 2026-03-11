@@ -80,7 +80,18 @@ def generate_environment_contract_pdf(env_data: dict) -> str:
     plan_price = float(env_data.get('plan_price', 0))
     billing_cycle = str(env_data.get('billing_cycle', 'mensal')).title()
     has_trial = str(env_data.get('has_trial', 'false')).lower() == 'true'
-    trial_text = "com um período adicional de teste grátis (Trial) de 30 dias contemplado." if has_trial else "sem período preambular de degustação gratuita."
+    payment_due_date = env_data.get('payment_due_date', '---')
+    
+    # Format date if it's a string ISO
+    if payment_due_date and 'T' in str(payment_due_date):
+        payment_due_date = str(payment_due_date).split('T')[0]
+        try:
+            d = datetime.strptime(payment_due_date, '%Y-%m-%d')
+            payment_due_date = d.strftime('%d/%m/%Y')
+        except:
+            pass
+
+    trial_text = f"com um período adicional de teste grátis (Trial) contemplado, tendo o primeiro vencimento em {payment_due_date}." if has_trial else f"sem período preambular de degustação gratuita, com o primeiro pagamento estipulado para {payment_due_date}."
     
     preco_formatado = f"R$ {plan_price:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     
@@ -226,6 +237,10 @@ async def get_environment_contract(slug: str, db: Session = Depends(get_db), cur
                 "nome_empresa": tenant.name,
                 "cnpj": tenant.document,
                 "endereco": tenant.address,
+                "plan_price": tenant.plan_price,
+                "billing_cycle": tenant.billing_cycle,
+                "has_trial": tenant.has_trial,
+                "payment_due_date": tenant.payment_due_date,
                 "modulos_habilitados": tenant.modulos_habilitados if tenant.modulos_habilitados else []
             }
             pdf_path = generate_environment_contract_pdf(env_data)
@@ -411,6 +426,21 @@ async def create_ambiente(
     )
     db.add(admin_user)
     
+    from app.services.automation_service import AutomationService
+    
+    # Notify N8N Master Webhook
+    AutomationService.trigger_master_automation(
+        "environment_created",
+        {
+            "event": "environment_created",
+            "company_name": nome_empresa,
+            "admin_email": admin_email,
+            "admin_password": admin_password,
+            "slug": slug,
+            "login_url": f"https://crm-saas-jpcrow.vercel.app/login?slug={slug}" # Default Vercel or local
+        }
+    )
+
     db.commit()
     db.refresh(new_tenant)
     

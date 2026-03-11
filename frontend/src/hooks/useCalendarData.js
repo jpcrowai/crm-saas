@@ -1,10 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
-    getAppointments,
-    getCustomers,
-    getCalendarInfo,
-    getServices,
-    getProfessionals,
+    getCalendarBundle,
     createAppointment,
     completeAppointment
 } from '../services/api';
@@ -16,32 +12,37 @@ export const useCalendarData = () => {
     const [services, setServices] = useState([]);
     const [connectionInfo, setConnectionInfo] = useState({ connected: false, email: '' });
     const [loading, setLoading] = useState(true);
+    const lastFetch = useRef(0);
 
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async (force = false) => {
+        // Evita múltiplas chamadas redundantes (debounce de 2 segundos)
+        const now = Date.now();
+        if (!force && now - lastFetch.current < 2000) {
+            console.log("--- BUNDLE: Ignorando chamada redundante ---");
+            return;
+        }
+        lastFetch.current = now;
+
         setLoading(true);
         try {
-            const [apptRes, custRes, infoRes, servRes, profRes] = await Promise.all([
-                getAppointments(),
-                getCustomers(),
-                getCalendarInfo(),
-                getServices(),
-                getProfessionals()
-            ]);
+            console.log("--- BUNDLE: Buscando dados unificados da Agenda ---");
+            const res = await getCalendarBundle();
+            const { appointments, customers, professionals, services, connectionInfo } = res.data;
 
-            setAppointments(apptRes.data);
-            localStorage.setItem('cached_appointments', JSON.stringify(apptRes.data));
-            setCustomers(custRes.data);
-            setProfessionals(profRes.data);
-            setConnectionInfo(infoRes.data);
-            setServices(servRes.data);
+            setAppointments(appointments);
+            localStorage.setItem('cached_appointments', JSON.stringify(appointments));
+            setCustomers(customers);
+            setProfessionals(professionals);
+            setConnectionInfo(connectionInfo || { connected: false });
+            setServices(services);
 
-            if (infoRes.data.connected) {
+            if (connectionInfo?.connected) {
                 localStorage.setItem('google_connected', 'true');
             } else {
                 localStorage.removeItem('google_connected');
             }
         } catch (e) {
-            console.error(e);
+            console.error("Erro no Bundle:", e);
         } finally {
             setLoading(false);
         }
@@ -49,13 +50,13 @@ export const useCalendarData = () => {
 
     const addAppointment = async (apptData) => {
         const res = await createAppointment(apptData);
-        await loadData();
+        await loadData(true); // Force reload after action
         return res;
     };
 
     const finishAppointment = async (id) => {
         await completeAppointment(id);
-        await loadData();
+        await loadData(true); // Force reload after action
     };
 
     return {

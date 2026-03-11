@@ -4,6 +4,8 @@ from app.database import SessionLocal
 import httpx
 import asyncio
 
+import os
+
 class AutomationService:
     @staticmethod
     def trigger_automations(tenant_id, trigger_type, payload):
@@ -21,19 +23,30 @@ class AutomationService:
 
             for auto in automations:
                 if auto.action_type == 'webhook':
-                    asyncio.run(AutomationService._execute_webhook(auto, payload))
+                    asyncio.run(AutomationService._execute_webhook(auto.action_config.get('url'), payload))
         finally:
             db.close()
-            # Add other types here
             
     @staticmethod
-    async def _execute_webhook(automation, payload):
-        url = automation.action_config.get('url')
+    def trigger_master_automation(trigger_type, payload):
+        """
+        Triggers master-level automations (e.g., environment creation).
+        Currently uses N8N_MASTER_WEBHOOK_URL globally.
+        """
+        webhook_url = os.getenv("N8N_MASTER_WEBHOOK_URL")
+        if not webhook_url:
+            print("MASTER WEBHOOK skipped: N8N_MASTER_WEBHOOK_URL not set.")
+            return
+            
+        asyncio.run(AutomationService._execute_webhook(webhook_url, payload))
+
+    @staticmethod
+    async def _execute_webhook(url, payload):
         if not url: return
         
         try:
             async with httpx.AsyncClient() as client:
                 await client.post(url, json=payload, timeout=5.0)
-                print(f"Webhook executed for {automation.name}")
+                print(f"Webhook executed for {url}")
         except Exception as e:
-            print(f"Webhook failed for {automation.name}: {e}")
+            print(f"Webhook failed for {url}: {e}")

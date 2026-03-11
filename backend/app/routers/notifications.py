@@ -63,3 +63,32 @@ async def mark_all_as_read(
     ).update({"read": True})
     db.commit()
     return {"message": "Success"}
+
+@router.post("/push-subscribe")
+async def subscribe_push(
+    subscription: dict,
+    current_user: TokenData = Depends(get_current_tenant_user),
+    db: Session = Depends(get_db)
+):
+    """Saves a push subscription for the user."""
+    from app.models.sql_models import PushSubscription
+    
+    # Check if subscription already exists for this user/device? 
+    # For now, we update or create.
+    db_sub = db.query(PushSubscription).filter(
+        PushSubscription.user_id == current_user.user_id,
+        # Potentially matching the endpoint in JSON
+    ).first()
+
+    if not db_sub:
+        db_sub = PushSubscription(
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.user_id,
+            subscription_json=subscription
+        )
+        db.add(db_sub)
+    else:
+        db_sub.subscription_json = subscription
+    
+    db.commit()
+    return {"message": "Inscrição de notificações salva com sucesso"}

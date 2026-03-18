@@ -8,7 +8,7 @@ const ModuleRoute = ({ children, module }) => {
     if (loading) return null;
 
     // Master always has access or we are in master context
-    if (user?.role_global === 'master' && !user?.tenant_slug) return children;
+    if (user?.role_global === 'master') return children;
 
     const habilitados = user?.modulos_habilitados || [];
 

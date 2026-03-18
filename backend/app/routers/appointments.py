@@ -118,7 +118,7 @@ async def get_calendar_bundle(
     """Retorna todos os dados necessários para a Agenda de uma só vez para otimizar a rede."""
     from app.models.sql_models import (
         Professional as SQLProfessional, 
-        Service as SQLService,
+        Product as SQLService,
         Customer as SQLCustomer
     )
     
@@ -187,7 +187,7 @@ async def get_calendar_bundle(
 
     # 4. Services
     services = db.query(SQLService).filter(SQLService.tenant_id == current_user.tenant_id).all()
-    services_list = [{"id": str(s.id), "name": s.name, "duration_minutes": s.duration_minutes, "value": float(s.value or 0)} for s in services]
+    services_list = [{"id": str(s.id), "name": s.name, "duration_minutes": s.duration_minutes, "value": float(s.price or 0)} for s in services]
 
     # 5. Connection Info
     conn_info = {"connected": False}

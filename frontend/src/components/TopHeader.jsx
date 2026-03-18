@@ -1,50 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import { User, BellRing, BellOff } from 'lucide-react'
+import React from 'react'
+import { User } from 'lucide-react'
 import NotificationCenter from './NotificationCenter'
 import { useAuth } from '../context/AuthContext'
-import { subscribePush } from '../services/api'
 
 const TopHeader = ({ onSearchClick }) => {
     const { user } = useAuth()
-    const [pushStatus, setPushStatus] = useState('default')
-
-    useEffect(() => {
-        if ('Notification' in window) {
-            setPushStatus(Notification.permission)
-        }
-    }, [])
-
-    const handleEnablePush = async () => {
-        if (!('Notification' in window)) {
-            alert("Este navegador não suporta notificações.");
-            return;
-        }
-
-        const permission = await Notification.requestPermission();
-        setPushStatus(permission);
-
-        if (permission === 'granted') {
-            try {
-                const registration = await navigator.serviceWorker.ready;
-                let subscription = await registration.pushManager.getSubscription();
-
-                if (!subscription) {
-                    // Chave pública VAPID (exemplo genérico para teste)
-                    const publicVapidKey = 'BN77X7Vf9v6D5b0A6c-K3S8H_Xv_qU-N8w_l_x_S_m_A';
-                    subscription = await registration.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: publicVapidKey
-                    });
-                }
-
-                await subscribePush(subscription);
-                alert("Notificações via Push ativadas! Você receberá alertas mesmo com o app fechado.");
-            } catch (err) {
-                console.error("Erro ao assinar push:", err);
-                // Mesmo com erro de VAPID, a permissão do browser foi dada
-            }
-        }
-    };
 
     return (
         <header className="app-top-header" style={{
@@ -63,26 +23,6 @@ const TopHeader = ({ onSearchClick }) => {
             zIndex: 100,
             width: '100%'
         }}>
-
-            <button
-                onClick={handleEnablePush}
-                className="notification-toggle-btn"
-                title={pushStatus === 'granted' ? "Notificações Ativas" : "Ativar Notificações no Celular"}
-                style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: '10px',
-                    padding: '8px',
-                    color: pushStatus === 'granted' ? 'var(--gold-500)' : 'rgba(255,255,255,0.4)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.3s'
-                }}
-            >
-                {pushStatus === 'granted' ? <BellRing size={20} /> : <BellOff size={20} />}
-            </button>
 
             <NotificationCenter />
 
@@ -134,27 +74,6 @@ const TopHeader = ({ onSearchClick }) => {
                         border: none !important;
                         z-index: 2000;
                         pointer-events: none;
-                    }
-
-                    .notification-toggle-btn {
-                        position: fixed !important;
-                        top: max(20px, env(safe-area-inset-top)) !important;
-                        right: 60px !important;
-                        pointer-events: auto !important;
-                        z-index: 2001;
-                        width: 34px !important;
-                        height: 34px !important;
-                        padding: 0 !important;
-                        background: rgba(15, 23, 42, 0.9) !important;
-                        border: 1px solid rgba(255,255,255,0.15) !important;
-                        border-radius: 8px !important;
-                        color: rgba(255,255,255,0.7) !important;
-                        backdrop-filter: blur(10px) !important;
-                    }
-
-                    .notification-toggle-btn svg {
-                        width: 18px !important;
-                        height: 18px !important;
                     }
 
                     .notification-center-container {

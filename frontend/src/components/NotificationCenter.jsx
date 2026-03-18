@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Bell, Check, Clock, X, Info, AlertTriangle, CheckCircle2 } from 'lucide-react'
-import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../services/api'
+import { getNotifications, getUnreadCount, markAsRead, markAllAsRead, subscribePush } from '../services/api'
 import { useNavigate } from 'react-router-dom'
 
 const NotificationCenter = () => {
@@ -33,6 +33,32 @@ const NotificationCenter = () => {
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
+
+    const handleBellClick = async () => {
+        setIsOpen(!isOpen)
+
+        if ('Notification' in window && Notification.permission === 'default') {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const registration = await navigator.serviceWorker.ready;
+                    let subscription = await registration.pushManager.getSubscription();
+
+                    if (!subscription) {
+                        const publicVapidKey = 'BN77X7Vf9v6D5b0A6c-K3S8H_Xv_qU-N8w_l_x_S_m_A'; // Update in production to env var
+                        subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: publicVapidKey
+                        });
+                    }
+
+                    await subscribePush(subscription);
+                }
+            } catch (err) {
+                console.error("Erro ao pedir permissão de push notificaton:", err);
+            }
+        }
+    }
 
     const fetchUnreadCount = async () => {
         try {
@@ -107,7 +133,7 @@ const NotificationCenter = () => {
         <div className="notification-center-container" ref={dropdownRef} style={{ position: 'relative' }}>
             <button
                 className={`btn-icon ${isOpen ? 'active' : ''}`}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleBellClick}
                 style={{ position: 'relative' }}
             >
                 <Bell size={20} />

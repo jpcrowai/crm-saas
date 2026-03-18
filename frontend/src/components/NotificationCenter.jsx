@@ -270,13 +270,22 @@ const NotificationCenter = () => {
                     background: rgba(212,175,55,0.08) !important;
                 }
                 @media (max-width: 768px) {
-                    .btn-icon {
-                        width: 32px !important;
-                        height: 32px !important;
+                    .notification-center-container .btn-icon {
+                        width: 34px !important;
+                        height: 34px !important;
+                        background: rgba(15, 23, 42, 0.9) !important;
+                        border: 1px solid rgba(255,255,255,0.15) !important;
+                        color: rgba(255,255,255,0.8) !important;
+                        border-radius: 8px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        padding: 0 !important;
+                        backdrop-filter: blur(10px) !important;
                     }
-                    .btn-icon svg {
-                        width: 16px !important;
-                        height: 16px !important;
+                    .notification-center-container .btn-icon svg {
+                        width: 18px !important;
+                        height: 18px !important;
                     }
                     .notification-dropdown {
                         width: 90vw !important;

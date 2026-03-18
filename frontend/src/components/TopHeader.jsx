@@ -138,17 +138,31 @@ const TopHeader = ({ onSearchClick }) => {
 
                     .notification-toggle-btn {
                         position: fixed !important;
-                        top: max(10px, env(safe-area-inset-top)) !important;
+                        top: max(20px, env(safe-area-inset-top)) !important;
                         right: 60px !important;
                         pointer-events: auto !important;
                         z-index: 2001;
+                        width: 34px !important;
+                        height: 34px !important;
+                        padding: 0 !important;
+                        background: rgba(15, 23, 42, 0.9) !important;
+                        border: 1px solid rgba(255,255,255,0.15) !important;
+                        border-radius: 8px !important;
+                        color: rgba(255,255,255,0.7) !important;
+                        backdrop-filter: blur(10px) !important;
+                    }
+
+                    .notification-toggle-btn svg {
+                        width: 18px !important;
+                        height: 18px !important;
                     }
 
                     .notification-center-container {
                         position: fixed !important;
-                        top: max(10px, env(safe-area-inset-top)) !important;
-                        right: 15px !important;
+                        top: max(20px, env(safe-area-inset-top)) !important;
+                        right: 16px !important;
                         pointer-events: auto !important;
+                        z-index: 2001;
                     }
 
                     .app-top-header .user-profile-summary {
@@ -157,6 +171,10 @@ const TopHeader = ({ onSearchClick }) => {
 
                     .main-content {
                         padding-top: 0 !important;
+                    }
+
+                    .page-header-row {
+                        padding-right: 100px !important; /* Prevent text overlap with absolute buttons */
                     }
                 }
             `}</style>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getCustomers, createCustomer, deleteCustomer, upgradeCustomer } from '../services/api';
+import { getCustomers, createCustomer, updateCustomer, deleteCustomer, upgradeCustomer } from '../services/api';
 import { useDataCache } from '../hooks/useDataCache';
 import { useOptimistic } from '../hooks/useOptimistic';
 import { Plus, Search, Trash2, FileText, Briefcase, XCircle, CheckCircle2, UserCheck } from 'lucide-react';
@@ -11,6 +11,8 @@ const Customers = () => {
     const optimistic = useOptimistic(mutate);
     const [searchTerm, setSearchTerm] = useState('');
     const [showForm, setShowForm] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', document: '' });
     const [viewMode, setViewMode] = useState(localStorage.getItem('viewMode_Customers') || 'grid');
 
@@ -20,6 +22,25 @@ const Customers = () => {
 
     const handleCreate = async (e) => {
         e.preventDefault();
+
+        if (isEditing && selectedCustomer) {
+            const updatedData = { ...newCustomer };
+            const id = selectedCustomer.id;
+            setShowForm(false);
+            setNewCustomer({ name: '', email: '', phone: '', document: '' });
+            setIsEditing(false);
+            setSelectedCustomer(null);
+
+            await optimistic(
+                prev => prev.map(c => c.id === id ? { ...c, ...updatedData } : c),
+                async () => {
+                    await updateCustomer(id, updatedData);
+                },
+                { errorMessage: 'Erro ao atualizar cliente.' }
+            );
+            return;
+        }
+
         const tempId = `temp_${Date.now()}`;
         const tempCustomer = { ...newCustomer, id: tempId, _pending: true };
         setShowForm(false);
@@ -59,6 +80,25 @@ const Customers = () => {
         (c.email || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const openEditModal = (customer) => {
+        setSelectedCustomer(customer);
+        setNewCustomer({
+            name: customer.name,
+            email: customer.email || '',
+            phone: customer.phone || '',
+            document: customer.document || ''
+        });
+        setIsEditing(true);
+        setShowForm(true);
+    };
+
+    const openCreateModal = () => {
+        setIsEditing(false);
+        setSelectedCustomer(null);
+        setNewCustomer({ name: '', email: '', phone: '', document: '' });
+        setShowForm(true);
+    };
+
     return (
         <div className="tenant-page-container">
             <header className="page-header-row">
@@ -67,7 +107,7 @@ const Customers = () => {
                     <p>Gerencie seus parceiros e histórico de relacionamento</p>
                 </div>
                 <div className="page-header-actions">
-                    <button className="btn-primary" onClick={() => setShowForm(true)}>
+                    <button className="btn-primary" onClick={openCreateModal}>
                         <Plus size={20} /> Novo Cliente
                     </button>
                 </div>
@@ -156,6 +196,9 @@ const Customers = () => {
                                                             <UserCheck size={16} />
                                                         </button>
                                                     )}
+                                                    <button className="btn-action-luxury" style={{ color: 'var(--primary)' }} onClick={() => openEditModal(c)} title="Editar" disabled={c._pending}>
+                                                        <FileText size={16} />
+                                                    </button>
                                                     <button className="btn-action-luxury" style={{ color: 'var(--error)' }} onClick={() => handleDelete(c.id, c.name)} title="Remover" disabled={c._pending}>
                                                         <Trash2 size={16} />
                                                     </button>
@@ -169,7 +212,10 @@ const Customers = () => {
                             <div className="data-grid-cards">
                                 {filtered.map(c => (
                                     <div key={c.id} className="data-card-item" style={{ opacity: c._pending ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-                                        <div className="card-actions-dropdown">
+                                        <div className="card-actions-dropdown" style={{ display: 'flex', gap: '0.2rem' }}>
+                                            <button className="btn-icon" onClick={() => openEditModal(c)} title="Editar" disabled={c._pending}>
+                                                <FileText size={16} color="var(--primary)" />
+                                            </button>
                                             <button className="btn-icon" onClick={() => handleDelete(c.id, c.name)} title="Remover" disabled={c._pending}>
                                                 <Trash2 size={16} color="var(--error)" />
                                             </button>
@@ -240,10 +286,10 @@ const Customers = () => {
 
             {showForm && (
                 <div className="modal-overlay">
-                    <div className="card" style={{ width: '480px', padding: '0', overflow: 'hidden' }}>
+                    <div className="card" style={{ width: '90%', maxWidth: '480px', padding: '0', overflow: 'hidden', margin: 'auto' }}>
                         <div className="modal-header-luxury">
-                            <h2>Novo Cadastro</h2>
-                            <button onClick={() => setShowForm(false)} className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}><XCircle /></button>
+                            <h2>{isEditing ? 'Editar Cliente' : 'Novo Cadastro'}</h2>
+                            <button onClick={() => setShowForm(false)} className="btn-close-modal"><XCircle size={18} /></button>
                         </div>
                         <form onSubmit={handleCreate} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             <div className="form-group">
@@ -264,9 +310,9 @@ const Customers = () => {
                                     <input className="input-premium" placeholder="000.000.000-00" value={newCustomer.document} onChange={e => setNewCustomer({ ...newCustomer, document: e.target.value })} />
                                 </div>
                             </div>
-                            <footer style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
-                                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowForm(false)}>Cancelar</button>
-                                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Salvar Cliente</button>
+                            <footer style={{ marginTop: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <button type="button" className="btn-secondary" style={{ flex: 1, minWidth: '120px' }} onClick={() => setShowForm(false)}>Cancelar</button>
+                                <button type="submit" className="btn-primary" style={{ flex: 1, minWidth: '120px' }}>{isEditing ? 'Salvar Alterações' : 'Salvar Cliente'}</button>
                             </footer>
                         </form>
                     </div>
